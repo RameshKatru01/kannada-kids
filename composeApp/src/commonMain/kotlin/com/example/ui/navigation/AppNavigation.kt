@@ -113,7 +113,21 @@ fun AppNavigation(authViewModel: AuthViewModel = viewModel { AuthViewModel() }) 
             }
 
             composable("reference") {
-                ReferenceScreen(onBack = { navController.popBackStack() })
+                ReferenceScreen(
+                    onBack = { navController.popBackStack() },
+                    onOpenLetter = { tab, index -> navController.navigate("reference_letter/$tab/$index") }
+                )
+            }
+            composable(
+                "reference_letter/{tab}/{index}",
+                arguments = listOf(
+                    navArgument("tab") { type = NavType.IntType },
+                    navArgument("index") { type = NavType.IntType }
+                )
+            ) { backStackEntry ->
+                val tab = backStackEntry.arguments?.read { getIntOrNull("tab") } ?: 0
+                val index = backStackEntry.arguments?.read { getIntOrNull("index") } ?: 0
+                ReferenceLetterScreen(tab = tab, startIndex = index, onBack = { navController.popBackStack() })
             }
             composable("profile") {
                 ProfileScreen(

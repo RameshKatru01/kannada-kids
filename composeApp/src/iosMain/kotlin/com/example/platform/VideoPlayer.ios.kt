@@ -38,6 +38,7 @@ class IosVideoPlayerController(val player: AVPlayer, private val loop: Boolean) 
             if (loop) {
                 player.seekToTime(CMTimeMake(value = 0, timescale = 1))
                 player.play()
+                if (speed != 1f) player.rate = speed
             }
         }
     }
@@ -54,6 +55,7 @@ class IosVideoPlayerController(val player: AVPlayer, private val loop: Boolean) 
     override fun play() {
         wantsToPlay = true
         player.play()
+        if (speed != 1f) player.rate = speed
         refreshState()
     }
 
@@ -66,6 +68,13 @@ class IosVideoPlayerController(val player: AVPlayer, private val loop: Boolean) 
     @OptIn(ExperimentalForeignApi::class)
     override fun seekTo(positionMs: Long) {
         player.seekToTime(CMTimeMakeWithSeconds(positionMs / 1000.0, preferredTimescale = 600))
+    }
+
+    private var speed = 1f
+
+    override fun setSpeed(speed: Float) {
+        this.speed = speed
+        if (wantsToPlay) player.rate = speed
     }
 
     override fun setVolume(volume: Float) {

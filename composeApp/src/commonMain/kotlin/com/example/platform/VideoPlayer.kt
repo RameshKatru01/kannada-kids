@@ -14,6 +14,8 @@ interface VideoPlayerController {
     fun pause()
     fun seekTo(positionMs: Long)
     fun setVolume(volume: Float)
+    /** Playback speed: 1 = normal, 0.5 = half speed. */
+    fun setSpeed(speed: Float) {}
     fun release()
 }
 

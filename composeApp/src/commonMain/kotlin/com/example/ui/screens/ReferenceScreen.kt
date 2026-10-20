@@ -5,35 +5,50 @@ import com.example.platform.*
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.GridItemSpan
+import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
+import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.automirrored.filled.VolumeUp
-import androidx.compose.material.icons.filled.Close
-import androidx.compose.material.icons.filled.Lock
-import androidx.compose.material.icons.filled.Videocam
-import androidx.compose.material3.*
+import androidx.compose.material.icons.filled.PlayArrow
+import androidx.compose.material3.Icon
+import androidx.compose.material3.Text
 import androidx.compose.runtime.*
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.geometry.CornerRadius
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.compose.ui.window.Dialog
-import androidx.compose.ui.window.DialogProperties
 import com.example.data.KannadaLetter
 import com.example.data.LetterData
-import com.example.ui.components.LetterTraceVideoPlayer
-import com.example.ui.data.LanguageManager
-import com.example.ui.theme.*
+import com.example.ui.components.ScrapbookHeader
+import com.example.ui.components.ScrapbookInk
+import com.example.ui.components.ScrapbookInkSoft
+import com.example.ui.components.ScrapbookPaper
+import com.example.ui.progress.StarGold
+import com.example.ui.progress.StarIcon
+import com.example.ui.reference.ReferenceInfo
+import com.example.ui.reference.ReferenceProgress
+import com.example.ui.reference.RefTab
 
+private const val ASSETS_MAIN = "https://raw.githubusercontent.com/RameshKatru01/kannada-app-assets/main"
+
+/** Stroke-writing video for a vowel or consonant (null for numbers and ka-kaa). */
 fun getVideoUrlForLetter(letter: KannadaLetter): String? {
-    val base = "https://raw.githubusercontent.com/RameshKatru01/kannada-app-assets/main"
-    return letter.videoUrl ?: when (letter.character) {
+    val base = ASSETS_MAIN
+    return when (letter.character) {
         "ಅ" -> "$base/Final_A.mp4"
         "ಆ" -> "$base/Final%20AA.mp4"
         "ಇ" -> "$base/Final_E.mp4"
@@ -87,392 +102,208 @@ fun getVideoUrlForLetter(letter: KannadaLetter): String? {
     }
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
+/** Pastel tile colour + its darker edge, cycled across tiles / consonant groups. */
+internal val RefTints = listOf(
+    Color(0xFFD9F6F2) to Color(0xFF2EC4B6),
+    Color(0xFFFFE1E1) to Color(0xFFFF6B6B),
+    Color(0xFFE6E4FF) to Color(0xFF6C63FF),
+    Color(0xFFFFF0C2) to Color(0xFFF2B21B),
+    Color(0xFFFFE6CC) to Color(0xFFFF9F1C),
+    Color(0xFFFBDDEB) to Color(0xFFE84393),
+    Color(0xFFDCEEFF) to Color(0xFF4DA8FF)
+)
+
+/** Reference: the letter chart. Tapping a letter opens its letter page. */
 @Composable
-fun ReferenceScreen(onBack: () -> Unit) {
-    val context = LocalContext.current
-    val currentLanguage by LanguageManager.currentLanguage.collectAsState()
-    var selectedLetterForVideo by remember { mutableStateOf<KannadaLetter?>(null) }
+fun ReferenceScreen(onBack: () -> Unit, onOpenLetter: (tab: Int, index: Int) -> Unit) {
+    var tabIndex by rememberSaveable { mutableIntStateOf(0) }
+    val tab = RefTab.entries[tabIndex]
+    val version by ReferenceProgress.version.collectAsState()
+    val letters = tab.letters()
+    val practised = remember(version, tab) { ReferenceProgress.count(letters) }
 
-    val authPrefs = remember { getSharedPreferences("AppProgress") }
-    val userEmail = authPrefs.getString("last_active_user", "guest") ?: "guest"
-    val isGuest = com.example.ui.data.UserManager.isGuest(userEmail)
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(ScrapbookPaper)
+            .safeDrawingPadding()
+    ) {
+        ScrapbookHeader(title = "Reference", onBack = onBack)
+        Text(
+            "ಅಕ್ಷರ ಮಾಲೆ · Letter chart",
+            modifier = Modifier.padding(start = 72.dp, bottom = 8.dp),
+            fontSize = 13.sp, fontWeight = FontWeight.Bold, color = ScrapbookInkSoft
+        )
 
-    Scaffold(
-        topBar = {
-            TopAppBar(
-                title = { Text("Reference Library", color = Color.White, fontWeight = FontWeight.Bold) },
-                navigationIcon = {
-                    IconButton(onClick = onBack) {
-                        Icon(
-                            Icons.AutoMirrored.Filled.ArrowBack,
-                            contentDescription = "Back",
-                            tint = Color.White
-                        )
-                    }
-                },
-                colors = TopAppBarDefaults.topAppBarColors(containerColor = DeepBlue)
-            )
-        },
-        containerColor = Color(0xFFE1F5FE)
-    ) { paddingValues ->
-        LazyColumn(
+        // Tabs
+        Row(
             modifier = Modifier
-                .fillMaxSize()
-                .padding(paddingValues)
-                .padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(24.dp)
+                .padding(horizontal = 16.dp)
+                .fillMaxWidth()
+                .background(Color.White, RoundedCornerShape(22.dp))
+                .padding(5.dp),
+            horizontalArrangement = Arrangement.spacedBy(6.dp)
         ) {
-            item {
-                Surface(
-                    color = Color(0xFFFFF8E1),
-                    shape = RoundedCornerShape(12.dp),
-                    border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFFFE082)),
-                    modifier = Modifier.fillMaxWidth()
+            RefTab.entries.forEachIndexed { i, t ->
+                val on = i == tabIndex
+                Column(
+                    modifier = Modifier
+                        .weight(1f)
+                        .clip(RoundedCornerShape(17.dp))
+                        .background(if (on) ScrapbookInk else Color.Transparent)
+                        .clickable { tabIndex = i }
+                        .padding(vertical = 6.dp)
+                        .testTag("ref_tab_$i"),
+                    horizontalAlignment = Alignment.CenterHorizontally
                 ) {
-                    Row(
-                        modifier = Modifier.padding(12.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(8.dp)
-                    ) {
-                        Icon(
-                            Icons.Default.Videocam,
-                            contentDescription = "Videos Available",
-                            tint = Color(0xFFE65100),
-                            modifier = Modifier.size(24.dp)
-                        )
-                        Text(
-                            text = if (isGuest) "🔒 Guest mode: First letter unlocked in each section!" else "Tap any Vowel or Consonant to watch its stroke writing video!",
-                            fontSize = 13.sp,
-                            fontWeight = FontWeight.Medium,
-                            color = Color(0xFF5D4037)
+                    Text(t.kannada, fontWeight = FontWeight.ExtraBold, fontSize = 15.sp, color = if (on) Color.White else ScrapbookInk)
+                    Text(t.english, fontWeight = FontWeight.Bold, fontSize = 11.sp, color = if (on) Color.White else ScrapbookInk)
+                }
+            }
+        }
+
+        val hasVideos = tab == RefTab.Vowels || tab == RefTab.Consonants
+        Row(
+            modifier = Modifier.padding(horizontal = 18.dp, vertical = 12.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            Box(Modifier.size(22.dp).background(Color(0xFFFF6B6B), CircleShape), contentAlignment = Alignment.Center) {
+                Icon(Icons.Default.PlayArrow, contentDescription = null, tint = Color.White, modifier = Modifier.size(14.dp))
+            }
+            Text(
+                if (hasVideos) "Tap a letter to watch how it is written" else "Tap a letter to hear it",
+                fontSize = 14.sp, fontWeight = FontWeight.Bold, color = ScrapbookInkSoft
+            )
+        }
+
+        LazyVerticalGrid(
+            columns = GridCells.Fixed(if (tab == RefTab.Consonants) 5 else 4),
+            modifier = Modifier.weight(1f).fillMaxWidth(),
+            contentPadding = PaddingValues(start = 16.dp, end = 16.dp, bottom = 12.dp),
+            horizontalArrangement = Arrangement.spacedBy(if (tab == RefTab.Consonants) 6.dp else 10.dp),
+            verticalArrangement = Arrangement.spacedBy(if (tab == RefTab.Consonants) 6.dp else 10.dp)
+        ) {
+            if (tab == RefTab.Consonants) {
+                ReferenceInfo.consonantGroups().forEachIndexed { g, group ->
+                    item(span = { GridItemSpan(maxLineSpan) }, key = "group_$g") {
+                        Row(
+                            modifier = Modifier.padding(top = if (g == 0) 0.dp else 8.dp),
+                            verticalAlignment = Alignment.Bottom,
+                            horizontalArrangement = Arrangement.spacedBy(6.dp)
+                        ) {
+                            Text(group.kannada, fontWeight = FontWeight.ExtraBold, fontSize = 15.sp, color = ScrapbookInk)
+                            Text(group.english, fontWeight = FontWeight.Bold, fontSize = 11.sp, color = ScrapbookInkSoft, modifier = Modifier.padding(bottom = 2.dp))
+                        }
+                    }
+                    items(group.letters, key = { it.id }) { letter ->
+                        LetterTile(
+                            letter = letter,
+                            sound = ReferenceInfo.sound(letter),
+                            tint = RefTints[g % RefTints.size],
+                            height = 60.dp,
+                            letterSize = 26,
+                            hasVideo = true,
+                            practised = remember(version, letter.id) { ReferenceProgress.isPractised(letter) },
+                            onClick = { onOpenLetter(tabIndex, letters.indexOfFirst { it.id == letter.id }) }
                         )
                     }
                 }
-            }
-
-            item {
-                ReferenceSection(
-                    title = "Vowels",
-                    items = LetterData.vowels,
-                    color = BrightCyan,
-                    hasVideos = true,
-                    isGuest = isGuest,
-                    onClick = { letter ->
-                        com.example.ui.audio.NativeAudioPlayer.playPhonics(context, letter.character)
-                        val videoUrl = getVideoUrlForLetter(letter)
-                        if (videoUrl != null) {
-                            selectedLetterForVideo = letter.copy(videoUrl = videoUrl)
-                        }
-                    }
-                )
-            }
-            item {
-                ReferenceSection(
-                    title = "Consonants",
-                    items = LetterData.consonants,
-                    color = BrightGreen,
-                    hasVideos = true,
-                    isGuest = isGuest,
-                    onClick = { letter ->
-                        com.example.ui.audio.NativeAudioPlayer.playPhonics(context, letter.character)
-                        val videoUrl = getVideoUrlForLetter(letter)
-                        if (videoUrl != null) {
-                            selectedLetterForVideo = letter.copy(videoUrl = videoUrl)
-                        }
-                    }
-                )
-            }
-            item {
-                ReferenceSection(
-                    title = "Guninthakshari (Ka)",
-                    items = LetterData.kaGuninthakshari,
-                    color = Color(0xFFBA68C8),
-                    hasVideos = false,
-                    isGuest = isGuest,
-                    onClick = { letter ->
-                        com.example.ui.audio.NativeAudioPlayer.playPhonics(context, letter.character)
-                    }
-                )
-            }
-            item {
-                ReferenceSection(
-                    title = "Numbers",
-                    items = LetterData.numbers,
-                    color = Color(0xFFFF9800),
-                    hasVideos = false,
-                    isGuest = isGuest,
-                    onClick = { letter ->
-                        com.example.ui.audio.NativeAudioPlayer.playPhonics(context, letter.character)
-                    }
-                )
+            } else {
+                items(letters.size, key = { letters[it].id }) { i ->
+                    val letter = letters[i]
+                    LetterTile(
+                        letter = letter,
+                        sound = if (tab == RefTab.Vowels) ReferenceInfo.sound(letter) else letter.transliteration,
+                        tint = RefTints[i % RefTints.size],
+                        height = 84.dp,
+                        letterSize = if (letter.character.length > 1 && tab == RefTab.Numbers) 28 else 34,
+                        hasVideo = hasVideos,
+                        practised = remember(version, letter.id) { ReferenceProgress.isPractised(letter) },
+                        onClick = { onOpenLetter(tabIndex, i) }
+                    )
+                }
             }
         }
-    }
 
-    // Video Demonstration Popup Dialog
-    selectedLetterForVideo?.let { letter ->
-        val videoUrl = getVideoUrlForLetter(letter)
-        if (videoUrl != null) {
-            Dialog(
-                onDismissRequest = { selectedLetterForVideo = null },
-                properties = DialogProperties(usePlatformDefaultWidth = false)
-            ) {
-                Card(
-                    modifier = Modifier
-                        .fillMaxWidth(0.92f)
-                        .padding(vertical = 16.dp),
-                    shape = RoundedCornerShape(24.dp),
-                    colors = CardDefaults.cardColors(containerColor = Color.White),
-                    elevation = CardDefaults.cardElevation(defaultElevation = 10.dp)
+        // Practised so far
+        Row(
+            modifier = Modifier
+                .padding(start = 16.dp, end = 16.dp, bottom = 14.dp)
+                .fillMaxWidth()
+                .background(Color.White, RoundedCornerShape(18.dp))
+                .padding(horizontal = 14.dp, vertical = 10.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(10.dp)
+        ) {
+            StarIcon(20.dp, StarGold)
+            Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(5.dp)) {
+                Text(
+                    "$practised of ${letters.size} ${tab.english.lowercase()} practised",
+                    fontSize = 13.sp, fontWeight = FontWeight.ExtraBold, color = ScrapbookInk
+                )
+                Box(
+                    Modifier.fillMaxWidth().height(8.dp).clip(RoundedCornerShape(4.dp)).background(Color(0xFFE3EEF8))
                 ) {
-                    Column(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(16.dp),
-                        horizontalAlignment = Alignment.CenterHorizontally
-                    ) {
-                        // Dialog Header: letter badge, info & close button
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.SpaceBetween,
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Row(
-                                verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.spacedBy(10.dp)
-                            ) {
-                                Box(
-                                    modifier = Modifier
-                                        .size(46.dp)
-                                        .background(
-                                            if (letter.isVowel) BrightCyan else BrightGreen,
-                                            CircleShape
-                                        ),
-                                    contentAlignment = Alignment.Center
-                                ) {
-                                    Text(
-                                        text = letter.character,
-                                        fontSize = 24.sp,
-                                        fontWeight = FontWeight.Bold,
-                                        color = Color.White
-                                    )
-                                }
-                                Column {
-                                    Text(
-                                        text = "${letter.character} (${letter.transliteration})",
-                                        fontSize = 18.sp,
-                                        fontWeight = FontWeight.Bold,
-                                        color = BentoTitle
-                                    )
-                                    Text(
-                                        text = if (letter.isVowel) "Vowel Stroke Video" else "Consonant Stroke Video",
-                                        fontSize = 12.sp,
-                                        color = Color.Gray
-                                    )
-                                }
-                            }
-
-                            IconButton(
-                                onClick = { selectedLetterForVideo = null },
-                                modifier = Modifier
-                                    .size(36.dp)
-                                    .background(Color(0xFFEEEEEE), CircleShape)
-                            ) {
-                                Icon(
-                                    imageVector = Icons.Default.Close,
-                                    contentDescription = "Close",
-                                    tint = Color.DarkGray,
-                                    modifier = Modifier.size(20.dp)
-                                )
-                            }
-                        }
-
-                        Spacer(modifier = Modifier.height(14.dp))
-
-                        // Video Player (Streams directly from GitHub)
-                        Box(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .height(320.dp)
-                        ) {
-                            LetterTraceVideoPlayer(
-                                modifier = Modifier.fillMaxSize(),
-                                letterCharacter = letter.character,
-                                letterName = letter.transliteration,
-                                videoUrl = videoUrl
-                            )
-                        }
-
-                        Spacer(modifier = Modifier.height(14.dp))
-
-                        // Dialog Bottom Buttons
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.spacedBy(10.dp)
-                        ) {
-                            OutlinedButton(
-                                onClick = {
-                                    com.example.ui.audio.NativeAudioPlayer.playPhonics(context, letter.character)
-                                },
-                                modifier = Modifier
-                                    .weight(1f)
-                                    .height(46.dp),
-                                shape = RoundedCornerShape(12.dp)
-                            ) {
-                                Icon(
-                                    imageVector = Icons.AutoMirrored.Filled.VolumeUp,
-                                    contentDescription = "Pronounce",
-                                    modifier = Modifier.size(18.dp)
-                                )
-                                Spacer(modifier = Modifier.width(6.dp))
-                                Text("Pronounce", fontSize = 13.sp)
-                            }
-
-                            Button(
-                                onClick = { selectedLetterForVideo = null },
-                                colors = ButtonDefaults.buttonColors(containerColor = BentoTitle),
-                                modifier = Modifier
-                                    .weight(1f)
-                                    .height(46.dp),
-                                shape = RoundedCornerShape(12.dp)
-                            ) {
-                                Text("Close", fontSize = 14.sp, fontWeight = FontWeight.Bold)
-                            }
-                        }
-                    }
+                    Box(
+                        Modifier
+                            .fillMaxHeight()
+                            .fillMaxWidth(if (letters.isEmpty()) 0f else practised.toFloat() / letters.size)
+                            .clip(RoundedCornerShape(4.dp))
+                            .background(Color(0xFF2EC4B6))
+                    )
                 }
             }
         }
     }
 }
 
-@OptIn(ExperimentalLayoutApi::class)
 @Composable
-fun ReferenceSection(
-    title: String,
-    items: List<KannadaLetter>,
-    color: Color,
-    hasVideos: Boolean = false,
-    isGuest: Boolean = false,
-    onClick: (KannadaLetter) -> Unit
+private fun LetterTile(
+    letter: KannadaLetter,
+    sound: String,
+    tint: Pair<Color, Color>,
+    height: Dp,
+    letterSize: Int,
+    hasVideo: Boolean,
+    practised: Boolean,
+    onClick: () -> Unit
 ) {
-    val context = LocalContext.current
-    Column {
-        Row(
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
-            modifier = Modifier.padding(bottom = 8.dp)
+    val (bg, edge) = tint
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(height)
+            .clip(RoundedCornerShape(16.dp))
+            .drawBehind {
+                drawRoundRect(edge, cornerRadius = CornerRadius(16.dp.toPx()))
+                drawRoundRect(
+                    bg,
+                    size = Size(size.width, size.height - 4.dp.toPx()),
+                    cornerRadius = CornerRadius(16.dp.toPx())
+                )
+            }
+            .clickable { onClick() }
+            .testTag("ref_letter_${letter.id}")
+    ) {
+        Column(
+            modifier = Modifier.fillMaxSize().padding(bottom = 4.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Center
         ) {
-            Text(
-                text = title,
-                fontSize = 22.sp,
-                fontWeight = FontWeight.Bold,
-                color = BentoTitle
-            )
-            if (hasVideos) {
-                Surface(
-                    color = color.copy(alpha = 0.2f),
-                    shape = RoundedCornerShape(8.dp)
-                ) {
-                    Row(
-                        modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(4.dp)
-                    ) {
-                        Icon(
-                            Icons.Default.Videocam,
-                            contentDescription = "Video",
-                            tint = BentoTitle,
-                            modifier = Modifier.size(14.dp)
-                        )
-                        Text(
-                            text = "Videos",
-                            fontSize = 11.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = BentoTitle
-                        )
-                    }
-                }
+            Text(letter.character, fontSize = letterSize.sp, fontWeight = FontWeight.ExtraBold, color = ScrapbookInk, textAlign = TextAlign.Center, lineHeight = (letterSize + 6).sp)
+            Text(sound, fontSize = 11.sp, fontWeight = FontWeight.Bold, color = ScrapbookInkSoft, maxLines = 1)
+        }
+        if (hasVideo) {
+            Box(
+                Modifier.align(Alignment.TopEnd).padding(5.dp).size(15.dp).background(edge, CircleShape),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(Icons.Default.PlayArrow, contentDescription = null, tint = Color.White, modifier = Modifier.size(11.dp))
             }
         }
-
-        FlowRow(
-            horizontalArrangement = Arrangement.spacedBy(10.dp),
-            verticalArrangement = Arrangement.spacedBy(10.dp),
-            modifier = Modifier.fillMaxWidth()
-        ) {
-            items.forEachIndexed { index, letter ->
-                val isLocked = isGuest && index > 0
-                val itemColor = if (isLocked) Color(0xFFEEEEEE) else color
-                Surface(
-                    shape = RoundedCornerShape(16.dp),
-                    color = itemColor,
-                    shadowElevation = if (isLocked) 1.dp else 3.dp,
-                    modifier = Modifier
-                        .size(68.dp)
-                        .clip(RoundedCornerShape(16.dp))
-                        .clickable { 
-                            if (isLocked) {
-                                Toast.makeText(context, "🔒 Locked: Sign in with Gmail to explore all letters!", Toast.LENGTH_SHORT).show()
-                            } else {
-                                onClick(letter) 
-                            }
-                        }
-                ) {
-                    Box(
-                        modifier = Modifier.fillMaxSize(),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        if (isLocked) {
-                            Icon(
-                                imageVector = Icons.Default.Lock,
-                                contentDescription = "Locked",
-                                tint = Color.Gray,
-                                modifier = Modifier.size(24.dp)
-                            )
-                        } else {
-                            Column(
-                                horizontalAlignment = Alignment.CenterHorizontally,
-                                verticalArrangement = Arrangement.Center
-                            ) {
-                                Text(
-                                    text = letter.character,
-                                    fontSize = 28.sp,
-                                    fontWeight = FontWeight.Bold,
-                                    color = Color.White
-                                )
-                                if (letter.transliteration.isNotEmpty()) {
-                                    Text(
-                                        text = letter.transliteration,
-                                        fontSize = 11.sp,
-                                        fontWeight = FontWeight.Medium,
-                                        color = Color.White.copy(alpha = 0.9f)
-                                    )
-                                }
-                            }
-
-                            if (hasVideos || letter.videoUrl != null) {
-                                Box(
-                                    modifier = Modifier
-                                        .align(Alignment.TopEnd)
-                                        .padding(4.dp)
-                                        .size(16.dp)
-                                        .background(Color.Black.copy(alpha = 0.25f), CircleShape),
-                                    contentAlignment = Alignment.Center
-                                ) {
-                                    Icon(
-                                        imageVector = Icons.Default.Videocam,
-                                        contentDescription = "Video available",
-                                        tint = Color.White,
-                                        modifier = Modifier.size(11.dp)
-                                    )
-                                }
-                            }
-                        }
-                    }
-                }
-            }
+        if (practised) {
+            StarIcon(13.dp, StarGold, Modifier.align(Alignment.TopStart).padding(start = 5.dp, top = 5.dp))
         }
     }
 }

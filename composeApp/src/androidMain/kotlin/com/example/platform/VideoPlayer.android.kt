@@ -35,6 +35,7 @@ class AndroidVideoPlayerController(val player: ExoPlayer) : VideoPlayerControlle
     override fun pause() = player.pause()
     override fun seekTo(positionMs: Long) = player.seekTo(positionMs)
     override fun setVolume(volume: Float) { player.volume = volume }
+    override fun setSpeed(speed: Float) { player.setPlaybackSpeed(speed) }
     override fun release() {
         try {
             player.stop()
