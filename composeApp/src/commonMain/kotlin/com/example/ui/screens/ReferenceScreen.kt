@@ -128,9 +128,9 @@ fun ReferenceScreen(onBack: () -> Unit, onOpenLetter: (tab: Int, index: Int) -> 
             .background(ScrapbookPaper)
             .safeDrawingPadding()
     ) {
-        ScrapbookHeader(title = "Reference", onBack = onBack)
+        ScrapbookHeader(title = "Letter Box", onBack = onBack)
         Text(
-            "ಅಕ್ಷರ ಮಾಲೆ · Letter chart",
+            "ಅಕ್ಷರ ಪೆಟ್ಟಿಗೆ · All the letters",
             modifier = Modifier.padding(start = 72.dp, bottom = 8.dp),
             fontSize = 13.sp, fontWeight = FontWeight.Bold, color = ScrapbookInkSoft
         )

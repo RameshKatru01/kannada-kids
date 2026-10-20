@@ -433,8 +433,8 @@ fun BentoBottomNav(
             )
             NavItem(
                 icon = Icons.Default.MenuBook,
-                label = "Reference",
-                isActive = currentRoute == "reference",
+                label = "Letter Box",
+                isActive = currentRoute.startsWith("reference"),
                 onClick = { onNavigate("reference") }
             )
             NavItem(
