@@ -3,8 +3,9 @@ package com.example.ui.screens
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
+import androidx.compose.foundation.lazy.grid.itemsIndexed
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -30,6 +31,11 @@ import com.example.ui.progress.ProgressInk
 import com.example.ui.progress.ProgressInkSoft
 import com.example.ui.progress.StarGold
 import com.example.ui.progress.StarIcon
+import com.example.ui.progress.lerpColor
+import com.example.ui.components.GameArt
+import com.example.ui.components.GameArtKind
+import com.example.ui.components.PolaroidCard
+import com.example.ui.components.ScrapbookPaper
 
 /**
  * Games list: every game with its level progress and stars.
@@ -46,7 +52,7 @@ fun GamesListScreen(
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .background(Color(0xFFEAF6FF))
+            .background(ScrapbookPaper)
             .safeDrawingPadding()
     ) {
         Row(
@@ -75,13 +81,16 @@ fun GamesListScreen(
             fontSize = 15.sp, fontWeight = FontWeight.Bold, color = ProgressInkSoft
         )
 
-        LazyColumn(
+        LazyVerticalGrid(
+            columns = GridCells.Adaptive(minSize = 150.dp),
             modifier = Modifier.fillMaxSize(),
-            contentPadding = PaddingValues(start = 20.dp, end = 20.dp, top = 8.dp, bottom = 24.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp)
+            contentPadding = PaddingValues(start = 14.dp, end = 14.dp, top = 8.dp, bottom = 24.dp),
+            horizontalArrangement = Arrangement.spacedBy(14.dp),
+            verticalArrangement = Arrangement.spacedBy(14.dp)
         ) {
-            items(GameRegistry.games, key = { it.id }) { game ->
-                GameProgressCard(
+            itemsIndexed(GameRegistry.games, key = { _, g -> g.id }) { index, game ->
+                GamePolaroid(
+                    index = index,
                     game = game,
                     version = version,
                     onClick = { if (game.hasLevels) onOpenLevels(game.id) else onNavigateToGame(game.id) }
@@ -91,69 +100,58 @@ fun GamesListScreen(
     }
 }
 
+private fun artFor(game: GameInfo): GameArtKind = when (game.id) {
+    in 1..4 -> GameArtKind.Monster
+    21 -> GameArtKind.Train
+    22 -> GameArtKind.Paint
+    12 -> GameArtKind.Balloons
+    else -> GameArtKind.Letter
+}
+
 @Composable
-private fun GameProgressCard(game: GameInfo, version: Int, onClick: () -> Unit) {
+private fun GamePolaroid(index: Int, game: GameInfo, version: Int, onClick: () -> Unit) {
     val stars = remember(version, game.id) { if (game.hasLevels) GameProgress.totalStars(game) else 0 }
     val done = remember(version, game.id) { if (game.hasLevels) GameProgress.levelsDone(game) else 0 }
-
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clip(RoundedCornerShape(22.dp))
-            .background(Color.White)
-            .clickable { onClick() }
-            .padding(horizontal = 14.dp, vertical = 12.dp)
-            .testTag("game_card_${game.id}"),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(14.dp)
-    ) {
-        Box(
-            modifier = Modifier
-                .size(56.dp)
-                .background(game.color, CircleShape),
-            contentAlignment = Alignment.Center
-        ) {
-            Text(game.glyph, color = game.ink, fontWeight = FontWeight.ExtraBold, fontSize = 26.sp)
-        }
-        Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+    val isMonster = game.id in 1..4
+    PolaroidCard(
+        index = index,
+        onClick = onClick,
+        modifier = Modifier.testTag("game_card_${game.id}"),
+        pictureHeight = 112,
+        picture = {
+            GameArt(
+                kind = artFor(game),
+                color = game.color,
+                background = lerpColor(game.color, Color.White, 0.82f),
+                glyph = game.glyph,
+                ink = game.ink
+            )
+        },
+        caption = {
             Text(
-                if (game.hasLevels && game.subtitle.isNotEmpty() && game.name == "Feed the Monster") "${game.name}: ${game.subtitle}" else game.name,
-                fontWeight = FontWeight.ExtraBold, fontSize = 16.sp, color = ProgressInk,
+                game.name,
+                fontWeight = FontWeight.ExtraBold, fontSize = 15.sp, color = ProgressInk,
                 maxLines = 1, overflow = TextOverflow.Ellipsis
             )
             if (game.hasLevels) {
-                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    Box(
-                        modifier = Modifier
-                            .weight(1f)
-                            .height(8.dp)
-                            .clip(RoundedCornerShape(4.dp))
-                            .background(Color(0xFFE3EEF8))
-                    ) {
-                        Box(
-                            modifier = Modifier
-                                .fillMaxHeight()
-                                .fillMaxWidth(done.toFloat() / game.levels)
-                                .clip(RoundedCornerShape(4.dp))
-                                .background(game.color)
-                        )
-                    }
+                if (isMonster) {
+                    Text(game.subtitle, fontWeight = FontWeight.Bold, fontSize = 12.sp, color = ProgressInkSoft, maxLines = 1)
+                }
+                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                    StarIcon(15.dp, StarGold)
                     Text(
-                        if (done >= game.levels) "All done!" else "Level ${done + 1}/${game.levels}",
-                        fontSize = 13.sp, fontWeight = FontWeight.Bold, color = ProgressInkSoft
+                        "$stars/${game.maxStars}",
+                        fontWeight = FontWeight.ExtraBold, fontSize = 12.sp, color = ProgressInk
+                    )
+                    Text(
+                        if (done >= game.levels) "· All done!" else "· Level ${done + 1}/${game.levels}",
+                        fontWeight = FontWeight.Bold, fontSize = 12.sp, color = ProgressInkSoft, maxLines = 1
                     )
                 }
             } else {
-                Text(game.subtitle, fontSize = 13.sp, fontWeight = FontWeight.Bold, color = ProgressInkSoft)
+                Text(game.subtitle, fontWeight = FontWeight.Bold, fontSize = 12.sp, color = ProgressInkSoft)
             }
         }
-        if (game.hasLevels) {
-            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(3.dp)) {
-                StarIcon(18.dp, StarGold)
-                Text("$stars/${game.maxStars}", fontWeight = FontWeight.ExtraBold, fontSize = 14.sp, color = ProgressInk)
-            }
-        } else {
-            Icon(Icons.Default.PlayArrow, contentDescription = "Play", tint = game.color, modifier = Modifier.size(28.dp))
-        }
-    }
+    )
 }
+

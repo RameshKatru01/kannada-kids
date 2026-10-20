@@ -1,31 +1,92 @@
 package com.example.ui.screens
 
-import com.example.platform.*
-
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
-import androidx.compose.foundation.lazy.grid.items
-import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.filled.Folder
-import androidx.compose.material3.*
+import androidx.compose.foundation.lazy.grid.itemsIndexed
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.example.ui.theme.BrightCyan
-import com.example.ui.theme.BrightGreen
+import com.example.resources.Res
+import com.example.resources.thumb_animals
+import com.example.resources.thumb_birds
+import com.example.resources.thumb_classroom
+import com.example.resources.thumb_colours
+import com.example.resources.thumb_consonants
+import com.example.resources.thumb_how_many
+import com.example.resources.thumb_letter_quiz
+import com.example.resources.thumb_number_quiz
+import com.example.resources.thumb_numbers
+import com.example.resources.thumb_picture_quiz
+import com.example.resources.thumb_playtime
+import com.example.resources.thumb_vowels
+import com.example.ui.components.LetterTag
+import com.example.ui.components.PolaroidCard
+import com.example.ui.components.ScrapbookHeader
+import com.example.ui.components.ScrapbookInk
+import com.example.ui.components.ScrapbookInkSoft
+import com.example.ui.components.ScrapbookPaper
+import org.jetbrains.compose.resources.DrawableResource
+import org.jetbrains.compose.resources.painterResource
 
-@OptIn(ExperimentalMaterial3Api::class)
+/** How a video folder looks in the scrapbook: photo (from one of its videos), letter tag, names. */
+private data class FolderLook(
+    val kannada: String,
+    val glyph: String,
+    val color: Color,
+    val ink: Color,
+    val photo: DrawableResource? = null
+)
+
+private val Teal = Color(0xFF2EC4B6)
+private val Coral = Color(0xFFFF6B6B)
+private val Violet = Color(0xFF6C63FF)
+private val Sun = Color(0xFFFFC93C)
+private val Tangerine = Color(0xFFFF9F1C)
+private val Berry = Color(0xFFE84393)
+private val Sky = Color(0xFF4DA8FF)
+private val Leaf = Color(0xFF59C173)
+
+private fun folderLook(name: String): FolderLook = when (name.lowercase()) {
+    "vowels" -> FolderLook("ಸ್ವರಗಳು", "ಅ", Teal, ScrapbookInk, Res.drawable.thumb_vowels)
+    "consonants" -> FolderLook("ವ್ಯಂಜನಗಳು", "ಕ", Violet, Color.White, Res.drawable.thumb_consonants)
+    "birds" -> FolderLook("ಪಕ್ಷಿಗಳು", "ನ", Sky, ScrapbookInk, Res.drawable.thumb_birds)
+    "animals" -> FolderLook("ಪ್ರಾಣಿಗಳು", "ಸಿಂ", Coral, ScrapbookInk, Res.drawable.thumb_animals)
+    "colours", "colors" -> FolderLook("ಬಣ್ಣಗಳು", "ಬ", Berry, Color.White, Res.drawable.thumb_colours)
+    "numbers" -> FolderLook("ಅಂಕೆಗಳು", "೩", Sun, ScrapbookInk, Res.drawable.thumb_numbers)
+    "letter quiz" -> FolderLook("ಅಕ್ಷರ ರಸಪ್ರಶ್ನೆ", "?", Sun, ScrapbookInk, Res.drawable.thumb_letter_quiz)
+    "picture quiz" -> FolderLook("ಚಿತ್ರ ರಸಪ್ರಶ್ನೆ", "?", Tangerine, ScrapbookInk, Res.drawable.thumb_picture_quiz)
+    "number quiz" -> FolderLook("ಸಂಖ್ಯೆ ರಸಪ್ರಶ್ನೆ", "?", Teal, ScrapbookInk, Res.drawable.thumb_number_quiz)
+    "how many?" -> FolderLook("ಎಷ್ಟು?", "೧", Coral, ScrapbookInk, Res.drawable.thumb_how_many)
+    "class room" -> FolderLook("ತರಗತಿ", "ತ", Teal, ScrapbookInk, Res.drawable.thumb_classroom)
+    "play time" -> FolderLook("ಆಟದ ಸಮಯ", "ಆ", Tangerine, ScrapbookInk, Res.drawable.thumb_playtime)
+    "getting ready to school" -> FolderLook("ಶಾಲೆಗೆ ಸಿದ್ಧ", "ಶಾ", Leaf, ScrapbookInk)
+    "shopping mall" -> FolderLook("ಶಾಪಿಂಗ್ ಮಾಲ್", "ಮಾ", Berry, Color.White)
+    "hospital" -> FolderLook("ಆಸ್ಪತ್ರೆ", "ಆ", Sky, ScrapbookInk)
+    "vacation" -> FolderLook("ರಜೆ", "ರ", Sun, ScrapbookInk)
+    else -> {
+        val number = name.filter { it.isDigit() }
+        val colors = listOf(Teal, Coral, Violet, Sun, Tangerine, Berry, Sky, Leaf)
+        val c = colors[(number.toIntOrNull() ?: kotlin.math.abs(name.hashCode())) % colors.size]
+        if (name.lowercase().startsWith("class") && number.isNotEmpty()) {
+            FolderLook("ತರಗತಿ $number", number, c, ScrapbookInk)
+        } else {
+            FolderLook("", name.take(1).uppercase(), c, ScrapbookInk)
+        }
+    }
+}
+
 @Composable
 fun VideoFoldersScreen(
     title: String,
@@ -33,71 +94,75 @@ fun VideoFoldersScreen(
     onFolderClick: (String) -> Unit,
     onBack: () -> Unit
 ) {
-    Scaffold(
-        topBar = {
-            TopAppBar(
-                title = { Text(title, color = Color.White, fontWeight = FontWeight.Bold) },
-                navigationIcon = {
-                    IconButton(onClick = onBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back", tint = Color.White)
-                    }
-                },
-                colors = TopAppBarDefaults.topAppBarColors(containerColor = Color(0xFFE91E63))
-            )
-        },
-        containerColor = Color(0xFFE1F5FE)
-    ) { paddingValues ->
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(ScrapbookPaper)
+            .safeDrawingPadding()
+    ) {
+        ScrapbookHeader(title = title, onBack = onBack)
         LazyVerticalGrid(
-            columns = GridCells.Fixed(2),
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(paddingValues)
-                .padding(16.dp),
-            horizontalArrangement = Arrangement.spacedBy(16.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp)
+            columns = GridCells.Adaptive(minSize = 150.dp),
+            modifier = Modifier.fillMaxSize(),
+            contentPadding = PaddingValues(start = 14.dp, end = 14.dp, top = 8.dp, bottom = 24.dp),
+            horizontalArrangement = Arrangement.spacedBy(14.dp),
+            verticalArrangement = Arrangement.spacedBy(14.dp)
         ) {
-            items(folders) { folder ->
-                FolderCard(name = folder, onClick = { 
+            itemsIndexed(folders) { index, folder ->
+                VideoFolderPolaroid(index, folder) {
                     com.example.ui.audio.SoundEffectsHelper.playButtonTap()
-                    onFolderClick(folder) 
-                })
+                    onFolderClick(folder)
+                }
             }
         }
     }
 }
 
 @Composable
-fun FolderCard(name: String, onClick: () -> Unit) {
-    val colors = listOf(Color(0xFFFFCC80), BrightCyan, BrightGreen, Color(0xFFCE93D8), Color(0xFF81D4FA), Color(0xFFFFAB91))
-    val bgColor = colors[kotlin.math.abs(name.hashCode()) % colors.size]
-
-    Card(
-        modifier = Modifier
-            .aspectRatio(1f)
-            .clip(RoundedCornerShape(16.dp))
-            .clickable { onClick() },
-        colors = CardDefaults.cardColors(containerColor = bgColor),
-        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
-    ) {
-        Column(
-            modifier = Modifier.fillMaxSize().padding(8.dp),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.Center
-        ) {
-            Icon(
-                imageVector = Icons.Default.Folder,
-                contentDescription = "Folder",
-                tint = Color.White,
-                modifier = Modifier.size(48.dp)
-            )
-            Spacer(modifier = Modifier.height(8.dp))
+private fun VideoFolderPolaroid(index: Int, folder: String, onClick: () -> Unit) {
+    val look = folderLook(folder)
+    PolaroidCard(
+        index = index,
+        onClick = onClick,
+        modifier = Modifier.testTag("video_folder_$index"),
+        picture = {
+            val photo = look.photo
+            if (photo != null) {
+                Image(
+                    painter = painterResource(photo),
+                    contentDescription = "$folder videos",
+                    contentScale = ContentScale.Crop,
+                    modifier = Modifier.fillMaxSize()
+                )
+                LetterTag(look.glyph, look.color, look.ink)
+            } else {
+                // No picture yet: a big letter on the folder's colour
+                Box(
+                    modifier = Modifier.fillMaxSize().background(look.color.copy(alpha = 0.25f)),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Box(
+                        modifier = Modifier.size(84.dp).background(look.color, CircleShape),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text(look.glyph, color = look.ink, fontWeight = FontWeight.ExtraBold, fontSize = 34.sp)
+                    }
+                }
+            }
+        },
+        caption = {
+            if (look.kannada.isNotEmpty()) {
+                Text(
+                    look.kannada,
+                    fontWeight = FontWeight.ExtraBold, fontSize = 15.sp, color = ScrapbookInk,
+                    maxLines = 1, overflow = TextOverflow.Ellipsis
+                )
+            }
             Text(
-                text = name,
-                fontSize = 18.sp,
-                fontWeight = FontWeight.Bold,
-                color = Color.White,
-                textAlign = TextAlign.Center
+                folder.replaceFirstChar { it.uppercase() },
+                fontWeight = FontWeight.Bold, fontSize = 12.sp, color = ScrapbookInkSoft,
+                maxLines = 1, overflow = TextOverflow.Ellipsis
             )
         }
-    }
+    )
 }
