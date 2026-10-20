@@ -458,7 +458,6 @@ fun ListenAndChooseScreen(onBack: () -> Unit) {
                                         showSuccess = true
                                         rewardCharacter = letter
                                         com.example.ui.audio.SoundEffectsHelper.playSuccess(context)
-                                        try { toneGen.startTone(ToneGenerator.TONE_PROP_BEEP2, 100) } catch (e: Exception) {}
                                         try { com.example.ui.data.ScoreManager.addCoins(context, "listen_and_choose", 10) } catch (e: Exception) {}
                                         score += 1
                                         sharedPrefs.edit().putInt("listen_and_choose_score", score).apply()
@@ -475,7 +474,7 @@ fun ListenAndChooseScreen(onBack: () -> Unit) {
                                         }
                                     } else {
                                         wrongIndex = index
-                                        try { toneGen.startTone(ToneGenerator.TONE_PROP_BEEP, 80) } catch (e: Exception) {}
+                                        com.example.ui.audio.SoundEffectsHelper.playOops(context)
                                         coroutineScope.launch {
                                             delay(500)
                                             if (wrongIndex == index) wrongIndex = -1

@@ -253,55 +253,18 @@ fun DancingAnimal(animal: String, show: Boolean) {
     )
 }
 
+/** Game sounds for the tile games (Swara Adventure); uses the shared kid-friendly sounds. */
 class SoundEffects {
-    private val sampleRate = 22050
-
-    private fun tone(freqs: List<Double>, noteMs: Int, volume: Double = 14000.0): ShortArray {
-        val perNote = sampleRate * noteMs / 1000
-        val out = ShortArray(perNote * freqs.size)
-        var i = 0
-        for (f in freqs) {
-            for (n in 0 until perNote) {
-                val t = n.toDouble() / sampleRate
-                val fade = if (n > perNote - 200) (perNote - n) / 200.0 else 1.0
-                out[i++] = (kotlin.math.sin(2.0 * kotlin.math.PI * f * t) * volume * fade)
-                    .toInt().coerceIn(-32767, 32767).toShort()
-            }
-        }
-        return out
-    }
-
-    private val correctTile by lazy { tone(listOf(880.0, 1320.0), 100) }
-    private val incorrectTile by lazy { tone(listOf(950.0, 1400.0, 1800.0).reversed(), 110) }
-    private val levelComplete by lazy {
-        val duration = 2.5
-        val buffer = ShortArray((sampleRate * duration).toInt())
-        val random = kotlin.random.Random(7)
-        for (i in buffer.indices) {
-            val t = i.toDouble() / sampleRate
-            val envelope = kotlin.math.exp(-t * 0.5)
-            val noise = PlatformRandom.nextGaussian(random) * 12000
-            val mod1 = kotlin.math.sin(2.0 * kotlin.math.PI * 10 * t)
-            val mod2 = kotlin.math.sin(2.0 * kotlin.math.PI * 14 * t + 0.5)
-            val mod3 = kotlin.math.sin(2.0 * kotlin.math.PI * 8 * t + 1.2)
-
-            val combinedMod = (mod1 * mod1 + mod2 * mod2 + mod3 * mod3).coerceAtMost(1.0)
-
-            buffer[i] = (noise * combinedMod * envelope).toInt().coerceIn(-32767, 32767).toShort()
-        }
-        buffer
-    }
-
     fun playCorrectTile() {
-        PlatformAudio.playPcm16(correctTile, sampleRate)
+        com.example.ui.audio.SoundEffectsHelper.playSuccess()
     }
 
     fun playIncorrectTile() {
-        PlatformAudio.playPcm16(incorrectTile, sampleRate)
+        com.example.ui.audio.SoundEffectsHelper.playOops()
     }
 
     fun playLevelComplete() {
-        PlatformAudio.playPcm16(levelComplete, sampleRate)
+        com.example.ui.audio.SoundEffectsHelper.playFanfare()
     }
 
     fun release() {

@@ -34,7 +34,7 @@ object AudioFeedbackManager {
 
     @Suppress("UNUSED_PARAMETER")
     fun playLevelComplete(context: Context) {
-        PlatformAudio.playBeep(triumphant = false)
+        // The celebration tune is played by SoundEffectsHelper; here we only add the spoken cheer.
         if (isInitialized) {
             val message = encouragements[Random.nextInt(encouragements.size)]
             tts?.speak(message, TextToSpeech.QUEUE_FLUSH, null, null)
@@ -44,7 +44,7 @@ object AudioFeedbackManager {
     @Suppress("UNUSED_PARAMETER")
     fun playBadgeUnlocked(context: Context) {
         // A slightly different, more triumphant tone combination
-        PlatformAudio.playBeep(triumphant = true)
+        com.example.ui.audio.SoundEffectsHelper.playSparkle(context)
         if (isInitialized) {
             val message = badgeUnlockMessages[Random.nextInt(badgeUnlockMessages.size)]
             tts?.speak(message, TextToSpeech.QUEUE_FLUSH, null, null)
