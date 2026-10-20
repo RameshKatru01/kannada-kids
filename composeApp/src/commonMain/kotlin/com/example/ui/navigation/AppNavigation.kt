@@ -177,49 +177,49 @@ fun AppNavigation(authViewModel: AuthViewModel = viewModel { AuthViewModel() }) 
 
             composable("games") {
                 GamesListScreen(
+                    onOpenLevels = { gameIndex -> navController.navigate("levels/$gameIndex") },
                     onNavigateToGame = { gameIndex -> navController.navigate("game/$gameIndex") },
                     onBack = { navController.popBackStack() }
                 )
             }
 
             composable(
-                "game/{gameIndex}",
+                "levels/{gameIndex}",
                 arguments = listOf(navArgument("gameIndex") { type = NavType.IntType })
             ) { backStackEntry ->
                 val gameIndex = backStackEntry.arguments?.read { getIntOrNull("gameIndex") } ?: 1
-                if (gameIndex == 6) {
-                    LetterRunnerScreen(onBack = { navController.popBackStack() })
-                } else if (gameIndex == 7) {
-                    VowelMapNavigatorScreen(onBack = { navController.popBackStack() })
-                } else if (gameIndex == 8) {
-                    ScrambledWordsScreen(onBack = { navController.popBackStack() })
-                } else if (gameIndex == 9) {
-                    WordSearchScreen(onBack = { navController.popBackStack() })
-                } else if (gameIndex == 10) {
-                    TraceLetterScreen(onBack = { navController.popBackStack() })
-                } else if (gameIndex == 11) {
-                    MatchLetterScreen(onBack = { navController.popBackStack() })
-                } else if (gameIndex == 12) {
-                    MusicalBalloonPopScreen(onBack = { navController.popBackStack() })
-                } else if (gameIndex == 13) {
-                    BannaGaluGameScreen(onBack = { navController.popBackStack() })
-                } else if (gameIndex == 15) {
-                    BuguriSpinScreen(onBack = { navController.popBackStack() })
-                } else if (gameIndex == 16) {
-                    ConstellationPathGameScreen(onBack = { navController.popBackStack() })
-                } else if (gameIndex == 19) {
-                    ListenAndChooseScreen(onBack = { navController.popBackStack() })
-                } else if (gameIndex == 20) {
-                    SwaraAdventureScreen(onBack = { navController.popBackStack() })
-                } else if (gameIndex == 22) {
-                    PaintTheMonsterScreen(onBack = { navController.popBackStack() })
-                } else if (gameIndex == 21) {
-                    LetterTrainScreen(onBack = { navController.popBackStack() })
-                } else if (gameIndex in 1..4) {
-                    // Feed the Monster replaces the four Path Builder games (1 vowels, 2 consonants, 3 guninthakshari, 4 numbers)
-                    FeedTheMonsterScreen(mode = gameIndex, onBack = { navController.popBackStack() })
-                } else {
-                    PathBuilderScreen(gameType = gameIndex, onBack = { navController.popBackStack() })
+                com.example.ui.progress.LevelMapScreen(
+                    gameId = gameIndex,
+                    onPlayLevel = { level -> navController.navigate("game/$gameIndex?level=$level") },
+                    onBack = { navController.popBackStack() }
+                )
+            }
+
+            composable(
+                "game/{gameIndex}?level={level}",
+                arguments = listOf(
+                    navArgument("gameIndex") { type = NavType.IntType },
+                    navArgument("level") { type = NavType.IntType; defaultValue = 1 }
+                )
+            ) { backStackEntry ->
+                val gameIndex = backStackEntry.arguments?.read { getIntOrNull("gameIndex") } ?: 1
+                val level = backStackEntry.arguments?.read { getIntOrNull("level") } ?: 1
+                val back: () -> Unit = { navController.popBackStack() }
+                when (gameIndex) {
+                    in 1..4 -> FeedTheMonsterScreen(mode = gameIndex, firstLevel = level, onBack = back)
+                    21 -> LetterTrainScreen(firstLevel = level, onBack = back)
+                    22 -> PaintTheMonsterScreen(firstLevel = level, onBack = back)
+                    6 -> LetterRunnerScreen(onBack = back)
+                    7 -> VowelMapNavigatorScreen(onBack = back)
+                    8 -> ScrambledWordsScreen(onBack = back)
+                    9 -> WordSearchScreen(onBack = back)
+                    11 -> MatchLetterScreen(onBack = back)
+                    12 -> MusicalBalloonPopScreen(onBack = back)
+                    13 -> BannaGaluGameScreen(onBack = back)
+                    16 -> ConstellationPathGameScreen(onBack = back)
+                    19 -> ListenAndChooseScreen(onBack = back)
+                    20 -> SwaraAdventureScreen(onBack = back)
+                    else -> PathBuilderScreen(gameType = gameIndex, onBack = back)
                 }
             }
 

@@ -41,8 +41,10 @@ import com.example.ui.audio.NativeAudioPlayer
 import com.example.ui.audio.SoundEffectsHelper
 import com.example.ui.components.PauseMenuDialog
 import com.example.ui.data.LanguageManager
-import com.example.ui.data.ScoreManager
-import com.example.ui.data.UserManager
+import com.example.ui.progress.GameProgress
+import com.example.ui.progress.LevelCompleteOverlay
+import com.example.ui.progress.LevelResult
+import com.example.ui.progress.LevelTally
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlin.math.PI
@@ -83,11 +85,13 @@ internal val kidColors = listOf(
 
 private fun colorById(id: String) = kidColors.first { it.id == id }
 
-/** Each level adds new colours; the last level mixes all ten. */
+/** 6 levels: new colours, a mix of those, more new colours, a mix, then all ten. */
 private val paintLevels: List<List<String>> = listOf(
     listOf("red", "blue", "yellow"),
     listOf("green", "orange", "purple"),
+    listOf("red", "blue", "yellow", "green", "orange", "purple"),
     listOf("pink", "brown", "black", "white"),
+    listOf("pink", "brown", "black", "white", "green", "purple"),
     kidColors.map { it.id }
 )
 
@@ -107,22 +111,17 @@ private fun paintedStyle(paint: Color): MonsterStyle = MonsterStyle(
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun PaintTheMonsterScreen(onBack: () -> Unit) {
+fun PaintTheMonsterScreen(firstLevel: Int = 1, onBack: () -> Unit) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
     val language by LanguageManager.currentLanguage.collectAsState()
     val lang = language.code
 
-    val authPrefs = remember { getSharedPreferences("AppProgress") }
-    val userEmail = authPrefs.getString("last_active_user", "guest") ?: "guest"
-    val isGuest = UserManager.isGuest(userEmail)
-    val gamePrefs = remember { getSharedPreferences("GamePrefs") }
-    val progressKey = "${userEmail}_paint_monster_level"
     val levelCount = paintLevels.size
+    val tally = remember { LevelTally() }
+    var levelResult by remember { mutableStateOf<LevelResult?>(null) }
 
-    var level by remember {
-        mutableIntStateOf(if (isGuest) 0 else gamePrefs.getInt(progressKey, 0).coerceIn(0, levelCount - 1))
-    }
+    var level by remember { mutableIntStateOf((firstLevel - 1).coerceIn(0, levelCount - 1)) }
     var done by remember { mutableIntStateOf(0) }
     var target by remember { mutableStateOf<KidColor?>(null) }
     var pots by remember { mutableStateOf(listOf<KidColor>()) }
@@ -134,7 +133,6 @@ fun PaintTheMonsterScreen(onBack: () -> Unit) {
     var draggingPot by remember { mutableStateOf(false) }
     var splashColor by remember { mutableStateOf<Color?>(null) }
     var showConfetti by remember { mutableStateOf(false) }
-    var showSticker by remember { mutableStateOf(false) }
     var showPauseMenu by remember { mutableStateOf(false) }
     var monsterBounds by remember { mutableStateOf(Rect.Zero) }
     val splash = remember { Animatable(0f) }
@@ -169,6 +167,8 @@ fun PaintTheMonsterScreen(onBack: () -> Unit) {
 
     fun startLevel() {
         done = 0
+        tally.reset()
+        levelResult = null
         paint = Unpainted
         showConfetti = false
         busy = false
@@ -195,6 +195,7 @@ fun PaintTheMonsterScreen(onBack: () -> Unit) {
             paint = pot.color
             if (pot.id == wanted.id) {
                 mood = MonsterMood.Happy
+                tally.right()
                 message = "Yay! I'm ${pot.name(lang)}!"
                 SoundEffectsHelper.playSuccess(context)
                 NativeAudioPlayer.playPhonics(context, pot.name(lang))
@@ -203,15 +204,10 @@ fun PaintTheMonsterScreen(onBack: () -> Unit) {
                 if (done >= PAINT_JOBS_PER_LEVEL) {
                     showConfetti = true
                     SoundEffectsHelper.playGameCompletion(context)
-                    try { ScoreManager.addCoins(context, "paint_monster", 10) } catch (e: Exception) {}
-                    if (!isGuest) {
-                        val nextSaved = (level + 1).coerceAtMost(levelCount - 1)
-                        if (nextSaved > gamePrefs.getInt(progressKey, 0)) {
-                            gamePrefs.edit().putInt(progressKey, nextSaved).apply()
-                        }
-                    }
+                    val result = GameProgress.recordLevel(context, 22, level + 1, tally.mistakes, tally.streaks)
                     delay(1200)
-                    showSticker = true
+                    showConfetti = false
+                    levelResult = result
                 } else {
                     paint = Unpainted
                     newRound(wanted)
@@ -220,6 +216,7 @@ fun PaintTheMonsterScreen(onBack: () -> Unit) {
             } else {
                 // Wrong colour: show it, name it, then sneeze it off
                 mood = MonsterMood.Yuck
+                tally.wrong()
                 wrongId = pot.id
                 message = "Achoo! That's ${pot.name(lang)}!"
                 SoundEffectsHelper.playOops(context)
@@ -233,19 +230,6 @@ fun PaintTheMonsterScreen(onBack: () -> Unit) {
                 delay(300)
                 speakTarget()
             }
-        }
-    }
-
-    fun goToNextLevel() {
-        showSticker = false
-        if (isGuest) {
-            Toast.makeText(context, "🔒 Level 1 Complete! Sign in with Gmail to play all levels!", Toast.LENGTH_LONG).show()
-            startLevel()
-        } else if (level < levelCount - 1) {
-            level += 1
-        } else {
-            Toast.makeText(context, "🎨 You know all the colours! Let's paint again.", Toast.LENGTH_LONG).show()
-            startLevel()
         }
     }
 
@@ -422,13 +406,12 @@ fun PaintTheMonsterScreen(onBack: () -> Unit) {
                 )
             }
 
-            if (showSticker) {
-                com.example.ui.components.SurpriseStickerDialog(
-                    userEmail = userEmail,
-                    levelName = "Colours Level ${level + 1}",
-                    seedModifier = level + 300,
-                    onClose = { goToNextLevel() },
-                    onClaimOrNext = { goToNextLevel() }
+            levelResult?.let { result ->
+                LevelCompleteOverlay(
+                    result = result,
+                    onNextLevel = if (level < levelCount - 1) ({ levelResult = null; level += 1 }) else null,
+                    onPlayAgain = { startLevel() },
+                    onLevelMap = onBack
                 )
             }
         }

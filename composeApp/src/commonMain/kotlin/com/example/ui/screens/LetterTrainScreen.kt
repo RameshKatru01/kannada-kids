@@ -45,8 +45,10 @@ import com.example.data.LetterData
 import com.example.ui.audio.NativeAudioPlayer
 import com.example.ui.audio.SoundEffectsHelper
 import com.example.ui.components.PauseMenuDialog
-import com.example.ui.data.ScoreManager
-import com.example.ui.data.UserManager
+import com.example.ui.progress.GameProgress
+import com.example.ui.progress.LevelCompleteOverlay
+import com.example.ui.progress.LevelResult
+import com.example.ui.progress.LevelTally
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlin.math.PI
@@ -60,16 +62,21 @@ import kotlin.math.sin
  * A train pulls in with its carriages carrying letters in alphabet order, but some carriages are
  * empty. The child puts the missing letters back (tap a letter: it goes into the first empty
  * carriage if it belongs there; or drag it onto any carriage). When the train is complete it
- * reads the letters out loud, whistles and drives off. Every 3 trains earns a sticker.
+ * reads the letters out loud, whistles and drives off. 3 trains finish a level.
+ *
+ * 6 levels: vowels (easy, then harder), consonants (easy, then harder), numbers, ka-kaa-ki.
+ * "Harder" = 3 empty carriages and one extra letter that does not belong.
  */
 
-private data class TrainMode(val key: String, val label: String, val accent: Color)
+private data class TrainLevel(val modeKey: String, val label: String, val missing: Int, val distractor: Boolean)
 
-private val trainModes = listOf(
-    TrainMode("vowels", "Vowels", Color(0xFF2EC4B6)),
-    TrainMode("consonants", "Consonants", Color(0xFF6C63FF)),
-    TrainMode("guninthakshari", "ಕ ಕಾ ಕಿ", Color(0xFFFF6B6B)),
-    TrainMode("numbers", "Numbers", Color(0xFFFF9F1C))
+private val trainLevels = listOf(
+    TrainLevel("vowels", "Vowels", 2, false),
+    TrainLevel("vowels", "Vowels", 3, true),
+    TrainLevel("consonants", "Consonants", 2, false),
+    TrainLevel("consonants", "Consonants", 3, true),
+    TrainLevel("numbers", "Numbers", 3, true),
+    TrainLevel("guninthakshari", "ಕ ಕಾ ಕಿ", 3, true)
 )
 
 private val CarriageColors = listOf(
@@ -80,7 +87,7 @@ private val Sky = Color(0xFFE6F4FF)
 private val Grass = Color(0xFF9BE09B)
 
 private const val CARRIAGES = 5
-private const val TRAINS_PER_STICKER = 3
+private const val TRAINS_PER_LEVEL = 3
 
 private fun lettersFor(modeKey: String): List<KannadaLetter> = when (modeKey) {
     "vowels" -> LetterData.vowels
@@ -123,34 +130,33 @@ private val whistleSamples: ShortArray by lazy {
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun LetterTrainScreen(onBack: () -> Unit) {
+fun LetterTrainScreen(firstLevel: Int = 1, onBack: () -> Unit) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
 
-    val authPrefs = remember { getSharedPreferences("AppProgress") }
-    val userEmail = authPrefs.getString("last_active_user", "guest") ?: "guest"
-    val isGuest = UserManager.isGuest(userEmail)
-    val gamePrefs = remember { getSharedPreferences("GamePrefs") }
-
-    var mode by remember { mutableStateOf(trainModes.first()) }
-    val pool = remember(mode) { lettersFor(mode.key) }
-    val totalTrains = remember(pool) { trainCount(pool) }
-    fun progressKey(m: TrainMode) = "${userEmail}_letter_train_${m.key}"
-
-    var trainIndex by remember(mode) {
-        mutableIntStateOf(if (isGuest) 0 else gamePrefs.getInt(progressKey(mode), 0).coerceIn(0, trainCount(lettersFor(mode.key)) - 1))
+    var level by remember { mutableIntStateOf((firstLevel - 1).coerceIn(0, trainLevels.size - 1)) }
+    val spec = trainLevels[level]
+    val pool = remember(level) { lettersFor(spec.modeKey) }
+    // Which stretch of the alphabet each of this level's trains carries
+    val plan = remember(level, pool) {
+        val all = (0 until trainCount(pool)).shuffled()
+        List(TRAINS_PER_LEVEL) { all[it % all.size] }.let { picks ->
+            if (spec.distractor) picks else picks.sorted()
+        }
     }
-    var trainsSinceSticker by remember { mutableIntStateOf(0) }
+    var trainInLevel by remember { mutableIntStateOf(0) }
+    var round by remember { mutableIntStateOf(0) }     // bumps for every new train
+    val tally = remember { LevelTally() }
+    var levelResult by remember { mutableStateOf<LevelResult?>(null) }
 
-    val window = remember(pool, trainIndex) { trainWindow(pool, trainIndex) }
-    val missingCount = if (trainIndex == 0) 2 else 3
-    var filled by remember(window) { mutableStateOf(List(window.size) { true }) }
-    var tiles by remember(window) { mutableStateOf(listOf<KannadaLetter>()) }
+    val window = remember(round, level) { trainWindow(pool, plan[trainInLevel.coerceIn(0, plan.size - 1)]) }
+    val missingCount = spec.missing
+    var filled by remember(round, level) { mutableStateOf(List(window.size) { true }) }
+    var tiles by remember(round, level) { mutableStateOf(listOf<KannadaLetter>()) }
     var wrongTileId by remember { mutableStateOf<Int?>(null) }
     var highlighted by remember { mutableStateOf<Int?>(null) }
     var busy by remember { mutableStateOf(true) }
     var showConfetti by remember { mutableStateOf(false) }
-    var showSticker by remember { mutableStateOf(false) }
     var showPauseMenu by remember { mutableStateOf(false) }
     val carriageBounds = remember { mutableStateMapOf<Int, Rect>() }
 
@@ -162,7 +168,7 @@ fun LetterTrainScreen(onBack: () -> Unit) {
         val missing = window.indices.shuffled().take(missingCount.coerceAtMost(window.size)).toSet()
         filled = window.indices.map { it !in missing }
         val answers = missing.map { window[it] }
-        val distractor = if (trainIndex > 0) {
+        val distractor = if (spec.distractor) {
             pool.filter { candidate -> window.none { it.id == candidate.id } }.shuffled().take(1)
         } else emptyList()
         tiles = (answers + distractor).shuffled()
@@ -177,26 +183,19 @@ fun LetterTrainScreen(onBack: () -> Unit) {
         busy = false
     }
 
-    LaunchedEffect(window) {
+    LaunchedEffect(round, level) {
         setUpTrain()
         arrive()
     }
 
     fun speak(letter: KannadaLetter) = NativeAudioPlayer.playPhonics(context, letter.character)
 
-    fun goToTrain(index: Int) {
-        showSticker = false
-        when {
-            isGuest && index > 0 -> {
-                Toast.makeText(context, "🔒 Train 1 Complete! Sign in with Gmail to ride all trains!", Toast.LENGTH_LONG).show()
-                scope.launch { setUpTrain(); arrive() }
-            }
-            index >= totalTrains -> {
-                Toast.makeText(context, "🎉 You finished every train! Starting again.", Toast.LENGTH_LONG).show()
-                if (trainIndex == 0) scope.launch { setUpTrain(); arrive() } else trainIndex = 0
-            }
-            else -> trainIndex = index
-        }
+    fun startLevel(newLevel: Int) {
+        tally.reset()
+        levelResult = null
+        trainInLevel = 0
+        level = newLevel
+        round += 1
     }
 
     fun completeTrain() {
@@ -212,21 +211,15 @@ fun LetterTrainScreen(onBack: () -> Unit) {
             highlighted = null
             PlatformAudio.playPcm16(whistleSamples, 22050)
             showConfetti = true
-            try { ScoreManager.addCoins(context, "letter_train", 5) } catch (e: Exception) {}
             trainX.animateTo(-screenWidthPx * 1.3f, tween(1500, easing = FastOutLinearInEasing))
             showConfetti = false
 
-            val next = trainIndex + 1
-            if (!isGuest && next < totalTrains && next > gamePrefs.getInt(progressKey(mode), 0)) {
-                gamePrefs.edit().putInt(progressKey(mode), next).apply()
-            }
-            trainsSinceSticker += 1
-            if (trainsSinceSticker >= TRAINS_PER_STICKER || next >= totalTrains) {
-                trainsSinceSticker = 0
-                SoundEffectsHelper.playGameCompletion(context)
-                showSticker = true
+            if (trainInLevel + 1 < TRAINS_PER_LEVEL) {
+                trainInLevel += 1
+                round += 1
             } else {
-                goToTrain(next)
+                SoundEffectsHelper.playGameCompletion(context)
+                levelResult = GameProgress.recordLevel(context, 21, level + 1, tally.mistakes, tally.streaks)
             }
         }
     }
@@ -236,12 +229,14 @@ fun LetterTrainScreen(onBack: () -> Unit) {
         newFilled[slot] = true
         filled = newFilled
         tiles = tiles.filter { it.id != letter.id }
+        tally.right()
         SoundEffectsHelper.playSuccess(context)
         speak(letter)
         if (newFilled.all { it }) completeTrain()
     }
 
     fun wrong(letter: KannadaLetter) {
+        tally.wrong()
         SoundEffectsHelper.playOops(context)
         wrongTileId = letter.id
         scope.launch {
@@ -279,7 +274,7 @@ fun LetterTrainScreen(onBack: () -> Unit) {
                     Column {
                         Text("Letter Train", color = Color.White, fontWeight = FontWeight.ExtraBold, fontSize = 18.sp)
                         Text(
-                            "Train ${trainIndex + 1}/$totalTrains",
+                            "Level ${level + 1}/${trainLevels.size} · ${spec.label} · Train ${trainInLevel + 1}/$TRAINS_PER_LEVEL",
                             color = Color.White.copy(alpha = 0.9f),
                             fontSize = 13.sp
                         )
@@ -306,36 +301,23 @@ fun LetterTrainScreen(onBack: () -> Unit) {
                 .onGloballyPositioned { screenWidthPx = it.size.width.toFloat() }
         ) {
             Column(modifier = Modifier.fillMaxSize()) {
-                // Choose what the train carries
+                // Trains done in this level
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(horizontal = 12.dp, vertical = 12.dp),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.CenterHorizontally)
+                        .padding(vertical = 14.dp),
+                    horizontalArrangement = Arrangement.spacedBy(10.dp, Alignment.CenterHorizontally)
                 ) {
-                    trainModes.forEach { m ->
-                        val selected = m.key == mode.key
+                    repeat(TRAINS_PER_LEVEL) { i ->
                         Box(
                             modifier = Modifier
-                                .height(40.dp)
-                                .background(if (selected) m.accent else Color.White, RoundedCornerShape(20.dp))
-                                .border(2.dp, m.accent, RoundedCornerShape(20.dp))
-                                .clickable(enabled = !busy || !selected) {
-                                    if (!selected) {
-                                        trainsSinceSticker = 0
-                                        mode = m
-                                    }
-                                }
-                                .padding(horizontal = 12.dp),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Text(
-                                text = m.label,
-                                color = if (selected) Color.White else TrainInk,
-                                fontWeight = FontWeight.Bold,
-                                fontSize = 14.sp
-                            )
-                        }
+                                .size(width = 44.dp, height = 14.dp)
+                                .background(
+                                    if (i < trainInLevel) Color(0xFFFF6B6B) else if (i == trainInLevel) Color(0xFFFFC93C) else Color.White,
+                                    RoundedCornerShape(7.dp)
+                                )
+                                .border(2.dp, TrainInk.copy(alpha = 0.15f), RoundedCornerShape(7.dp))
+                        )
                     }
                 }
 
@@ -478,7 +460,7 @@ fun LetterTrainScreen(onBack: () -> Unit) {
                     onDismiss = { showPauseMenu = false },
                     onRestart = {
                         showPauseMenu = false
-                        scope.launch { setUpTrain(); arrive() }
+                        startLevel(level)
                     },
                     onMainMenu = {
                         showPauseMenu = false
@@ -487,13 +469,12 @@ fun LetterTrainScreen(onBack: () -> Unit) {
                 )
             }
 
-            if (showSticker) {
-                com.example.ui.components.SurpriseStickerDialog(
-                    userEmail = userEmail,
-                    levelName = "Train ${trainIndex + 1}",
-                    seedModifier = trainIndex + 100,
-                    onClose = { goToTrain(trainIndex + 1) },
-                    onClaimOrNext = { goToTrain(trainIndex + 1) }
+            levelResult?.let { result ->
+                LevelCompleteOverlay(
+                    result = result,
+                    onNextLevel = if (level < trainLevels.size - 1) ({ startLevel(level + 1) }) else null,
+                    onPlayAgain = { startLevel(level) },
+                    onLevelMap = onBack
                 )
             }
         }

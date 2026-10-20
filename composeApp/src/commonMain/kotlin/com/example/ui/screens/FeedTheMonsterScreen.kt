@@ -46,8 +46,11 @@ import com.example.data.LetterData
 import com.example.ui.audio.NativeAudioPlayer
 import com.example.ui.audio.SoundEffectsHelper
 import com.example.ui.components.PauseMenuDialog
-import com.example.ui.data.ScoreManager
-import com.example.ui.data.UserManager
+import com.example.ui.progress.GameProgress
+import com.example.ui.progress.LEVELS_PER_GAME
+import com.example.ui.progress.LevelCompleteOverlay
+import com.example.ui.progress.LevelResult
+import com.example.ui.progress.LevelTally
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlin.math.PI
@@ -87,11 +90,23 @@ private val CookieColors = listOf(
 internal val MonsterInk = Color(0xFF1E2A47)
 
 private const val MEALS_PER_LEVEL = 5
-private const val LETTERS_PER_LEVEL = 5
+
+/**
+ * Letters the monster asks for on [level] (0-based, 6 levels): levels 1-5 walk through the
+ * alphabet in small groups, level 6 mixes everything.
+ */
+private fun feedLevelLetters(pool: List<KannadaLetter>, level: Int): List<KannadaLetter> {
+    if (pool.size <= 3) return pool
+    val groups = LEVELS_PER_GAME - 1
+    if (level >= groups) return pool
+    val start = level * pool.size / groups
+    val end = maxOf((level + 1) * pool.size / groups, start + 3).coerceAtMost(pool.size)
+    return pool.subList(maxOf(0, end - maxOf(end - start, 3)), end)
+}
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun FeedTheMonsterScreen(mode: Int, onBack: () -> Unit) {
+fun FeedTheMonsterScreen(mode: Int, firstLevel: Int = 1, onBack: () -> Unit) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
     val style = remember(mode) { monsterStyleFor(mode) }
@@ -103,17 +118,11 @@ fun FeedTheMonsterScreen(mode: Int, onBack: () -> Unit) {
             else -> LetterData.numbers
         }
     }
-    val levelCount = ((pool.size + LETTERS_PER_LEVEL - 1) / LETTERS_PER_LEVEL).coerceAtLeast(1)
+    val levelCount = LEVELS_PER_GAME
+    val tally = remember { LevelTally() }
+    var levelResult by remember { mutableStateOf<LevelResult?>(null) }
 
-    val authPrefs = remember { getSharedPreferences("AppProgress") }
-    val userEmail = authPrefs.getString("last_active_user", "guest") ?: "guest"
-    val isGuest = UserManager.isGuest(userEmail)
-    val gamePrefs = remember { getSharedPreferences("GamePrefs") }
-    val progressKey = "${userEmail}_${style.gameId}_level"
-
-    var level by remember {
-        mutableIntStateOf(if (isGuest) 0 else gamePrefs.getInt(progressKey, 0).coerceIn(0, levelCount - 1))
-    }
+    var level by remember { mutableIntStateOf((firstLevel - 1).coerceIn(0, levelCount - 1)) }
     var fed by remember { mutableIntStateOf(0) }
     var target by remember { mutableStateOf<KannadaLetter?>(null) }
     var choices by remember { mutableStateOf(listOf<KannadaLetter>()) }
@@ -122,12 +131,11 @@ fun FeedTheMonsterScreen(mode: Int, onBack: () -> Unit) {
     var busy by remember { mutableStateOf(false) }
     var draggingId by remember { mutableStateOf<Int?>(null) }
     var showConfetti by remember { mutableStateOf(false) }
-    var showSticker by remember { mutableStateOf(false) }
     var showPauseMenu by remember { mutableStateOf(false) }
     var monsterBounds by remember { mutableStateOf(Rect.Zero) }
 
     val levelLetters = remember(level, pool) {
-        pool.drop(level * LETTERS_PER_LEVEL).take(LETTERS_PER_LEVEL).ifEmpty { pool.take(LETTERS_PER_LEVEL) }
+        feedLevelLetters(pool, level)
     }
 
     fun speakTarget() {
@@ -137,7 +145,7 @@ fun FeedTheMonsterScreen(mode: Int, onBack: () -> Unit) {
     fun newRound(previous: KannadaLetter?) {
         val candidates = levelLetters.filter { it.id != previous?.id }.ifEmpty { levelLetters }
         val next = candidates.random()
-        val choiceCount = if (level == 0) 3 else 4
+        val choiceCount = if (level < 2) 3 else 4
         val sameLevel = levelLetters.filter { it.id != next.id }.shuffled()
         val others = pool.filter { it.id != next.id && it !in levelLetters }.shuffled()
         val distractors = (sameLevel + others).take(choiceCount - 1)
@@ -153,6 +161,8 @@ fun FeedTheMonsterScreen(mode: Int, onBack: () -> Unit) {
 
     fun startLevel() {
         fed = 0
+        tally.reset()
+        levelResult = null
         showConfetti = false
         busy = false
         newRound(null)
@@ -167,6 +177,7 @@ fun FeedTheMonsterScreen(mode: Int, onBack: () -> Unit) {
         scope.launch {
             if (letter.id == wanted.id) {
                 mood = MonsterMood.Chomp
+                tally.right()
                 SoundEffectsHelper.playSuccess(context)
                 NativeAudioPlayer.playPhonics(context, letter.character)
                 choices = choices.filter { it.id != letter.id }
@@ -176,21 +187,17 @@ fun FeedTheMonsterScreen(mode: Int, onBack: () -> Unit) {
                     mood = MonsterMood.Happy
                     showConfetti = true
                     SoundEffectsHelper.playGameCompletion(context)
-                    try { ScoreManager.addCoins(context, style.gameId, 10) } catch (e: Exception) {}
-                    if (!isGuest) {
-                        val nextSaved = (level + 1).coerceAtMost(levelCount - 1)
-                        if (nextSaved > gamePrefs.getInt(progressKey, 0)) {
-                            gamePrefs.edit().putInt(progressKey, nextSaved).apply()
-                        }
-                    }
+                    val result = GameProgress.recordLevel(context, mode, level + 1, tally.mistakes, tally.streaks)
                     delay(1200)
-                    showSticker = true
+                    showConfetti = false
+                    levelResult = result
                 } else {
                     newRound(letter)
                     busy = false
                 }
             } else {
                 mood = MonsterMood.Yuck
+                tally.wrong()
                 wrongId = letter.id
                 SoundEffectsHelper.playOops(context)
                 delay(900)
@@ -199,19 +206,6 @@ fun FeedTheMonsterScreen(mode: Int, onBack: () -> Unit) {
                 busy = false
                 speakTarget()
             }
-        }
-    }
-
-    fun goToNextLevel() {
-        showSticker = false
-        if (isGuest) {
-            Toast.makeText(context, "🔒 Level 1 Complete! Sign in with Gmail to play all levels!", Toast.LENGTH_LONG).show()
-            startLevel()
-        } else if (level < levelCount - 1) {
-            level += 1
-        } else {
-            Toast.makeText(context, "🎉 Your monster ate every letter! Starting again.", Toast.LENGTH_LONG).show()
-            if (level == 0) startLevel() else level = 0
         }
     }
 
@@ -377,13 +371,12 @@ fun FeedTheMonsterScreen(mode: Int, onBack: () -> Unit) {
                 )
             }
 
-            if (showSticker) {
-                com.example.ui.components.SurpriseStickerDialog(
-                    userEmail = userEmail,
-                    levelName = "Level ${level + 1}",
-                    seedModifier = level + mode * 10,
-                    onClose = { goToNextLevel() },
-                    onClaimOrNext = { goToNextLevel() }
+            levelResult?.let { result ->
+                LevelCompleteOverlay(
+                    result = result,
+                    onNextLevel = if (level < levelCount - 1) ({ levelResult = null; level += 1 }) else null,
+                    onPlayAgain = { startLevel() },
+                    onLevelMap = onBack
                 )
             }
         }
