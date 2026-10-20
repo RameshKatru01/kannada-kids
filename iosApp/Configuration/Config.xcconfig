@@ -1,0 +1,19 @@
+// ---- Fill these in before building for a real iPhone / the App Store ----
+
+// Your Apple Developer Team ID (Xcode > Settings > Accounts), e.g. ABCDE12345
+TEAM_ID=
+
+// The iOS bundle identifier (must be unique in the App Store)
+PRODUCT_BUNDLE_IDENTIFIER=com.aistudio.kannadakids.ios
+PRODUCT_NAME=KannadaKids
+MARKETING_VERSION=1.1
+CURRENT_PROJECT_VERSION=1
+
+// Optional: Firebase "Web API key" (Firebase console > Project settings > General).
+// When set, Gmail sign-in on iPhone uses the same Firebase project as Android.
+FIREBASE_API_KEY=
+
+// Optional: Google Sign-In for iOS (see README). Leave empty to hide Google sign-in errors behind
+// a friendly message; users can still sign in with their Gmail address or as a guest.
+GOOGLE_IOS_CLIENT_ID=
+GOOGLE_REVERSED_CLIENT_ID=kannadakids-google-signin-not-configured
