@@ -355,6 +355,7 @@ fun LetterTrainScreen(onBack: () -> Unit) {
                         .weight(1f),
                     contentAlignment = Alignment.Center
                 ) {
+                  val sceneWidth = maxWidth
                   Box(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -380,7 +381,7 @@ fun LetterTrainScreen(onBack: () -> Unit) {
                     val engineWidth = 84.dp
                     val gap = 6.dp
                     val carriageSize: Dp = minOf(
-                        (maxWidth - engineWidth - gap * (CARRIAGES + 2)) / CARRIAGES,
+                        (sceneWidth - engineWidth - gap * (CARRIAGES + 2)) / CARRIAGES,
                         72.dp
                     )
 

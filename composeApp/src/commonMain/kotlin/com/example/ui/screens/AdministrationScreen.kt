@@ -160,7 +160,6 @@ fun AdministrationScreen(
                     AdminMetricsRow(
                         total = totalUsers,
                         gold = goldSubscribers,
-                        silver = silverSubscribers,
                         free = freeUsers,
                         expiring = expiringCount
                     )
