@@ -457,6 +457,7 @@ fun ListenAndChooseScreen(onBack: () -> Unit) {
                                     if (letter == correctLetter) {
                                         showSuccess = true
                                         rewardCharacter = letter
+                                        com.example.ui.data.ActivityTracker.recordAnswer(correctLetter, true)
                                         com.example.ui.audio.SoundEffectsHelper.playSuccess(context)
                                         try { com.example.ui.data.ScoreManager.addCoins(context, "listen_and_choose", 10) } catch (e: Exception) {}
                                         score += 1
@@ -474,6 +475,7 @@ fun ListenAndChooseScreen(onBack: () -> Unit) {
                                         }
                                     } else {
                                         wrongIndex = index
+                                        com.example.ui.data.ActivityTracker.recordAnswer(correctLetter, false)
                                         com.example.ui.audio.SoundEffectsHelper.playOops(context)
                                         coroutineScope.launch {
                                             delay(500)

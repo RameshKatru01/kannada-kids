@@ -38,6 +38,7 @@ fun App() {
     val currentTheme by ThemeManager.currentTheme.collectAsState()
     MyApplicationTheme(appTheme = currentTheme) {
         Box(modifier = Modifier.fillMaxSize()) {
+            com.example.ui.data.TrackActiveTime()
             AppNavigation()
             ToastHost()
         }

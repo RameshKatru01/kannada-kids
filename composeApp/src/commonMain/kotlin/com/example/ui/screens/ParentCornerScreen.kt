@@ -1,0 +1,490 @@
+package com.example.ui.screens
+
+import com.example.platform.*
+
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.Backspace
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Icon
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.rotate
+import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import androidx.lifecycle.viewmodel.compose.viewModel
+import com.example.ui.auth.AuthState
+import com.example.ui.auth.AuthViewModel
+import com.example.ui.components.ScrapbookInk
+import com.example.ui.components.ScrapbookInkSoft
+import com.example.ui.components.ScrapbookPaper
+import com.example.ui.data.ActivityTracker
+import com.example.ui.data.BadgeManager
+import com.example.ui.data.LanguageManager
+import com.example.ui.data.ScoreManager
+import com.example.ui.data.SurpriseStickerManager
+import com.example.ui.progress.GameProgress
+import com.example.ui.progress.GameRegistry
+import com.example.ui.progress.StarGold
+import com.example.ui.progress.StarIcon
+import com.example.ui.progress.formatPoints
+import kotlin.random.Random
+
+// ---------------------------------------------------------------------------------------------
+// Grown-ups check: a two-digit addition with carrying (too hard for young children)
+// ---------------------------------------------------------------------------------------------
+
+private fun newSum(): Pair<Int, Int> {
+    while (true) {
+        val a = Random.nextInt(26, 90)
+        val b = Random.nextInt(17, 80)
+        if (a % 10 + b % 10 >= 10 && a + b < 160) return a to b
+    }
+}
+
+@Composable
+fun ParentGate(onPass: () -> Unit, onCancel: () -> Unit) {
+    var sum by remember { mutableStateOf(newSum()) }
+    var typed by remember { mutableStateOf("") }
+    var wrong by remember { mutableStateOf(false) }
+
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(Color(0xE60B3B66))
+            .clickable(interactionSource = remember { MutableInteractionSource() }, indication = null) { }
+            .safeDrawingPadding()
+            .padding(20.dp),
+        contentAlignment = Alignment.Center
+    ) {
+        Column(
+            modifier = Modifier
+                .widthIn(max = 380.dp)
+                .fillMaxWidth()
+                .background(Color.White, RoundedCornerShape(30.dp))
+                .padding(20.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            Text("For grown-ups", fontSize = 24.sp, fontWeight = FontWeight.ExtraBold, color = ScrapbookInk)
+            Text(
+                if (wrong) "Not quite. Try this one:" else "Answer to open the Parent corner",
+                fontSize = 14.sp, fontWeight = FontWeight.Bold,
+                color = if (wrong) Color(0xFFD94848) else ScrapbookInkSoft, textAlign = TextAlign.Center
+            )
+            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                Text("${sum.first} + ${sum.second} =", fontSize = 32.sp, fontWeight = FontWeight.ExtraBold, color = ScrapbookInk)
+                Box(
+                    Modifier
+                        .widthIn(min = 76.dp)
+                        .height(54.dp)
+                        .border(3.dp, if (wrong) Color(0xFFFF6B6B) else ScrapbookInk, RoundedCornerShape(14.dp))
+                        .padding(horizontal = 10.dp),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(typed.ifEmpty { "?" }, fontSize = 30.sp, fontWeight = FontWeight.ExtraBold, color = if (typed.isEmpty()) Color(0xFFB8C7D4) else ScrapbookInk)
+                }
+            }
+            // Number pad
+            val keys = listOf("1", "2", "3", "4", "5", "6", "7", "8", "9", "⌫", "0", "OK")
+            keys.chunked(3).forEach { row ->
+                Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                    row.forEach { k ->
+                        val isOk = k == "OK"
+                        Box(
+                            modifier = Modifier
+                                .size(width = 84.dp, height = 54.dp)
+                                .clip(RoundedCornerShape(16.dp))
+                                .background(if (isOk) Color(0xFF2EC4B6) else Color(0xFFEAF6FF))
+                                .clickable {
+                                    when (k) {
+                                        "⌫" -> typed = typed.dropLast(1)
+                                        "OK" -> {
+                                            if (typed.toIntOrNull() == sum.first + sum.second) {
+                                                onPass()
+                                            } else {
+                                                wrong = true
+                                                typed = ""
+                                                sum = newSum()
+                                            }
+                                        }
+                                        else -> if (typed.length < 3) typed += k
+                                    }
+                                }
+                                .testTag("gate_key_$k"),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            if (k == "⌫") {
+                                Icon(Icons.AutoMirrored.Filled.Backspace, contentDescription = "Delete", tint = ScrapbookInk)
+                            } else {
+                                Text(k, fontSize = 22.sp, fontWeight = FontWeight.ExtraBold, color = ScrapbookInk)
+                            }
+                        }
+                    }
+                }
+            }
+            Text(
+                "Cancel",
+                modifier = Modifier.clip(RoundedCornerShape(12.dp)).clickable { onCancel() }.padding(horizontal = 16.dp, vertical = 8.dp),
+                fontSize = 15.sp, fontWeight = FontWeight.ExtraBold, color = ScrapbookInkSoft
+            )
+        }
+    }
+}
+
+@Composable
+private fun BackHeader(title: String, subtitle: String?, onBack: () -> Unit) {
+    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+        Box(
+            Modifier.size(44.dp).clip(CircleShape).background(Color.White).clickable { onBack() },
+            contentAlignment = Alignment.Center
+        ) {
+            Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back", tint = ScrapbookInk)
+        }
+        Column {
+            Text(title, fontSize = 28.sp, fontWeight = FontWeight.ExtraBold, color = ScrapbookInk, lineHeight = 30.sp)
+            if (subtitle != null) Text(subtitle, fontSize = 13.sp, fontWeight = FontWeight.Bold, color = ScrapbookInkSoft)
+        }
+    }
+}
+
+@Composable
+private fun WhiteCard(modifier: Modifier = Modifier, content: @Composable ColumnScope.() -> Unit) {
+    Column(
+        modifier = modifier.fillMaxWidth().background(Color.White, RoundedCornerShape(24.dp)).padding(horizontal = 16.dp, vertical = 14.dp),
+        verticalArrangement = Arrangement.spacedBy(10.dp),
+        content = content
+    )
+}
+
+// ---------------------------------------------------------------------------------------------
+// My rewards
+// ---------------------------------------------------------------------------------------------
+
+private val milestones = listOf(100, 250, 500, 1000, 1500, 2500, 5000, 10000)
+
+@Composable
+fun RewardsScreen(onBack: () -> Unit, authViewModel: AuthViewModel = viewModel { AuthViewModel() }) {
+    val context = LocalContext.current
+    val authState by authViewModel.authState.collectAsState()
+    val userEmail = (authState as? AuthState.Authenticated)?.email ?: "guest"
+    val langCode = LanguageManager.currentLanguage.collectAsState().value.code
+    val prefs = getSharedPreferences("AppProgress")
+    val points by ScoreManager.totalCoins.collectAsState()
+    val badges = remember(userEmail, langCode) { BadgeManager.badges.map { it to it.isUnlocked(prefs, userEmail, langCode) } }
+    val stickerIds = remember(userEmail) { SurpriseStickerManager.getUnlockedStickerIds(context, userEmail) }
+    val stickers = SurpriseStickerManager.allStickers.filter { it.id in stickerIds }
+    var showAlbum by remember { mutableStateOf(false) }
+
+    val nextGoal = milestones.firstOrNull { it > points } ?: milestones.last()
+    val prevGoal = milestones.lastOrNull { it <= points } ?: 0
+    val reached = milestones.count { it <= points }
+    val colors = listOf(DashSun, DashTeal, DashViolet, DashCoral, DashBerry, DashTangerine)
+
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(ScrapbookPaper)
+            .safeDrawingPadding()
+            .verticalScroll(rememberScrollState())
+            .padding(horizontal = 18.dp, vertical = 12.dp),
+        verticalArrangement = Arrangement.spacedBy(14.dp)
+    ) {
+        BackHeader(
+            "My Rewards",
+            "${badges.count { it.second }} of ${badges.size} badges · ${stickers.size} of ${SurpriseStickerManager.allStickers.size} stickers",
+            onBack
+        )
+
+        WhiteCard {
+            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                val frac = if (points >= nextGoal) 1f else (points - prevGoal).toFloat() / (nextGoal - prevGoal)
+                ProgressRing(frac, 64.dp, 8.dp, DashSun, Color(0xFFFFF0C2)) { StarIcon(24.dp, StarGold) }
+                Column {
+                    Text("${formatPoints(points)} points", fontSize = 18.sp, fontWeight = FontWeight.ExtraBold, color = ScrapbookInk)
+                    Text(
+                        if (points >= milestones.last()) "You reached every trophy!" else "${formatPoints(nextGoal - points)} more for the next trophy",
+                        fontSize = 13.sp, fontWeight = FontWeight.Bold, color = ScrapbookInkSoft
+                    )
+                }
+            }
+            // Trophy row
+            Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                milestones.forEachIndexed { i, m ->
+                    val got = i < reached
+                    Column(Modifier.weight(1f), horizontalAlignment = Alignment.CenterHorizontally) {
+                        Box(
+                            Modifier.size(30.dp).background(if (got) colors[i % colors.size] else Color(0xFFE3EEF8), CircleShape),
+                            contentAlignment = Alignment.Center
+                        ) { Text(if (got) "🏆" else "", fontSize = 15.sp) }
+                        Text(if (m >= 1000) "${m / 1000}k" else "$m", fontSize = 10.sp, fontWeight = FontWeight.Bold, color = ScrapbookInkSoft)
+                    }
+                }
+            }
+        }
+
+        Text("Badges", fontSize = 20.sp, fontWeight = FontWeight.ExtraBold, color = ScrapbookInk)
+        badges.chunked(3).forEachIndexed { r, row ->
+            Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                row.forEachIndexed { c, (badge, got) ->
+                    Box(
+                        Modifier.weight(1f).background(Color.White, RoundedCornerShape(20.dp)).padding(vertical = 12.dp, horizontal = 6.dp),
+                        contentAlignment = Alignment.TopCenter
+                    ) {
+                        BadgeCircle(badge.icon, badge.title, got, colors[(r * 3 + c) % colors.size], 56.dp, Modifier.fillMaxWidth(), badge.description)
+                    }
+                }
+                repeat(3 - row.size) { Spacer(Modifier.weight(1f)) }
+            }
+        }
+
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Text("Sticker album", modifier = Modifier.weight(1f), fontSize = 20.sp, fontWeight = FontWeight.ExtraBold, color = ScrapbookInk)
+            Text(
+                "Open album",
+                modifier = Modifier.clip(RoundedCornerShape(12.dp)).clickable { showAlbum = true }.padding(8.dp),
+                fontSize = 14.sp, fontWeight = FontWeight.ExtraBold, color = ScrapbookInk
+            )
+        }
+        if (stickers.isEmpty()) {
+            WhiteCard { Text("Finish a game level to win your first sticker!", fontSize = 14.sp, fontWeight = FontWeight.Bold, color = ScrapbookInkSoft) }
+        } else {
+            Row(horizontalArrangement = Arrangement.spacedBy(10.dp), modifier = Modifier.padding(horizontal = 4.dp, vertical = 6.dp)) {
+                stickers.takeLast(5).forEachIndexed { i, s ->
+                    Box(
+                        Modifier
+                            .weight(1f)
+                            .rotate(listOf(-4f, 3f, -2f, 4f, -3f)[i])
+                            .shadow(4.dp, RoundedCornerShape(6.dp))
+                            .background(Color.White, RoundedCornerShape(6.dp))
+                            .clickable { showAlbum = true }
+                            .padding(start = 5.dp, end = 5.dp, top = 5.dp, bottom = 10.dp)
+                    ) {
+                        Box(
+                            Modifier.fillMaxWidth().aspectRatio(1f).background(colors[i % colors.size].copy(alpha = 0.35f), RoundedCornerShape(4.dp)),
+                            contentAlignment = Alignment.Center
+                        ) { Text(s.emoji, fontSize = 26.sp) }
+                    }
+                }
+                repeat(5 - minOf(5, stickers.size)) { Spacer(Modifier.weight(1f)) }
+            }
+        }
+        Spacer(Modifier.height(8.dp))
+    }
+
+    if (showAlbum) {
+        com.example.ui.components.StickerAlbumDialog(userEmail = userEmail, onClose = { showAlbum = false })
+    }
+}
+
+// ---------------------------------------------------------------------------------------------
+// Parent corner
+// ---------------------------------------------------------------------------------------------
+
+@Composable
+fun ParentCornerScreen(
+    onBack: () -> Unit,
+    onSignOut: () -> Unit,
+    authViewModel: AuthViewModel = viewModel { AuthViewModel() }
+) {
+    val context = LocalContext.current
+    val authState by authViewModel.authState.collectAsState()
+    val userEmail = (authState as? AuthState.Authenticated)?.email ?: "guest"
+    val langCode = LanguageManager.currentLanguage.collectAsState().value.code
+    val prefs = getSharedPreferences("AppProgress")
+    val version by ActivityTracker.version.collectAsState()
+
+    val week = remember(version) { ActivityTracker.lastSevenDays() }
+    val weekMinutes = week.sumOf { it.minutes }
+    val activeDays = week.count { it.minutes > 0 }
+    val learned = remember(userEmail, langCode) { learningProgress(userEmail, langCode).sumOf { it.learned } }
+    val levelsDone = remember { GameRegistry.games.filter { it.hasLevels }.sumOf { GameProgress.levelsDone(it) } }
+    val accuracy = remember(version) { ActivityTracker.accuracyPercent() }
+    val weak = remember(version) { ActivityTracker.needsPractice() }
+    val strong = remember(version) { ActivityTracker.strongLetters() }
+
+    var plan by remember { mutableStateOf(prefs.getString("${langCode}_subscriptionPlan_$userEmail", "Free") ?: "Free") }
+    var pickedPrice by remember { mutableStateOf<String?>(null) }
+    var confirmSignOut by remember { mutableStateOf(false) }
+
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(ScrapbookPaper)
+            .safeDrawingPadding()
+            .verticalScroll(rememberScrollState())
+            .padding(horizontal = 18.dp, vertical = 12.dp),
+        verticalArrangement = Arrangement.spacedBy(14.dp)
+    ) {
+        BackHeader("Parent corner", "How your child is doing", onBack)
+
+        // Minutes this week
+        WhiteCard {
+            Row(verticalAlignment = Alignment.Bottom) {
+                Text("Minutes this week", modifier = Modifier.weight(1f), fontSize = 16.sp, fontWeight = FontWeight.ExtraBold, color = ScrapbookInk)
+                Text("$weekMinutes min · $activeDays of 7 days", fontSize = 13.sp, fontWeight = FontWeight.ExtraBold, color = Color(0xFF168F84))
+            }
+            val maxMin = maxOf(1, week.maxOf { it.minutes })
+            Row(
+                modifier = Modifier.fillMaxWidth().height(140.dp),
+                verticalAlignment = Alignment.Bottom,
+                horizontalArrangement = Arrangement.spacedBy(6.dp)
+            ) {
+                week.forEach { d ->
+                    Column(Modifier.weight(1f), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                        Text("${d.minutes}", fontSize = 11.sp, fontWeight = FontWeight.ExtraBold, color = ScrapbookInk)
+                        Box(
+                            Modifier
+                                .width(24.dp)
+                                .height((96f * d.minutes / maxMin).dp.coerceAtLeast(4.dp))
+                                .clip(RoundedCornerShape(topStart = 8.dp, topEnd = 8.dp, bottomStart = 4.dp, bottomEnd = 4.dp))
+                                .background(if (d.isToday) DashCoral else if (d.minutes == 0) Color(0xFFE3EEF8) else DashTeal)
+                        )
+                        Text(d.label, fontSize = 11.sp, fontWeight = FontWeight.Bold, color = ScrapbookInkSoft)
+                    }
+                }
+            }
+        }
+
+        // Quick numbers
+        Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+            StatTile("$learned", "letters learned", DashTeal, Modifier.weight(1f))
+            StatTile("$levelsDone", "levels finished", DashViolet, Modifier.weight(1f))
+            StatTile(accuracy?.let { "$it%" } ?: "–", "right answers", DashSun, Modifier.weight(1f))
+        }
+
+        // Practice lists
+        WhiteCard {
+            Row(verticalAlignment = Alignment.Bottom) {
+                Text("Needs more practice", modifier = Modifier.weight(1f), fontSize = 16.sp, fontWeight = FontWeight.ExtraBold, color = ScrapbookInk)
+                Text("most mistakes", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = ScrapbookInkSoft)
+            }
+            LetterChips(weak, Color(0xFFFFE1E1), Color(0xFF9E2B2B), "No tricky letters yet. Keep playing the games!")
+            Text("Strong letters", fontSize = 16.sp, fontWeight = FontWeight.ExtraBold, color = ScrapbookInk)
+            LetterChips(strong, Color(0xFFD9F6F2), Color(0xFF0F6B62), "Letters answered right again and again will show here.")
+        }
+
+        // Plan
+        Column(
+            Modifier.fillMaxWidth().background(Color(0xFFFFF6E0), RoundedCornerShape(22.dp)).border(2.dp, Color(0xFFF2DFAE), RoundedCornerShape(22.dp)).padding(14.dp),
+            verticalArrangement = Arrangement.spacedBy(10.dp)
+        ) {
+            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                Box(Modifier.size(44.dp).background(DashSun, CircleShape), contentAlignment = Alignment.Center) { StarIcon(24.dp, Color.White) }
+                Column(Modifier.weight(1f)) {
+                    Text("$plan plan", fontSize = 16.sp, fontWeight = FontWeight.ExtraBold, color = ScrapbookInk)
+                    Text(if (plan == "Gold") "All letters, games and videos" else "Upgrade to unlock everything", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = ScrapbookInkSoft)
+                }
+            }
+            if (plan == "Free") {
+                Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                    PlanButton("₹99 / month", Modifier.weight(1f)) { pickedPrice = "₹99 / month" }
+                    PlanButton("₹699 / year", Modifier.weight(1f)) { pickedPrice = "₹699 / year" }
+                }
+            } else {
+                Text(
+                    "Cancel subscription",
+                    modifier = Modifier.clip(RoundedCornerShape(12.dp)).clickable {
+                        plan = "Free"
+                        prefs.edit().putString("${langCode}_subscriptionPlan_$userEmail", "Free").apply()
+                        com.example.ui.data.UserManager.updateUserPlan(context, userEmail, "Free Explorer", 0)
+                    }.padding(vertical = 6.dp),
+                    fontSize = 14.sp, fontWeight = FontWeight.ExtraBold, color = Color(0xFFB23A3A)
+                )
+            }
+        }
+
+        // Sign out
+        Box(
+            Modifier.fillMaxWidth().height(52.dp).clip(RoundedCornerShape(26.dp)).border(2.dp, ScrapbookInk, RoundedCornerShape(26.dp)).clickable { confirmSignOut = true },
+            contentAlignment = Alignment.Center
+        ) { Text("Sign out", fontSize = 16.sp, fontWeight = FontWeight.ExtraBold, color = ScrapbookInk) }
+        Spacer(Modifier.height(8.dp))
+    }
+
+    pickedPrice?.let { price ->
+        AlertDialog(
+            onDismissRequest = { pickedPrice = null },
+            title = { Text("Unlock Gold", fontWeight = FontWeight.Bold) },
+            text = { Text("You picked the $price plan. This is a demo, so confirming unlocks Gold straight away.") },
+            confirmButton = {
+                TextButton(onClick = {
+                    plan = "Gold"
+                    prefs.edit().putString("${langCode}_subscriptionPlan_$userEmail", "Gold").apply()
+                    val days = if (price.contains("year")) 365 else 30
+                    com.example.ui.data.UserManager.updateUserPlan(context, userEmail, if (days == 365) "Gold Yearly" else "Gold Monthly", days)
+                    pickedPrice = null
+                }) { Text("Confirm") }
+            },
+            dismissButton = { TextButton(onClick = { pickedPrice = null }) { Text("Cancel") } }
+        )
+    }
+    if (confirmSignOut) {
+        AlertDialog(
+            onDismissRequest = { confirmSignOut = false },
+            title = { Text("Sign out?", fontWeight = FontWeight.Bold) },
+            text = { Text("You will go back to the sign-in screen. Progress stays saved on this device.") },
+            confirmButton = { TextButton(onClick = { confirmSignOut = false; onSignOut() }) { Text("Sign out") } },
+            dismissButton = { TextButton(onClick = { confirmSignOut = false }) { Text("Cancel") } }
+        )
+    }
+}
+
+@Composable
+private fun StatTile(value: String, label: String, color: Color, modifier: Modifier) {
+    Column(
+        modifier
+            .clip(RoundedCornerShape(20.dp))
+            .background(color)
+            .padding(top = 5.dp)
+            .clip(RoundedCornerShape(topStart = 16.dp, topEnd = 16.dp, bottomStart = 20.dp, bottomEnd = 20.dp))
+            .background(Color.White)
+            .padding(12.dp)
+    ) {
+        Text(value, fontSize = 26.sp, fontWeight = FontWeight.ExtraBold, color = ScrapbookInk, lineHeight = 28.sp)
+        Text(label, fontSize = 12.sp, fontWeight = FontWeight.Bold, color = ScrapbookInkSoft, lineHeight = 14.sp)
+    }
+}
+
+@OptIn(ExperimentalLayoutApi::class)
+@Composable
+private fun LetterChips(letters: List<String>, bg: Color, ink: Color, empty: String) {
+    if (letters.isEmpty()) {
+        Text(empty, fontSize = 13.sp, fontWeight = FontWeight.Bold, color = ScrapbookInkSoft)
+        return
+    }
+    FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        letters.forEach { l ->
+            Box(
+                Modifier.heightIn(min = 44.dp).widthIn(min = 44.dp).background(bg, RoundedCornerShape(14.dp)).padding(horizontal = 8.dp),
+                contentAlignment = Alignment.Center
+            ) { Text(l, fontSize = 22.sp, fontWeight = FontWeight.ExtraBold, color = ink) }
+        }
+    }
+}
+
+@Composable
+private fun PlanButton(label: String, modifier: Modifier, onClick: () -> Unit) {
+    Box(
+        modifier.height(46.dp).clip(RoundedCornerShape(23.dp)).background(DashSun).clickable { onClick() },
+        contentAlignment = Alignment.Center
+    ) { Text(label, fontSize = 15.sp, fontWeight = FontWeight.ExtraBold, color = ScrapbookInk) }
+}

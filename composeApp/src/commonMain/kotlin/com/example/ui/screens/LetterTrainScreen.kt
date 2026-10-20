@@ -230,6 +230,7 @@ fun LetterTrainScreen(firstLevel: Int = 1, onBack: () -> Unit) {
         filled = newFilled
         tiles = tiles.filter { it.id != letter.id }
         tally.right()
+        com.example.ui.data.ActivityTracker.recordAnswer(letter.character, true)
         SoundEffectsHelper.playSuccess(context)
         speak(letter)
         if (newFilled.all { it }) completeTrain()
@@ -237,6 +238,7 @@ fun LetterTrainScreen(firstLevel: Int = 1, onBack: () -> Unit) {
 
     fun wrong(letter: KannadaLetter) {
         tally.wrong()
+        com.example.ui.data.ActivityTracker.recordAnswer(letter.character, false)
         SoundEffectsHelper.playOops(context)
         wrongTileId = letter.id
         scope.launch {

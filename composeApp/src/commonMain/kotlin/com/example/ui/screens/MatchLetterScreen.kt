@@ -359,8 +359,10 @@ fun MatchLetterScreen(onBack: () -> Unit) {
                                                 if (targetMatch?.key == pair.id) {
                                                     matchedIds = matchedIds + pair.id
                                                     rewardCharacter = pair.letter
+                                                    com.example.ui.data.ActivityTracker.recordAnswer(pair.letter, true)
                                                     com.example.ui.audio.SoundEffectsHelper.playSuccess(context)
                                                 } else if (targetMatch != null) {
+                                                    com.example.ui.data.ActivityTracker.recordAnswer(pair.letter, false)
                                                     com.example.ui.audio.SoundEffectsHelper.playOops(context)
                                                 }
                                                 // Reset offset

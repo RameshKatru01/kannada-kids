@@ -100,7 +100,18 @@ fun AppNavigation(authViewModel: AuthViewModel = viewModel { AuthViewModel() }) 
             composable("dashboard") {
                 DashboardScreen(
                     authViewModel = authViewModel,
-                    onSignOut = signOutAction
+                    onSignOut = signOutAction,
+                    onNavigate = { route -> navController.navigate(route) }
+                )
+            }
+            composable("rewards") {
+                RewardsScreen(onBack = { navController.popBackStack() }, authViewModel = authViewModel)
+            }
+            composable("parent_corner") {
+                ParentCornerScreen(
+                    onBack = { navController.popBackStack() },
+                    onSignOut = signOutAction,
+                    authViewModel = authViewModel
                 )
             }
 

@@ -178,6 +178,7 @@ fun FeedTheMonsterScreen(mode: Int, firstLevel: Int = 1, onBack: () -> Unit) {
             if (letter.id == wanted.id) {
                 mood = MonsterMood.Chomp
                 tally.right()
+                com.example.ui.data.ActivityTracker.recordAnswer(wanted.character, true)
                 SoundEffectsHelper.playSuccess(context)
                 NativeAudioPlayer.playPhonics(context, letter.character)
                 choices = choices.filter { it.id != letter.id }
@@ -198,6 +199,7 @@ fun FeedTheMonsterScreen(mode: Int, firstLevel: Int = 1, onBack: () -> Unit) {
             } else {
                 mood = MonsterMood.Yuck
                 tally.wrong()
+                com.example.ui.data.ActivityTracker.recordAnswer(wanted.character, false)
                 wrongId = letter.id
                 SoundEffectsHelper.playOops(context)
                 delay(900)
