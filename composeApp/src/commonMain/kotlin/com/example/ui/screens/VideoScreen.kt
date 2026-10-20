@@ -266,20 +266,20 @@ fun VideoScreen(title: String, onBack: () -> Unit, authViewModel: AuthViewModel 
             )
         } else if (title == "Class Room") {
             listOf(
-                "https://raw.githubusercontent.com/RameshKatru01/kannada-app-assets/9264af8c85bb935a122e13cf3014301ab97266ea/1_class_room.mp4",
-                "https://raw.githubusercontent.com/RameshKatru01/kannada-app-assets/9264af8c85bb935a122e13cf3014301ab97266ea/2_class_room.mp4",
-                "https://raw.githubusercontent.com/RameshKatru01/kannada-app-assets/9264af8c85bb935a122e13cf3014301ab97266ea/3_class_room.mp4",
-                "https://raw.githubusercontent.com/RameshKatru01/kannada-app-assets/9264af8c85bb935a122e13cf3014301ab97266ea/4_class_room.mp4",
-                "https://raw.githubusercontent.com/RameshKatru01/kannada-app-assets/9264af8c85bb935a122e13cf3014301ab97266ea/5_class_room.mp4",
-                "https://raw.githubusercontent.com/RameshKatru01/kannada-app-assets/9264af8c85bb935a122e13cf3014301ab97266ea/6_class_room.mp4",
-                "https://raw.githubusercontent.com/RameshKatru01/kannada-app-assets/9264af8c85bb935a122e13cf3014301ab97266ea/7_class_room.mp4",
-                "https://raw.githubusercontent.com/RameshKatru01/kannada-app-assets/9264af8c85bb935a122e13cf3014301ab97266ea/8_class_room.mp4",
-                "https://raw.githubusercontent.com/RameshKatru01/kannada-app-assets/9264af8c85bb935a122e13cf3014301ab97266ea/9_class_room.mp4",
-                "https://raw.githubusercontent.com/RameshKatru01/kannada-app-assets/9264af8c85bb935a122e13cf3014301ab97266ea/10_class_room.mp4",
-                "https://raw.githubusercontent.com/RameshKatru01/kannada-app-assets/9264af8c85bb935a122e13cf3014301ab97266ea/11_class_room.mp4",
-                "https://raw.githubusercontent.com/RameshKatru01/kannada-app-assets/9264af8c85bb935a122e13cf3014301ab97266ea/12_class_room.mp4",
-                "https://raw.githubusercontent.com/RameshKatru01/kannada-app-assets/9264af8c85bb935a122e13cf3014301ab97266ea/13_class_room.mp4",
-                "https://raw.githubusercontent.com/RameshKatru01/kannada-app-assets/9264af8c85bb935a122e13cf3014301ab97266ea/14_class_room.mp4"
+                "https://raw.githubusercontent.com/RameshKatru01/kannada-app-assets/d172d9c98346cca20182a48632504f19967005a4/assets/videos/class_room/class_room_01.mp4",
+                "https://raw.githubusercontent.com/RameshKatru01/kannada-app-assets/d172d9c98346cca20182a48632504f19967005a4/assets/videos/class_room/class_room_02.mp4",
+                "https://raw.githubusercontent.com/RameshKatru01/kannada-app-assets/d172d9c98346cca20182a48632504f19967005a4/assets/videos/class_room/class_room_03.mp4",
+                "https://raw.githubusercontent.com/RameshKatru01/kannada-app-assets/d172d9c98346cca20182a48632504f19967005a4/assets/videos/class_room/class_room_04.mp4",
+                "https://raw.githubusercontent.com/RameshKatru01/kannada-app-assets/d172d9c98346cca20182a48632504f19967005a4/assets/videos/class_room/class_room_05.mp4",
+                "https://raw.githubusercontent.com/RameshKatru01/kannada-app-assets/d172d9c98346cca20182a48632504f19967005a4/assets/videos/class_room/class_room_06.mp4",
+                "https://raw.githubusercontent.com/RameshKatru01/kannada-app-assets/d172d9c98346cca20182a48632504f19967005a4/assets/videos/class_room/class_room_07.mp4",
+                "https://raw.githubusercontent.com/RameshKatru01/kannada-app-assets/d172d9c98346cca20182a48632504f19967005a4/assets/videos/class_room/class_room_08.mp4",
+                "https://raw.githubusercontent.com/RameshKatru01/kannada-app-assets/d172d9c98346cca20182a48632504f19967005a4/assets/videos/class_room/class_room_09.mp4",
+                "https://raw.githubusercontent.com/RameshKatru01/kannada-app-assets/d172d9c98346cca20182a48632504f19967005a4/assets/videos/class_room/class_room_10.mp4",
+                "https://raw.githubusercontent.com/RameshKatru01/kannada-app-assets/d172d9c98346cca20182a48632504f19967005a4/assets/videos/class_room/class_room_11.mp4",
+                "https://raw.githubusercontent.com/RameshKatru01/kannada-app-assets/d172d9c98346cca20182a48632504f19967005a4/assets/videos/class_room/class_room_12.mp4",
+                "https://raw.githubusercontent.com/RameshKatru01/kannada-app-assets/d172d9c98346cca20182a48632504f19967005a4/assets/videos/class_room/class_room_13.mp4",
+                "https://raw.githubusercontent.com/RameshKatru01/kannada-app-assets/d172d9c98346cca20182a48632504f19967005a4/assets/videos/class_room/class_room_14.mp4"
             )
         } else if (title == "Play Time") {
             listOf(
