@@ -64,7 +64,7 @@ fun LetterListScreen(
     }
     
     val isGuest = com.example.ui.data.UserManager.isGuest(userEmail)
-    val highestUnlocked = if (isGuest) 0 else if (subscriptionPlan == "Gold") items.size else progressUnlocked
+    val highestUnlocked = if (com.example.ui.data.FeatureFlags.UNLOCK_ALL) items.size else if (isGuest) 0 else if (subscriptionPlan == "Gold") items.size else progressUnlocked
     
     DisposableEffect(context) {
         var textToSpeech: TextToSpeech? = null

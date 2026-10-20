@@ -408,7 +408,7 @@ fun VideoScreen(title: String, onBack: () -> Unit, authViewModel: AuthViewModel 
             modifier = Modifier.fillMaxSize()
         ) { page ->
             val isGuest = com.example.ui.data.UserManager.isGuest(userEmail)
-            val isUnlocked = (!isGuest && subscriptionPlan == "Gold") || page == 0
+            val isUnlocked = com.example.ui.data.FeatureFlags.UNLOCK_ALL || (!isGuest && subscriptionPlan == "Gold") || page == 0
             
             Box(
                 modifier = Modifier.fillMaxSize(),

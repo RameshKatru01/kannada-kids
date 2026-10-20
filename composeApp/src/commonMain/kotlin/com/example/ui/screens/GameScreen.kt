@@ -102,7 +102,7 @@ fun GameScreen(onBack: () -> Unit, onNavigateToGameFlow: (String, String, Int) -
     val subscriptionPlan = prefs.getString("${langPrefix}_subscriptionPlan_$userEmail", "Free") ?: "Free"
     val isGuest = com.example.ui.data.UserManager.isGuest(userEmail)
     val guninthakshariUnlocked = prefs.getInt("${userEmail}_${langPrefix}_guninthakshari_unlocked", 0)
-    val highestUnlocked = if (isGuest) 0 else if (subscriptionPlan == "Gold") Int.MAX_VALUE else guninthakshariUnlocked
+    val highestUnlocked = if (com.example.ui.data.FeatureFlags.UNLOCK_ALL) Int.MAX_VALUE else if (isGuest) 0 else if (subscriptionPlan == "Gold") Int.MAX_VALUE else guninthakshariUnlocked
 
     Scaffold(
         topBar = {

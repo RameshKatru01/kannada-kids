@@ -83,6 +83,8 @@ object UserManager {
      * Checks if the user is logged in as a guest.
      */
     fun isGuest(email: String?): Boolean {
+        // Locks in the app are based on "is this a guest?"; while everything is unlocked nobody is locked.
+        if (FeatureFlags.UNLOCK_ALL) return false
         if (email.isNullOrBlank()) return true
         val clean = email.trim().lowercase()
         return clean == "guest" ||
@@ -97,6 +99,7 @@ object UserManager {
      * Users without these profiles (Free Explorer, Guests, Expired users) return false (locked).
      */
     fun hasUnlockedAccess(context: Context? = null, email: String?): Boolean {
+        if (FeatureFlags.UNLOCK_ALL) return true
         if (email.isNullOrBlank() || isGuest(email)) return false
         val clean = email.trim().lowercase()
         if (clean == PRIMARY_ADMIN_EMAIL.lowercase()) return true
