@@ -96,7 +96,7 @@ fun ReferenceLetterScreen(tab: Int, startIndex: Int, onBack: () -> Unit) {
         ) {
             // Top bar
             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                RoundIconButton(Icons.AutoMirrored.Filled.ArrowBack, "Back", onBack)
+                RoundIconButton(Icons.AutoMirrored.Filled.ArrowBack, "Back", onClick = onBack)
                 Text(
                     "${refTab.english} · ${index + 1} of ${letters.size}",
                     modifier = Modifier.weight(1f),
