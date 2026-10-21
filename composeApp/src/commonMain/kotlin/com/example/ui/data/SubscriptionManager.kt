@@ -255,14 +255,7 @@ object SubscriptionManager {
         )
     }
 
-    suspend fun isCloudAdmin(): Boolean {
-        val email = PlatformAuth.currentUser()?.email?.trim()?.lowercase() ?: return false
-        return try {
-            CloudStore.get("admins/$email") != null
-        } catch (e: Exception) {
-            false
-        }
-    }
+    suspend fun isCloudAdmin(): Boolean = AdminRoles.load() != null
 
     suspend fun allSubscribers(): List<Subscriber> =
         CloudStore.list("subscriptions").map { (id, m) -> m.toSubscriber(id) }

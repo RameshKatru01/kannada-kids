@@ -10,6 +10,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -55,7 +56,9 @@ fun ProfileScreen(
     val context = LocalContext.current
     val authState by authViewModel.authState.collectAsState()
     val userEmail = (authState as? AuthState.Authenticated)?.email ?: "guest"
-    val isAdmin = com.example.ui.data.UserManager.isAdmin(userEmail)
+    val cloudAdmins by com.example.ui.data.AdminRoles.cloudAdmins.collectAsState()
+    LaunchedEffect(userEmail) { try { com.example.ui.data.AdminRoles.load() } catch (e: Exception) {} }
+    val isAdmin = com.example.ui.data.UserManager.isAdmin(userEmail) || userEmail.trim().lowercase() in cloudAdmins
     
     val prefs = getSharedPreferences("AppProgress")
     val gamePrefs = getSharedPreferences("GamePrefs")

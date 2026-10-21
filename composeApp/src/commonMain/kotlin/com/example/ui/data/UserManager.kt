@@ -60,7 +60,7 @@ data class AppUser(
  * Central repository managing app users, subscription plans, expiry dates, and administrative roles.
  */
 object UserManager {
-    const val PRIMARY_ADMIN_EMAIL = "ramesh.kartru01@gmail.com"
+    const val PRIMARY_ADMIN_EMAIL = "ramesh.katru01@gmail.com"
     private const val PREFS_NAME = "UserManagerPrefs"
     private const val KEY_USERS_JSON = "key_users_json"
 
@@ -69,12 +69,13 @@ object UserManager {
 
     /**
      * Checks if the given email corresponds to an assigned Administrator.
-     * Assigns ramesh.kartru01@gmail.com as the primary admin.
+     * Assigns ramesh.katru01@gmail.com as the primary admin.
      */
     fun isAdmin(email: String?): Boolean {
         if (email.isNullOrBlank()) return false
         val clean = email.trim().lowercase()
         if (clean == PRIMARY_ADMIN_EMAIL.lowercase()) return true
+        if (clean in AdminRoles.cloudAdmins.value) return true
         val user = _usersFlow.value.find { it.email.equals(clean, ignoreCase = true) }
         return user?.role.equals("Admin", ignoreCase = true)
     }
@@ -152,7 +153,7 @@ object UserManager {
     }
 
     /**
-     * Initializes the user database. If empty, seeds initial users and assigns ramesh.kartru01@gmail.com as Admin.
+     * Initializes the user database. If empty, seeds initial users and assigns ramesh.katru01@gmail.com as Admin.
      */
     fun init(context: Context) {
         val prefs = getSharedPreferences(PREFS_NAME)
@@ -383,7 +384,7 @@ object UserManager {
 
     /**
      * Toggles administrative privileges for a user.
-     * Note: Primary admin ramesh.kartru01@gmail.com cannot be downgraded.
+     * Note: Primary admin ramesh.katru01@gmail.com cannot be downgraded.
      */
     fun toggleAdminRole(context: Context, email: String) {
         if (email.equals(PRIMARY_ADMIN_EMAIL, ignoreCase = true)) return

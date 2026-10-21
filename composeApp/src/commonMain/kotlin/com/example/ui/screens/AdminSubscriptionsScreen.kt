@@ -123,7 +123,7 @@ private fun rememberSubscribers(): Triple<List<Subscriber>?, String?, () -> Unit
 // ---------------------------------------------------------------------------------------------
 
 @Composable
-fun AdminSubscriptionsScreen(onBack: () -> Unit, onOpen: (String) -> Unit, onRenewals: () -> Unit) {
+fun AdminSubscriptionsScreen(onBack: () -> Unit, onOpen: (String) -> Unit, onRenewals: () -> Unit, onAdmins: () -> Unit = {}) {
     val (list, error, reload) = rememberSubscribers()
     var filter by remember { mutableStateOf("All") }
     var query by remember { mutableStateOf("") }
@@ -176,11 +176,18 @@ fun AdminSubscriptionsScreen(onBack: () -> Unit, onOpen: (String) -> Unit, onRen
                         StatCard("${all.count { it.effectiveStatus == "expired" }}", "expired", Color(0xFF9FB3C8), Modifier.weight(1f))
                     }
                     PlanSplit(paying)
-                    Text(
-                        "Renewals & plans →",
-                        modifier = Modifier.clip(RoundedCornerShape(12.dp)).clickable { onRenewals() }.padding(vertical = 6.dp),
-                        fontSize = 15.sp, fontWeight = FontWeight.ExtraBold, color = Ink
-                    )
+                    Row(horizontalArrangement = Arrangement.spacedBy(18.dp)) {
+                        Text(
+                            "Renewals & plans →",
+                            modifier = Modifier.clip(RoundedCornerShape(12.dp)).clickable { onRenewals() }.padding(vertical = 6.dp),
+                            fontSize = 15.sp, fontWeight = FontWeight.ExtraBold, color = Ink
+                        )
+                        Text(
+                            "Admins →",
+                            modifier = Modifier.clip(RoundedCornerShape(12.dp)).clickable { onAdmins() }.padding(vertical = 6.dp).testTag("open_admin_roles"),
+                            fontSize = 15.sp, fontWeight = FontWeight.ExtraBold, color = Ink
+                        )
+                    }
                     // Search
                     Row(
                         Modifier.fillMaxWidth().height(44.dp).background(Color.White, RoundedCornerShape(16.dp)).padding(horizontal = 12.dp),
@@ -474,5 +481,126 @@ fun AdminRenewalsScreen(onBack: () -> Unit, onOpen: (String) -> Unit) {
             Text("Prices are changed in the Google Play Console and App Store Connect.", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = Soft)
         }
         Spacer(Modifier.height(12.dp))
+    }
+}
+
+// ---------------------------------------------------------------------------------------------
+// D · Admins (the owner gives and removes admin rights)
+// ---------------------------------------------------------------------------------------------
+
+@Composable
+fun AdminRolesScreen(onBack: () -> Unit) {
+    val scope = rememberCoroutineScope()
+    var admins by remember { mutableStateOf<List<com.example.ui.data.AdminRoles.AdminEntry>?>(null) }
+    var message by remember { mutableStateOf<String?>(null) }
+    var newEmail by remember { mutableStateOf("") }
+    var confirmRemove by remember { mutableStateOf<String?>(null) }
+    val myRole by com.example.ui.data.AdminRoles.myRole.collectAsState()
+    val isOwner = myRole == "owner"
+
+    suspend fun reload() {
+        admins = try {
+            com.example.ui.data.AdminRoles.load()
+            com.example.ui.data.AdminRoles.list()
+        } catch (e: Exception) {
+            message = e.message ?: "Couldn't load admins."
+            emptyList()
+        }
+    }
+    LaunchedEffect(Unit) { reload() }
+
+    Column(
+        Modifier.fillMaxSize().background(AdminBg).safeDrawingPadding().verticalScroll(rememberScrollState()).padding(horizontal = 16.dp, vertical = 12.dp),
+        verticalArrangement = Arrangement.spacedBy(10.dp)
+    ) {
+        AdminHeader("Admins", if (isOwner) "You're the owner: you can add and remove admins" else "Only the owner can change this list", onBack)
+
+        if (isOwner) {
+            AdminCard {
+                Text("Give admin rights", fontSize = 16.sp, fontWeight = FontWeight.ExtraBold, color = Ink)
+                Text("They'll see subscriptions and can give free time after signing in with this Gmail.", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = Soft)
+                Row(
+                    Modifier.fillMaxWidth().height(46.dp).background(AdminBg, RoundedCornerShape(14.dp)).padding(horizontal = 12.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Box(Modifier.weight(1f)) {
+                        if (newEmail.isEmpty()) Text("name@gmail.com", fontSize = 15.sp, fontWeight = FontWeight.Bold, color = Soft.copy(alpha = 0.6f))
+                        BasicTextField(newEmail, { newEmail = it.trim() }, singleLine = true, textStyle = TextStyle(fontSize = 15.sp, fontWeight = FontWeight.Bold, color = Ink), modifier = Modifier.fillMaxWidth().testTag("new_admin_email"))
+                    }
+                }
+                Box(
+                    Modifier.fillMaxWidth().height(46.dp).clip(RoundedCornerShape(23.dp)).background(Color(0xFF2EC4B6)).clickable {
+                        scope.launch {
+                            message = try {
+                                com.example.ui.data.AdminRoles.grant(newEmail)
+                                val added = newEmail
+                                newEmail = ""
+                                reload()
+                                "$added is now an admin."
+                            } catch (e: Exception) {
+                                e.message ?: "Couldn't add admin."
+                            }
+                        }
+                    }.testTag("add_admin_button"),
+                    contentAlignment = Alignment.Center
+                ) { Text("Make admin", fontSize = 15.sp, fontWeight = FontWeight.ExtraBold, color = Ink) }
+            }
+        }
+
+        message?.let { Text(it, fontSize = 14.sp, fontWeight = FontWeight.ExtraBold, color = Ink) }
+
+        AdminCard {
+            Text("People with admin rights", fontSize = 16.sp, fontWeight = FontWeight.ExtraBold, color = Ink)
+            val list = admins
+            if (list == null) {
+                CircularProgressIndicator(color = Ink, modifier = Modifier.size(28.dp))
+            } else if (list.isEmpty()) {
+                Text("No admins found.", fontSize = 13.sp, fontWeight = FontWeight.Bold, color = Soft)
+            } else {
+                list.forEachIndexed { i, a ->
+                    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                        Avatar(a.email, i)
+                        Column(Modifier.weight(1f)) {
+                            Text(a.email, fontSize = 14.sp, fontWeight = FontWeight.ExtraBold, color = Ink, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                            Text(
+                                (if (a.role == "owner") "Owner" else "Admin") + if (a.addedAt > 0 && a.role != "owner") " · added ${formatDate(a.addedAt, "d MMM yyyy")}" else "",
+                                fontSize = 12.sp, fontWeight = FontWeight.Bold, color = if (a.role == "owner") Green else Soft
+                            )
+                        }
+                        if (isOwner && a.role != "owner") {
+                            Text(
+                                "Remove",
+                                modifier = Modifier.clip(RoundedCornerShape(10.dp)).clickable { confirmRemove = a.email }.padding(6.dp),
+                                fontSize = 13.sp, fontWeight = FontWeight.ExtraBold, color = Red
+                            )
+                        }
+                    }
+                }
+            }
+        }
+        Spacer(Modifier.height(12.dp))
+    }
+
+    confirmRemove?.let { email ->
+        androidx.compose.material3.AlertDialog(
+            onDismissRequest = { confirmRemove = null },
+            title = { Text("Remove admin rights?", fontWeight = FontWeight.Bold) },
+            text = { Text("$email will no longer see subscriptions.") },
+            confirmButton = {
+                androidx.compose.material3.TextButton(onClick = {
+                    confirmRemove = null
+                    scope.launch {
+                        message = try {
+                            com.example.ui.data.AdminRoles.revoke(email)
+                            reload()
+                            "$email is no longer an admin."
+                        } catch (e: Exception) {
+                            e.message ?: "Couldn't remove admin."
+                        }
+                    }
+                }) { Text("Remove") }
+            },
+            dismissButton = { androidx.compose.material3.TextButton(onClick = { confirmRemove = null }) { Text("Cancel") } }
+        )
     }
 }

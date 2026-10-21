@@ -18,6 +18,7 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import kotlinx.coroutines.launch
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -45,9 +46,12 @@ fun AdministrationScreen(
     onOpenSubscriptions: () -> Unit = {}
 ) {
     val context = LocalContext.current
+    val adminScope = rememberCoroutineScope()
     val authState by authViewModel.authState.collectAsState()
     val currentEmail = (authState as? AuthState.Authenticated)?.email ?: ""
-    val isCurrentAdmin = UserManager.isAdmin(currentEmail)
+    val cloudAdmins by com.example.ui.data.AdminRoles.cloudAdmins.collectAsState()
+    LaunchedEffect(currentEmail) { try { com.example.ui.data.AdminRoles.load() } catch (e: Exception) {} }
+    val isCurrentAdmin = UserManager.isAdmin(currentEmail) || currentEmail.trim().lowercase() in cloudAdmins
 
     LaunchedEffect(Unit) {
         UserManager.init(context)
@@ -266,6 +270,17 @@ fun AdministrationScreen(
                     role = role
                 )
                 Toast.makeText(context, "Updated plan for ${user.email}", Toast.LENGTH_SHORT).show()
+                // Keep the online admin list in step (only the owner may change it)
+                if (com.example.ui.data.AdminRoles.isOwner()) {
+                    adminScope.launch {
+                        try {
+                            if (role.equals("Admin", ignoreCase = true)) com.example.ui.data.AdminRoles.grant(user.email)
+                            else com.example.ui.data.AdminRoles.revoke(user.email)
+                        } catch (e: Exception) {
+                            Toast.makeText(context, e.message ?: "Couldn't update admin rights online", Toast.LENGTH_LONG).show()
+                        }
+                    }
+                }
                 userToEdit = null
             }
         )

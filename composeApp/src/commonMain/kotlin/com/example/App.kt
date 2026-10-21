@@ -44,6 +44,7 @@ fun App() {
                 try {
                     com.example.ui.data.SubscriptionManager.loadProducts()
                     com.example.ui.data.SubscriptionManager.refresh()
+                    com.example.ui.data.AdminRoles.load()
                 } catch (e: Exception) {
                 }
             }

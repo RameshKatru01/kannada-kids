@@ -128,8 +128,12 @@ fun AppNavigation(authViewModel: AuthViewModel = viewModel { AuthViewModel() }) 
                 AdminSubscriptionsScreen(
                     onBack = { navController.popBackStack() },
                     onOpen = { uid -> navController.navigate("admin_sub/$uid") },
-                    onRenewals = { navController.navigate("admin_renewals") }
+                    onRenewals = { navController.navigate("admin_renewals") },
+                    onAdmins = { navController.navigate("admin_roles") }
                 )
+            }
+            composable("admin_roles") {
+                AdminRolesScreen(onBack = { navController.popBackStack() })
             }
             composable(
                 "admin_sub/{uid}",

@@ -1,6 +1,7 @@
 package com.example.ui.data
 
 import com.example.platform.*
+import io.ktor.client.request.delete
 import io.ktor.client.request.get
 import io.ktor.client.request.header
 import io.ktor.client.request.patch
@@ -66,6 +67,14 @@ object CloudStore {
             setBody(body.toString())
         }
         if (!response.status.isSuccess()) {
+            throw CloudException(errorMessage(response.bodyAsText(), response.status.value), response.status.value)
+        }
+    }
+
+    /** Deletes a document. */
+    suspend fun delete(path: String) {
+        val response = http.delete("$BASE/$path") { header("Authorization", "Bearer ${token()}") }
+        if (!response.status.isSuccess() && response.status.value != 404) {
             throw CloudException(errorMessage(response.bodyAsText(), response.status.value), response.status.value)
         }
     }
