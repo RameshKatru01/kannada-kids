@@ -1,5 +1,6 @@
 package com.example.ui.screens
 
+import com.example.ui.components.readableWidth
 import com.example.platform.*
 
 import androidx.compose.foundation.background
@@ -60,6 +61,7 @@ fun PaywallScreen(onBack: () -> Unit) {
             .fillMaxSize()
             .background(ScrapbookPaper)
             .safeDrawingPadding()
+            .readableWidth(640.dp)
             .verticalScroll(rememberScrollState())
             .padding(horizontal = 18.dp, vertical = 12.dp),
         verticalArrangement = Arrangement.spacedBy(14.dp)

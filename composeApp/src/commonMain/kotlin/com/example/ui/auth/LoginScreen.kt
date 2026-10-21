@@ -1,5 +1,6 @@
 package com.example.ui.auth
 
+import com.example.ui.components.readableWidth
 import com.example.platform.*
 import com.example.resources.Res
 import com.example.resources.ic_google_logo
@@ -139,6 +140,7 @@ fun LoginScreen(
             .fillMaxSize()
             .background(SkyBackground)
             .safeDrawingPadding()
+            .readableWidth(520.dp)
             .verticalScroll(rememberScrollState())
             .padding(vertical = 24.dp),
         verticalArrangement = Arrangement.Center

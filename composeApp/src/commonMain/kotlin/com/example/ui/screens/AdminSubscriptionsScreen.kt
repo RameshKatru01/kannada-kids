@@ -1,5 +1,6 @@
 package com.example.ui.screens
 
+import com.example.ui.components.readableWidth
 import com.example.platform.*
 
 import androidx.compose.foundation.background
@@ -148,7 +149,7 @@ fun AdminSubscriptionsScreen(onBack: () -> Unit, onOpen: (String) -> Unit, onRen
         }
     }.filter { query.isBlank() || it.name.contains(query, true) || it.email.contains(query, true) }
 
-    Column(Modifier.fillMaxSize().background(AdminBg).safeDrawingPadding().padding(horizontal = 16.dp, vertical = 12.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+    Column(Modifier.fillMaxSize().background(AdminBg).safeDrawingPadding().readableWidth(760.dp).padding(horizontal = 16.dp, vertical = 12.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
         AdminHeader("Subscriptions", "${all.size} families · plans renew automatically", onBack) {
             Box(Modifier.size(44.dp).clip(CircleShape).background(Color.White).clickable { reload() }, contentAlignment = Alignment.Center) {
                 Icon(Icons.Default.Refresh, contentDescription = "Reload", tint = Ink)
@@ -293,7 +294,7 @@ fun AdminSubscriberScreen(uid: String, onBack: () -> Unit) {
     }
 
     Column(
-        Modifier.fillMaxSize().background(AdminBg).safeDrawingPadding().verticalScroll(rememberScrollState()).padding(horizontal = 16.dp, vertical = 12.dp),
+        Modifier.fillMaxSize().background(AdminBg).safeDrawingPadding().readableWidth(760.dp).verticalScroll(rememberScrollState()).padding(horizontal = 16.dp, vertical = 12.dp),
         verticalArrangement = Arrangement.spacedBy(10.dp)
     ) {
         AdminHeader("Subscriber", "Plan, free time and payments", onBack)
@@ -405,7 +406,7 @@ fun AdminRenewalsScreen(onBack: () -> Unit, onOpen: (String) -> Unit) {
     val problems = all.filter { it.effectiveStatus == "overdue" || it.effectiveStatus == "autorenew_off" }
 
     Column(
-        Modifier.fillMaxSize().background(AdminBg).safeDrawingPadding().verticalScroll(rememberScrollState()).padding(horizontal = 16.dp, vertical = 12.dp),
+        Modifier.fillMaxSize().background(AdminBg).safeDrawingPadding().readableWidth(760.dp).verticalScroll(rememberScrollState()).padding(horizontal = 16.dp, vertical = 12.dp),
         verticalArrangement = Arrangement.spacedBy(10.dp)
     ) {
         AdminHeader("Renewals & plans", "Money coming in, and who needs a nudge", onBack)
@@ -510,7 +511,7 @@ fun AdminRolesScreen(onBack: () -> Unit) {
     LaunchedEffect(Unit) { reload() }
 
     Column(
-        Modifier.fillMaxSize().background(AdminBg).safeDrawingPadding().verticalScroll(rememberScrollState()).padding(horizontal = 16.dp, vertical = 12.dp),
+        Modifier.fillMaxSize().background(AdminBg).safeDrawingPadding().readableWidth(760.dp).verticalScroll(rememberScrollState()).padding(horizontal = 16.dp, vertical = 12.dp),
         verticalArrangement = Arrangement.spacedBy(10.dp)
     ) {
         AdminHeader("Admins", if (isOwner) "You're the owner: you can add and remove admins" else "Only the owner can change this list", onBack)

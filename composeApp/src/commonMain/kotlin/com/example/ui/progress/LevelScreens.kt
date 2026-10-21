@@ -1,5 +1,6 @@
 package com.example.ui.progress
 
+import com.example.ui.components.readableWidth
 import androidx.compose.animation.core.*
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
@@ -126,6 +127,7 @@ fun LevelMapScreen(gameId: Int, onPlayLevel: (Int) -> Unit, onBack: () -> Unit) 
             .fillMaxSize()
             .background(background)
             .safeDrawingPadding()
+            .readableWidth(600.dp)
             .padding(start = 20.dp, end = 20.dp, top = 12.dp, bottom = 20.dp)
     ) {
         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {

@@ -1,5 +1,6 @@
 package com.example.ui.screens
 
+import com.example.ui.components.readableWidth
 import com.example.platform.*
 
 import androidx.compose.foundation.Canvas
@@ -90,6 +91,7 @@ fun ReferenceLetterScreen(tab: Int, startIndex: Int, onBack: () -> Unit) {
             modifier = Modifier
                 .fillMaxSize()
                 .safeDrawingPadding()
+                .readableWidth(680.dp)
                 .verticalScroll(rememberScrollState())
                 .padding(horizontal = 18.dp, vertical = 12.dp),
             verticalArrangement = Arrangement.spacedBy(14.dp)
@@ -327,6 +329,7 @@ private fun TracePanel(letter: KannadaLetter, onHear: () -> Unit, onDone: () -> 
             .background(ScrapbookPaper)
             .clickable(interactionSource = remember { MutableInteractionSource() }, indication = null) { }
             .safeDrawingPadding()
+            .readableWidth(760.dp)
             .padding(18.dp),
         verticalArrangement = Arrangement.spacedBy(14.dp)
     ) {

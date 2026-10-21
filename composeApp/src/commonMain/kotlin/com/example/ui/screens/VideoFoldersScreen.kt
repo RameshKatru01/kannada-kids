@@ -1,5 +1,6 @@
 package com.example.ui.screens
 
+import com.example.ui.components.readableWidth
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
@@ -99,10 +100,11 @@ fun VideoFoldersScreen(
             .fillMaxSize()
             .background(ScrapbookPaper)
             .safeDrawingPadding()
+            .readableWidth(1000.dp)
     ) {
         ScrapbookHeader(title = title, onBack = onBack)
         LazyVerticalGrid(
-            columns = GridCells.Adaptive(minSize = 150.dp),
+            columns = GridCells.Adaptive(minSize = 160.dp),
             modifier = Modifier.fillMaxSize(),
             contentPadding = PaddingValues(start = 14.dp, end = 14.dp, top = 8.dp, bottom = 24.dp),
             horizontalArrangement = Arrangement.spacedBy(14.dp),

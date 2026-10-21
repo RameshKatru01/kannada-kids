@@ -1,5 +1,6 @@
 package com.example.ui.screens
 
+import com.example.ui.components.readableWidth
 import com.example.platform.*
 
 import androidx.compose.foundation.background
@@ -77,7 +78,7 @@ fun ParentGate(onPass: () -> Unit, onCancel: () -> Unit) {
     ) {
         Column(
             modifier = Modifier
-                .widthIn(max = 380.dp)
+                .widthIn(max = 420.dp)
                 .fillMaxWidth()
                 .background(Color.White, RoundedCornerShape(30.dp))
                 .padding(20.dp),
@@ -204,6 +205,7 @@ fun RewardsScreen(onBack: () -> Unit, authViewModel: AuthViewModel = viewModel {
             .fillMaxSize()
             .background(ScrapbookPaper)
             .safeDrawingPadding()
+            .readableWidth(720.dp)
             .verticalScroll(rememberScrollState())
             .padding(horizontal = 18.dp, vertical = 12.dp),
         verticalArrangement = Arrangement.spacedBy(14.dp)
@@ -329,6 +331,7 @@ fun ParentCornerScreen(
             .fillMaxSize()
             .background(ScrapbookPaper)
             .safeDrawingPadding()
+            .readableWidth(720.dp)
             .verticalScroll(rememberScrollState())
             .padding(horizontal = 18.dp, vertical = 12.dp),
         verticalArrangement = Arrangement.spacedBy(14.dp)

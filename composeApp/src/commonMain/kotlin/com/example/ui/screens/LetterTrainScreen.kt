@@ -343,7 +343,7 @@ fun LetterTrainScreen(firstLevel: Int = 1, onBack: () -> Unit) {
                   Box(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .height(240.dp),
+                        .height(if (sceneWidth > 600.dp) 300.dp else 240.dp),
                     contentAlignment = Alignment.BottomCenter
                   ) {
                     // A couple of clouds
@@ -362,11 +362,13 @@ fun LetterTrainScreen(firstLevel: Int = 1, onBack: () -> Unit) {
                             .background(Color.White, RoundedCornerShape(13.dp))
                     )
 
-                    val engineWidth = 84.dp
-                    val gap = 6.dp
+                    // Bigger train on tablets
+                    val wide = sceneWidth > 600.dp
+                    val engineWidth = if (wide) 120.dp else 84.dp
+                    val gap = if (wide) 10.dp else 6.dp
                     val carriageSize: Dp = minOf(
                         (sceneWidth - engineWidth - gap * (CARRIAGES + 2)) / CARRIAGES,
-                        72.dp
+                        if (wide) 110.dp else 72.dp
                     )
 
                     // Ground and rails

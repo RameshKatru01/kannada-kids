@@ -1,5 +1,6 @@
 package com.example.ui.screens
 
+import com.example.ui.components.readableWidth
 import com.example.platform.*
 
 import androidx.compose.foundation.Canvas
@@ -136,6 +137,7 @@ fun DashboardScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .safeDrawingPadding()
+                .readableWidth(720.dp)
                 .verticalScroll(rememberScrollState())
                 .padding(horizontal = 18.dp, vertical = 12.dp),
             verticalArrangement = Arrangement.spacedBy(14.dp)

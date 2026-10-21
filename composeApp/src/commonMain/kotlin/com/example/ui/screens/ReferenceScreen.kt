@@ -1,5 +1,6 @@
 package com.example.ui.screens
 
+import com.example.ui.components.readableWidth
 import com.example.platform.*
 
 import androidx.compose.foundation.background
@@ -127,6 +128,7 @@ fun ReferenceScreen(onBack: () -> Unit, onOpenLetter: (tab: Int, index: Int) -> 
             .fillMaxSize()
             .background(ScrapbookPaper)
             .safeDrawingPadding()
+            .readableWidth(820.dp)
     ) {
         ScrapbookHeader(title = "Letter Box", onBack = onBack)
         Text(
@@ -178,7 +180,8 @@ fun ReferenceScreen(onBack: () -> Unit, onOpenLetter: (tab: Int, index: Int) -> 
         }
 
         LazyVerticalGrid(
-            columns = GridCells.Fixed(if (tab == RefTab.Consonants) 5 else 4),
+            // Consonants stay in rows of 5 (one ವರ್ಗ per row); other tabs add columns on wide screens
+            columns = if (tab == RefTab.Consonants) GridCells.Fixed(5) else GridCells.Adaptive(minSize = 78.dp),
             modifier = Modifier.weight(1f).fillMaxWidth(),
             contentPadding = PaddingValues(start = 16.dp, end = 16.dp, bottom = 12.dp),
             horizontalArrangement = Arrangement.spacedBy(if (tab == RefTab.Consonants) 6.dp else 10.dp),
