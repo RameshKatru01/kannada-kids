@@ -43,15 +43,16 @@ object GameRegistry {
         GameInfo(4, "monster_numbers", "Feed the Monster", "Numbers", "೧", Tangerine, Navy, LEVELS_PER_GAME),
         GameInfo(21, "letter_train", "Letter Train", "Put the letters in order", "ರ", Sky, Color.White, LEVELS_PER_GAME),
         GameInfo(22, "paint_monster", "Paint the Monster", "Colours", "ಬ", Berry, Color.White, LEVELS_PER_GAME),
+        GameInfo(8, "scrambled_words", "Scrambled Words", "Build the word", "ಪ", Tangerine, Navy, LEVELS_PER_GAME),
+        GameInfo(9, "word_search", "Word Search", "Find hidden words", "ಮ", Violet, Color.White, LEVELS_PER_GAME),
+        GameInfo(13, "colour_sort", "Colour Sort", "Pour the colours", "ಹ", Coral, Color.White, LEVELS_PER_GAME),
         // Older games: play freely (levels come in a later update)
         GameInfo(19, "listen_choose", "Listen & Choose", "Just for fun", "ಆ", Sun, Navy),
         GameInfo(11, "match_letter", "Match the Letter", "Just for fun", "ಇ", Tangerine, Navy),
         GameInfo(12, "balloon_pop", "Musical Balloon Pop", "Just for fun", "ಉ", Berry, Color.White),
         GameInfo(6, "letter_runner", "Letter Runner", "Just for fun", "ಎ", Leaf, Navy),
         GameInfo(7, "vowel_map", "Vowel Map Navigator", "Just for fun", "ಒ", Teal, Navy),
-        GameInfo(8, "scrambled_words", "Scrambled Words", "Just for fun", "ಪ", Violet, Color.White),
-        GameInfo(9, "word_search", "Word Search Puzzles", "Just for fun", "ಮ", Sky, Color.White),
-        GameInfo(13, "colors_sort", "Colors Sort", "Just for fun", "ಹ", Coral, Color.White),
+
         GameInfo(16, "constellation", "Constellation Path", "Just for fun", "ನ", Navy, Color.White),
         GameInfo(20, "swara_adventure", "Swara Adventure", "Just for fun", "ಸ", Leaf, Navy)
     )

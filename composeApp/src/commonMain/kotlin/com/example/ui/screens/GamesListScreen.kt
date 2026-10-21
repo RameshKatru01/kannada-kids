@@ -107,6 +107,9 @@ private fun artFor(game: GameInfo): GameArtKind = when (game.id) {
     21 -> GameArtKind.Train
     22 -> GameArtKind.Paint
     12 -> GameArtKind.Balloons
+    8 -> GameArtKind.Tiles
+    9 -> GameArtKind.Grid
+    13 -> GameArtKind.Jars
     else -> GameArtKind.Letter
 }
 

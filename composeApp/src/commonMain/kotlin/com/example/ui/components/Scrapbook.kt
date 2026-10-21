@@ -138,7 +138,7 @@ fun ScrapbookHeader(title: String, onBack: () -> Unit, trailing: @Composable () 
 // Drawn pictures for the games (no image files needed)
 // ---------------------------------------------------------------------------------------------
 
-enum class GameArtKind { Monster, Train, Paint, Balloons, Letter }
+enum class GameArtKind { Monster, Train, Paint, Balloons, Tiles, Grid, Jars, Letter }
 
 private val ArtInk = Color(0xFF1E2A47)
 
@@ -164,6 +164,9 @@ fun GameArt(kind: GameArtKind, color: Color, background: Color, glyph: String, m
                             GameArtKind.Train -> drawTrainArt(k)
                             GameArtKind.Paint -> drawPaintArt(k)
                             GameArtKind.Balloons -> drawBalloonArt(k)
+                            GameArtKind.Tiles -> drawTilesArt(k)
+                            GameArtKind.Grid -> drawGridArt(k)
+                            GameArtKind.Jars -> drawJarsArt(k)
                             GameArtKind.Letter -> Unit
                         }
                     }
@@ -174,6 +177,15 @@ fun GameArt(kind: GameArtKind, color: Color, background: Color, glyph: String, m
                             ArtLetter("ಖ", x = 74, y = 42, size = 0, bg = Color.Transparent)
                         }
                         GameArtKind.Balloons -> ArtLetter("ಉ", x = 40, y = 16, size = 0, bg = Color.Transparent, ink = Color.White)
+                        GameArtKind.Tiles -> {
+                            ArtLetter("ಆ", x = 6, y = 50, size = 0, bg = Color.Transparent)
+                            ArtLetter("ನೆ", x = 38, y = 58, size = 0, bg = Color.Transparent)
+                            ArtLetter("ಮ", x = 70, y = 50, size = 0, bg = Color.Transparent)
+                        }
+                        GameArtKind.Grid -> {
+                            ArtLetter("ಮ", x = 9, y = 37, size = 0, bg = Color.Transparent)
+                            ArtLetter("ನೆ", x = 38, y = 37, size = 0, bg = Color.Transparent)
+                        }
                         else -> Unit
                     }
                 }
@@ -275,4 +287,40 @@ private fun DrawScope.drawBalloonArt(k: Float) {
     drawOval(Color(0xFFFFC93C), Offset(57 * k, 19 * k), Size(34 * k, 42 * k))
     drawOval(Color(0xFF6C63FF), Offset(33 * k, 5 * k), Size(38 * k, 46 * k))
     drawOval(Color.White.copy(alpha = 0.5f), Offset(41 * k, 11 * k), Size(8 * k, 14 * k))
+}
+
+private fun DrawScope.drawTilesArt(k: Float) {
+    drawCircle(Color(0xFFFFF4E6), 20 * k, Offset(50 * k, 24 * k))
+    drawCircle(Color(0xFFFF9F1C), 15 * k, Offset(50 * k, 24 * k), style = Stroke(4 * k))
+    listOf(Color(0xFFFF6B6B) to Offset(18 * k, 62 * k), Color(0xFF2EC4B6) to Offset(50 * k, 70 * k), Color(0xFF6C63FF) to Offset(82 * k, 62 * k))
+        .forEach { (c, o) ->
+            drawCircle(Color.White, 17 * k, o)
+            drawCircle(c, 14 * k, o)
+        }
+}
+
+private fun DrawScope.drawGridArt(k: Float) {
+    val colors = listOf(Color(0xFFFFC93C), Color(0xFF4DA8FF), Color(0xFF59C173), Color(0xFFE84393))
+    for (r in 0 until 3) for (c in 0 until 3) {
+        val found = r == 1 && c < 2
+        drawRoundRect(
+            if (found) Color(0xFF6C63FF) else colors[(r + c) % colors.size].copy(alpha = 0.45f),
+            Offset((6 + c * 30) * k, (8 + r * 30) * k), Size(26 * k, 26 * k), CornerRadius(6 * k)
+        )
+    }
+}
+
+private fun DrawScope.drawJarsArt(k: Float) {
+    val stacks = listOf(
+        listOf(Color(0xFFE53935), Color(0xFF1E88E5), Color(0xFFE53935)),
+        listOf(Color(0xFF1E88E5), Color(0xFFFDD835), Color(0xFF1E88E5)),
+        listOf(Color(0xFFFDD835), Color(0xFFFDD835), Color(0xFFE53935))
+    )
+    stacks.forEachIndexed { j, stack ->
+        val x = (8 + j * 31) * k
+        drawRoundRect(ArtInk.copy(alpha = 0.25f), Offset(x, 14 * k), Size(24 * k, 78 * k), CornerRadius(10 * k), style = Stroke(3 * k))
+        stack.forEachIndexed { i, c ->
+            drawRoundRect(c, Offset(x + 3 * k, (68 - i * 24) * k), Size(18 * k, 21 * k), CornerRadius(5 * k))
+        }
+    }
 }

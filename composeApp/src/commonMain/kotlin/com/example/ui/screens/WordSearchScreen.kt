@@ -1,421 +1,297 @@
-
 package com.example.ui.screens
 
 import com.example.platform.*
 
+import androidx.compose.animation.core.*
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.detectDragGestures
+import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material3.*
+import androidx.compose.material3.Text
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.example.ui.theme.BrightCyan
+import com.example.ui.audio.NativeAudioPlayer
+import com.example.ui.audio.SoundEffectsHelper
+import com.example.ui.data.ActivityTracker
+import com.example.ui.progress.GameProgress
+import com.example.ui.progress.LevelResult
+import com.example.ui.progress.LevelTally
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
+import kotlin.math.abs
+import kotlin.math.max
+import kotlin.random.Random
 
-data class WordSearchTarget(
-    val word: List<String>,
-    val emoji: String,
-    val meaning: String
+/*
+ * Word Search: find the picture words hidden in a grid of letters by sliding a finger across them.
+ * 6 levels: the grid grows (4×4 → 6×6), more words hide, and from level 5 words also run diagonally.
+ */
+
+private data class SearchLevel(val size: Int, val words: Int, val vertical: Boolean, val diagonal: Boolean, val label: String)
+
+private val searchLevels = listOf(
+    SearchLevel(4, 2, false, false, "Words go across →"),
+    SearchLevel(4, 3, true, false, "Across → and down ↓"),
+    SearchLevel(5, 3, true, false, "Bigger grid"),
+    SearchLevel(5, 4, true, false, "4 hidden words"),
+    SearchLevel(6, 4, true, true, "Diagonal words too ↘"),
+    SearchLevel(6, 5, true, true, "Word Search champion")
 )
 
-data class WordSearchLevel(
-    val grid: List<List<String>>,
-    val targetWords: List<WordSearchTarget>
+private data class Cell(val r: Int, val c: Int)
+private data class Placed(val word: PictureWord, val cells: List<Cell>, val color: Color)
+private data class Puzzle(val grid: List<List<String>>, val placed: List<Placed>)
+
+private val fillerSyllables = listOf(
+    "ಅ", "ಆ", "ಇ", "ಉ", "ಎ", "ಒ", "ಕ", "ಗ", "ಚ", "ಜ", "ಟ", "ಡ", "ತ", "ದ", "ನ", "ಪ", "ಬ", "ಮ", "ಯ", "ರ", "ಲ", "ವ", "ಸ", "ಹ",
+    "ಕಾ", "ಮಾ", "ನಿ", "ರು", "ಲೆ", "ಬೆ", "ಗೆ", "ಹು", "ತೆ"
 )
 
-val wordSearchLevels = listOf(
-    WordSearchLevel(
-        grid = listOf(
-            listOf("ಅ", "ರ", "ಸ", "ಕ", "ಮ"),
-            listOf("ಆ", "ನೆ", "ಟ", "ಚ", "ರ"),
-            listOf("ಪ", "ಮ", "ನೆ", "ಗ", "ಬ"),
-            listOf("ಹ", "ಡ", "ಗು", "ಲ", "ವ"),
-            listOf("ಇ", "ಲಿ", "ಶ", "ಷ", "ಸ")
-        ),
-        targetWords = listOf(
-            WordSearchTarget(listOf("ಅ", "ರ", "ಸ"), "👑", "Arasa (King)"),
-            WordSearchTarget(listOf("ಆ", "ನೆ"), "🐘", "Aane (Elephant)"),
-            WordSearchTarget(listOf("ಮ", "ನೆ"), "🏠", "Mane (House)"),
-            WordSearchTarget(listOf("ಹ", "ಡ", "ಗು"), "🚢", "Hadagu (Ship)"),
-            WordSearchTarget(listOf("ಇ", "ಲಿ"), "🐁", "Ili (Rat)")
-        )
-    ),
-    WordSearchLevel(
-        grid = listOf(
-            listOf("ಕ", "ಮ", "ಲ", "ಯ", "ರ"),
-            listOf("ಬ", "ಸ", "ವ", "ಲ", "ವ"),
-            listOf("ಮ", "ರ", "ಶ", "ಷ", "ಸ"),
-            listOf("ಹ", "ಬ", "ಬ", "ಗ", "ಘ"),
-            listOf("ಪ", "ದ", "ಫ", "ಬ", "ಭ")
-        ),
-        targetWords = listOf(
-            WordSearchTarget(listOf("ಕ", "ಮ", "ಲ"), "🪷", "Kamala (Lotus)"),
-            WordSearchTarget(listOf("ಬ", "ಸ", "ವ"), "🐂", "Basava (Ox)"),
-            WordSearchTarget(listOf("ಮ", "ರ"), "🌳", "Mara (Tree)")
-        )
-    ),
-    WordSearchLevel(
-        grid = listOf(
-            listOf("ಹ", "ಸು", "ಸ", "ಕ", "ಮ"),
-            listOf("ಗಿ", "ಳಿ", "ಟ", "ಚ", "ರ"),
-            listOf("ಪ", "ಮ", "ಕ", "ರ", "ಡಿ"),
-            listOf("ಹ", "ಡ", "ಗು", "ಲ", "ವ"),
-            listOf("ಇ", "ಲಿ", "ಶ", "ಷ", "ಸ")
-        ),
-        targetWords = listOf(
-            WordSearchTarget(listOf("ಹ", "ಸು"), "🐄", "Hasu (Cow)"),
-            WordSearchTarget(listOf("ಗಿ", "ಳಿ"), "🦜", "Gili (Parrot)"),
-            WordSearchTarget(listOf("ಕ", "ರ", "ಡಿ"), "🐻", "Karadi (Bear)")
-        )
-    ),
-    WordSearchLevel(
-        grid = listOf(
-            listOf("ನಾ", "ಯಿ", "ಸ", "ಕ", "ಮ"),
-            listOf("ಬೆ", "ಕ್ಕು", "ಟ", "ಚ", "ರ"),
-            listOf("ಪ", "ಮ", "ಕು", "ರಿ", "ಬ"),
-            listOf("ಹ", "ಡ", "ಗು", "ಲ", "ವ"),
-            listOf("ಇ", "ಲಿ", "ಶ", "ಷ", "ಸ")
-        ),
-        targetWords = listOf(
-            WordSearchTarget(listOf("ನಾ", "ಯಿ"), "🐕", "Naayi (Dog)"),
-            WordSearchTarget(listOf("ಬೆ", "ಕ್ಕು"), "🐈", "Bekku (Cat)"),
-            WordSearchTarget(listOf("ಕು", "ರಿ"), "🐑", "Kuri (Sheep)")
-        )
-    ),
-    WordSearchLevel(
-        grid = listOf(
-            listOf("ಹು", "ಲಿ", "ಸ", "ಕ", "ಮ"),
-            listOf("ಸಿಂ", "ಹ", "ಟ", "ಚ", "ರ"),
-            listOf("ಪ", "ಮ", "ಆ", "ಮೆ", "ಬ"),
-            listOf("ಹ", "ಡ", "ಗು", "ಲ", "ವ"),
-            listOf("ಇ", "ಲಿ", "ಶ", "ಷ", "ಸ")
-        ),
-        targetWords = listOf(
-            WordSearchTarget(listOf("ಹು", "ಲಿ"), "🐅", "Huli (Tiger)"),
-            WordSearchTarget(listOf("ಸಿಂ", "ಹ"), "🦁", "Simha (Lion)"),
-            WordSearchTarget(listOf("ಆ", "ಮೆ"), "🐢", "Aame (Turtle)")
-        )
-    ),
-    WordSearchLevel(
-        grid = listOf(
-            listOf("ಕಾ", "ಗೆ", "ಸ", "ಕ", "ಮ"),
-            listOf("ಗೂ", "ಬೆ", "ಟ", "ಚ", "ರ"),
-            listOf("ನ", "ವಿ", "ಲು", "ಗ", "ಬ"),
-            listOf("ಹ", "ಡ", "ಗು", "ಲ", "ವ"),
-            listOf("ಇ", "ಲಿ", "ಶ", "ಷ", "ಸ")
-        ),
-        targetWords = listOf(
-            WordSearchTarget(listOf("ಕಾ", "ಗೆ"), "🐦‍⬛", "Kaage (Crow)"),
-            WordSearchTarget(listOf("ಗೂ", "ಬೆ"), "🦉", "Goobe (Owl)"),
-            WordSearchTarget(listOf("ನ", "ವಿ", "ಲು"), "🦚", "Navilu (Peacock)")
-        )
-    ),
-    WordSearchLevel(
-        grid = listOf(
-            listOf("ಕ", "ಣ್ಣು", "ಸ", "ಕ", "ಮ"),
-            listOf("ಕಿ", "ವಿ", "ಟ", "ಚ", "ರ"),
-            listOf("ಮೂ", "ಗು", "ನೆ", "ಗ", "ಬ"),
-            listOf("ಹ", "ಡ", "ಗು", "ಲ", "ವ"),
-            listOf("ಇ", "ಲಿ", "ಶ", "ಷ", "ಸ")
-        ),
-        targetWords = listOf(
-            WordSearchTarget(listOf("ಕ", "ಣ್ಣು"), "👁️", "Kannu (Eye)"),
-            WordSearchTarget(listOf("ಕಿ", "ವಿ"), "👂", "Kivi (Ear)"),
-            WordSearchTarget(listOf("ಮೂ", "ಗು"), "👃", "Moogu (Nose)")
-        )
-    ),
-    WordSearchLevel(
-        grid = listOf(
-            listOf("ಕಾ", "ಲು", "ಸ", "ಕ", "ಮ"),
-            listOf("ಕೈ", "ನೆ", "ಟ", "ಚ", "ರ"),
-            listOf("ತ", "ಲೆ", "ನೆ", "ಗ", "ಬ"),
-            listOf("ಹ", "ಡ", "ಗು", "ಲ", "ವ"),
-            listOf("ಇ", "ಲಿ", "ಶ", "ಷ", "ಸ")
-        ),
-        targetWords = listOf(
-            WordSearchTarget(listOf("ಕಾ", "ಲು"), "🦵", "Kaalu (Leg)"),
-            WordSearchTarget(listOf("ಕೈ"), "✋", "Kai (Hand)"),
-            WordSearchTarget(listOf("ತ", "ಲೆ"), "🧑", "Tale (Head)")
-        )
-    ),
-    WordSearchLevel(
-        grid = listOf(
-            listOf("ಸೂ", "ರ್ಯ", "ಸ", "ಕ", "ಮ"),
-            listOf("ಚಂ", "ದ್ರ", "ಟ", "ಚ", "ರ"),
-            listOf("ಭೂ", "ಮಿ", "ನೆ", "ಗ", "ಬ"),
-            listOf("ಹ", "ಡ", "ಗು", "ಲ", "ವ"),
-            listOf("ಇ", "ಲಿ", "ಶ", "ಷ", "ಸ")
-        ),
-        targetWords = listOf(
-            WordSearchTarget(listOf("ಸೂ", "ರ್ಯ"), "☀️", "Soorya (Sun)"),
-            WordSearchTarget(listOf("ಚಂ", "ದ್ರ"), "🌙", "Chandra (Moon)"),
-            WordSearchTarget(listOf("ಭೂ", "ಮಿ"), "🌍", "Bhoomi (Earth)")
-        )
-    ),
-    WordSearchLevel(
-        grid = listOf(
-            listOf("ಸೇ", "ಬು", "ಸ", "ಕ", "ಮ"),
-            listOf("ಬಾ", "ಳೆ", "ಟ", "ಚ", "ರ"),
-            listOf("ದ್ರಾ", "ಕ್ಷಿ", "ನೆ", "ಗ", "ಬ"),
-            listOf("ಹ", "ಡ", "ಗು", "ಲ", "ವ"),
-            listOf("ಇ", "ಲಿ", "ಶ", "ಷ", "ಸ")
-        ),
-        targetWords = listOf(
-            WordSearchTarget(listOf("ಸೇ", "ಬು"), "🍎", "Sebu (Apple)"),
-            WordSearchTarget(listOf("ಬಾ", "ಳೆ"), "🍌", "Baale (Banana)"),
-            WordSearchTarget(listOf("ದ್ರಾ", "ಕ್ಷಿ"), "🍇", "Drakshi (Grapes)")
-        )
-    )
-)
+private fun makePuzzle(spec: SearchLevel): Puzzle {
+    val dirs = buildList {
+        add(0 to 1)
+        if (spec.vertical) add(1 to 0)
+        if (spec.diagonal) add(1 to 1)
+    }
+    repeat(60) {
+        val grid = Array(spec.size) { arrayOfNulls<String>(spec.size) }
+        val chosen = pictureWords.filter { it.syllables.size in 2..spec.size }.shuffled()
+        val placed = mutableListOf<Placed>()
+        for (w in chosen) {
+            if (placed.size == spec.words) break
+            if (placed.any { it.word.text == w.text }) continue
+            var ok = false
+            for (attempt in 0 until 80) {
+                val (dr, dc) = dirs.random()
+                val len = w.syllables.size
+                val r0 = Random.nextInt(0, spec.size - dr * (len - 1))
+                val c0 = Random.nextInt(0, spec.size - dc * (len - 1))
+                val cells = (0 until len).map { Cell(r0 + dr * it, c0 + dc * it) }
+                if (cells.withIndex().all { (i, cell) -> grid[cell.r][cell.c].let { it == null || it == w.syllables[i] } }) {
+                    cells.forEachIndexed { i, cell -> grid[cell.r][cell.c] = w.syllables[i] }
+                    placed += Placed(w, cells, CandyColors[placed.size % CandyColors.size])
+                    ok = true
+                    break
+                }
+            }
+            if (!ok) continue
+        }
+        if (placed.size == spec.words) {
+            val filled = grid.map { row -> row.map { it ?: fillerSyllables.random() } }
+            return Puzzle(filled, placed)
+        }
+    }
+    // Fallback: simple rows
+    val words = pictureWords.filter { it.syllables.size == 2 }.shuffled().take(spec.words)
+    val grid = Array(spec.size) { r -> Array(spec.size) { fillerSyllables.random() } }
+    val placed = words.mapIndexed { i, w ->
+        val cells = w.syllables.indices.map { Cell(i, it) }
+        cells.forEachIndexed { k, cell -> grid[cell.r][cell.c] = w.syllables[k] }
+        Placed(w, cells, CandyColors[i % CandyColors.size])
+    }
+    return Puzzle(grid.map { it.toList() }, placed)
+}
 
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
-fun WordSearchScreen(onBack: () -> Unit) {
+fun WordSearchScreen(firstLevel: Int = 1, onBack: () -> Unit) {
     val context = LocalContext.current
-    var currentLevelIndex by remember { mutableIntStateOf(0) }
-    val level = wordSearchLevels[currentLevelIndex]
+    val scope = rememberCoroutineScope()
+    var level by remember { mutableIntStateOf((firstLevel - 1).coerceIn(0, searchLevels.size - 1)) }
+    val spec = searchLevels[level]
+    var round by remember { mutableIntStateOf(0) }
+    val puzzle = remember(level, round) { makePuzzle(spec) }
+    var found by remember(level, round) { mutableStateOf(listOf<Placed>()) }
+    var selection by remember(level, round) { mutableStateOf(listOf<Cell>()) }
+    val tally = remember { LevelTally() }
+    var levelResult by remember { mutableStateOf<LevelResult?>(null) }
+    var showConfetti by remember { mutableStateOf(false) }
+    var gridPx by remember { mutableStateOf(1f) }
+    var justFound by remember { mutableStateOf<Placed?>(null) }
 
-    var foundWords by remember(currentLevelIndex) { mutableStateOf(setOf<WordSearchTarget>()) }
-    var selectedCells by remember(currentLevelIndex) { mutableStateOf(listOf<Pair<Int, Int>>()) }
-    var foundCells by remember(currentLevelIndex) { mutableStateOf(setOf<Pair<Int, Int>>()) }
+    fun startLevel(newLevel: Int) {
+        tally.reset()
+        levelResult = null
+        showConfetti = false
+        justFound = null
+        level = newLevel
+        round += 1
+    }
 
-    var showSuccessMessage by remember { mutableStateOf(false) }
+    fun cellAt(p: Offset): Cell? {
+        val size = gridPx / spec.size
+        val r = (p.y / size).toInt()
+        val c = (p.x / size).toInt()
+        return if (r in 0 until spec.size && c in 0 until spec.size) Cell(r, c) else null
+    }
 
-    LaunchedEffect(foundWords) {
-        if (foundWords.size == level.targetWords.size && level.targetWords.isNotEmpty()) {
-                            try { com.example.ui.data.ScoreManager.addCoins(context, "word_search", 15) } catch (e: Exception) {}
-            showSuccessMessage = true
+    fun line(a: Cell, b: Cell): List<Cell> {
+        val dr = b.r - a.r
+        val dc = b.c - a.c
+        val straight = dr == 0 || dc == 0 || (spec.diagonal && abs(dr) == abs(dc))
+        if (!straight) return listOf(a)
+        val n = max(abs(dr), abs(dc))
+        val sr = if (dr == 0) 0 else dr / abs(dr)
+        val sc = if (dc == 0) 0 else dc / abs(dc)
+        return (0..n).map { Cell(a.r + sr * it, a.c + sc * it) }
+    }
+
+    fun finishSelection() {
+        val sel = selection
+        selection = emptyList()
+        if (sel.size < 2) return
+        val match = puzzle.placed.firstOrNull { p -> p !in found && (p.cells == sel || p.cells == sel.reversed()) }
+        if (match != null) {
+            found = found + match
+            justFound = match
+            tally.right()
+            ActivityTracker.recordAnswer(match.word.text, true)
+            SoundEffectsHelper.playSuccess(context)
+            NativeAudioPlayer.playPhonics(context, match.word.text)
+            if (found.size == puzzle.placed.size) {
+                scope.launch {
+                    delay(900)
+                    showConfetti = true
+                    SoundEffectsHelper.playGameCompletion(context)
+                    val result = GameProgress.recordLevel(context, 9, level + 1, tally.mistakes, tally.streaks)
+                    delay(1200)
+                    showConfetti = false
+                    levelResult = result
+                }
+            }
+        } else {
+            tally.wrong()
+            SoundEffectsHelper.playOops(context)
         }
     }
 
-    Scaffold(
-        topBar = {
-            TopAppBar(
-                title = { Text("Word Search Puzzles", color = Color.White, fontWeight = FontWeight.Bold) },
-                navigationIcon = {
-                    IconButton(onClick = onBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back", tint = Color.White)
-                    }
-                },
-                colors = TopAppBarDefaults.topAppBarColors(containerColor = BrightCyan)
-            )
-        },
-        containerColor = Color(0xFFFFF3E0)
-    ) { paddingValues ->
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(paddingValues)
-                .padding(16.dp)
-                .verticalScroll(rememberScrollState()),
-            horizontalAlignment = Alignment.CenterHorizontally
+    LevelGameScaffold(
+        title = "Word Search",
+        subtitle = "Level ${level + 1}/${searchLevels.size} · ${spec.label}",
+        headerColor = Color(0xFF6C63FF),
+        background = Color(0xFFF0EEFF),
+        rounds = puzzle.placed.size,
+        roundsDone = found.size,
+        showConfetti = showConfetti,
+        levelResult = levelResult,
+        hasNextLevel = level < searchLevels.size - 1,
+        onNextLevel = { startLevel(level + 1) },
+        onPlayAgain = { startLevel(level) },
+        onBack = onBack
+    ) {
+        // Words to find (tap to hear)
+        FlowRow(
+            horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.CenterHorizontally),
+            verticalArrangement = Arrangement.spacedBy(8.dp),
+            modifier = Modifier.fillMaxWidth()
         ) {
-            Text(
-                text = "Level ${currentLevelIndex + 1} of ${wordSearchLevels.size}",
-                fontSize = 18.sp,
-                fontWeight = FontWeight.Bold,
-                color = Color.Gray
-            )
-
-            Spacer(modifier = Modifier.height(16.dp))
-
-            // Picture Clues
-            Text(
-                text = "Find these pictures!",
-                fontSize = 20.sp,
-                fontWeight = FontWeight.Bold,
-                color = Color(0xFFE65100)
-            )
-            
-            Spacer(modifier = Modifier.height(8.dp))
-
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceEvenly,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                level.targetWords.forEach { target ->
-                    val isFound = foundWords.contains(target)
-                    Column(
-                        horizontalAlignment = Alignment.CenterHorizontally,
-                        modifier = Modifier.padding(4.dp)
-                    ) {
-                        Box(
-                            modifier = Modifier
-                                .size(56.dp)
-                                .shadow(4.dp, RoundedCornerShape(12.dp))
-                                .background(if (isFound) Color(0xFFC8E6C9) else Color.White, RoundedCornerShape(12.dp))
-                                .border(
-                                    2.dp,
-                                    if (isFound) Color(0xFF4CAF50) else Color.Transparent,
-                                    RoundedCornerShape(12.dp)
-                                ),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Text(text = target.emoji, fontSize = 32.sp)
-                        }
-                        if (isFound) {
-                            Text(
-                                text = "Found!",
-                                fontSize = 12.sp,
-                                color = Color(0xFF4CAF50),
-                                fontWeight = FontWeight.Bold,
-                                modifier = Modifier.padding(top = 4.dp)
-                            )
-                        }
-                    }
+            puzzle.placed.forEach { p ->
+                val isFound = p in found
+                Row(
+                    Modifier
+                        .clip(RoundedCornerShape(20.dp))
+                        .background(if (isFound) p.color else Color.White)
+                        .border(2.dp, p.color, RoundedCornerShape(20.dp))
+                        .clickable { NativeAudioPlayer.playPhonics(context, p.word.text) }
+                        .padding(horizontal = 12.dp, vertical = 6.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(6.dp)
+                ) {
+                    Text(p.word.picture, fontSize = 22.sp)
+                    Text(
+                        if (isFound) p.word.text else p.word.english,
+                        fontSize = 15.sp, fontWeight = FontWeight.ExtraBold, color = GameInk
+                    )
+                    if (isFound) Text("✓", fontSize = 15.sp, fontWeight = FontWeight.ExtraBold, color = GameInk)
                 }
             }
+        }
+        Spacer(Modifier.height(6.dp))
+        Text("Slide your finger across the letters", fontSize = 13.sp, fontWeight = FontWeight.Bold, color = GameInk.copy(alpha = 0.6f))
+        Spacer(Modifier.height(12.dp))
 
-            Spacer(modifier = Modifier.height(32.dp))
-
-            // Grid
-            Column(
-                modifier = Modifier
-                    .shadow(8.dp, RoundedCornerShape(16.dp))
-                    .background(Color.White, RoundedCornerShape(16.dp))
-                    .padding(16.dp),
-                verticalArrangement = Arrangement.spacedBy(8.dp)
+        BoxWithConstraints(Modifier.fillMaxWidth().weight(1f), contentAlignment = Alignment.Center) {
+            val side = minOf(maxWidth, maxHeight, 560.dp)
+            val cellDp = side / spec.size
+            Box(
+                Modifier
+                    .size(side)
+                    .clip(RoundedCornerShape(22.dp))
+                    .background(Color.White)
+                    .pointerInput(level, round) {
+                        gridPx = size.width.toFloat()
+                        var start: Cell? = null
+                        detectDragGestures(
+                            onDragStart = { p ->
+                                start = cellAt(p)
+                                selection = listOfNotNull(start)
+                            },
+                            onDrag = { change, _ ->
+                                change.consume()
+                                val s = start ?: return@detectDragGestures
+                                val c = cellAt(change.position) ?: return@detectDragGestures
+                                selection = line(s, c)
+                            },
+                            onDragEnd = { finishSelection() },
+                            onDragCancel = { selection = emptyList() }
+                        )
+                    }
+                    .pointerInput(level, round, "tap") {
+                        detectTapGestures { p ->
+                            cellAt(p)?.let { c -> NativeAudioPlayer.playPhonics(context, puzzle.grid[c.r][c.c]) }
+                        }
+                    }
+                    .testTag("word_search_grid")
             ) {
-                level.grid.forEachIndexed { rowIndex, row ->
-                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        row.forEachIndexed { colIndex, cellString ->
-                            val cellPos = Pair(rowIndex, colIndex)
-                            val isSelected = selectedCells.contains(cellPos)
-                            val isFoundCell = foundCells.contains(cellPos)
-
-                            Box(
-                                modifier = Modifier
-                                    .size(52.dp)
-                                    .clip(RoundedCornerShape(8.dp))
-                                    .background(
-                                        when {
-                                            isFoundCell -> Color(0xFF81C784) // Green for found
-                                            isSelected -> Color(0xFF64B5F6) // Blue for selecting
-                                            else -> Color(0xFFF5F5F5) // Default gray
-                                        }
+                Column {
+                    puzzle.grid.forEachIndexed { r, row ->
+                        Row {
+                            row.forEachIndexed { c, syl ->
+                                val cell = Cell(r, c)
+                                val owner = found.lastOrNull { cell in it.cells }
+                                val selected = cell in selection
+                                val pop by animateFloatAsState(if (owner != null && owner == justFound) 1.12f else 1f, spring(dampingRatio = 0.3f), label = "cell")
+                                Box(
+                                    Modifier
+                                        .size(cellDp)
+                                        .padding(3.dp)
+                                        .graphicsLayer { scaleX = pop; scaleY = pop }
+                                        .clip(RoundedCornerShape(14.dp))
+                                        .background(
+                                            when {
+                                                selected -> Color(0xFFFFC93C)
+                                                owner != null -> owner.color
+                                                else -> CandyColors[(r * 3 + c) % CandyColors.size].copy(alpha = 0.12f)
+                                            }
+                                        ),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Text(
+                                        syl,
+                                        fontSize = (cellDp.value * 0.38f).sp,
+                                        fontWeight = FontWeight.ExtraBold,
+                                        color = GameInk
                                     )
-                                    .clickable {
-                                        if (isFoundCell) return@clickable
-
-                                        if (selectedCells.isNotEmpty() && selectedCells.last() == cellPos) {
-                                            // Undo last selection
-                                            selectedCells = selectedCells.dropLast(1)
-                                            return@clickable
-                                        }
-
-                                        val newSelection = if (selectedCells.isEmpty()) {
-                                            listOf(cellPos)
-                                        } else {
-                                            val lastPos = selectedCells.last()
-                                            val rDiff = kotlin.math.abs(lastPos.first - rowIndex)
-                                            val cDiff = kotlin.math.abs(lastPos.second - colIndex)
-                                            // Must be adjacent and not already selected
-                                            if (rDiff <= 1 && cDiff <= 1 && !selectedCells.contains(cellPos)) {
-                                                selectedCells + cellPos
-                                            } else {
-                                                // If not adjacent, start new selection
-                                                listOf(cellPos)
-                                            }
-                                        }
-
-                                        // Check if newSelection matches prefix of any unfound word
-                                        val currentChars = newSelection.map { level.grid[it.first][it.second] }
-                                        val unfoundWords = level.targetWords - foundWords
-                                        
-                                        var matchedWord: WordSearchTarget? = null
-                                        val isPrefix = unfoundWords.any { target ->
-                                            if (target.word.size >= currentChars.size && target.word.take(currentChars.size) == currentChars) {
-                                                if (target.word.size == currentChars.size) {
-                                                    matchedWord = target
-                                                }
-                                                true
-                                            } else {
-                                                false
-                                            }
-                                        }
-
-                                        if (matchedWord != null) {
-                                            // Found a word!
-                                            foundWords = foundWords + matchedWord!!
-                                            foundCells = foundCells + newSelection
-                                            selectedCells = emptyList()
-                                        } else if (isPrefix) {
-                                            // Still a valid prefix, continue selecting
-                                            selectedCells = newSelection
-                                        } else {
-                                            // Not a prefix, start fresh with this cell if it's a valid starting letter
-                                            val isStartChar = unfoundWords.any { it.word.firstOrNull() == cellString }
-                                            selectedCells = if (isStartChar) listOf(cellPos) else emptyList()
-                                        }
-                                    },
-                                contentAlignment = Alignment.Center
-                            ) {
-                                Text(
-                                    text = cellString,
-                                    fontSize = 24.sp,
-                                    fontWeight = FontWeight.Bold,
-                                    color = if (isFoundCell || isSelected) Color.White else Color.DarkGray
-                                )
+                                }
                             }
                         }
                     }
                 }
             }
-
-            Spacer(modifier = Modifier.height(24.dp))
-
-            // Clear Selection Button (optional, but good for UX)
-            if (selectedCells.isNotEmpty()) {
-                Button(
-                    onClick = { selectedCells = emptyList() },
-                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFE57373))
-                ) {
-                    Text("Clear Selection", color = Color.White)
-                }
-            }
-
-            if (showSuccessMessage) {
-                val authPrefs = getSharedPreferences("AppProgress")
-                val userEmail = authPrefs.getString("last_active_user", "guest") ?: "guest"
-                com.example.ui.components.SurpriseStickerDialog(
-                    userEmail = userEmail,
-                    levelName = "Word Search Level ${currentLevelIndex + 1}",
-                    seedModifier = currentLevelIndex,
-                    onClose = {
-                        showSuccessMessage = false
-                    },
-                    onClaimOrNext = {
-                        val isGuest = com.example.ui.data.UserManager.isGuest(userEmail)
-                        if (isGuest) {
-                            Toast.makeText(context, "🔒 Level 1 Complete! Sign in with Gmail to play all word search puzzles!", Toast.LENGTH_LONG).show()
-                            onBack()
-                        } else if (currentLevelIndex < wordSearchLevels.size - 1) {
-                            currentLevelIndex++
-                            showSuccessMessage = false
-                            foundWords = emptySet()
-                            foundCells = emptySet()
-                            selectedCells = emptyList()
-                        } else {
-                            onBack()
-                        }
-                    }
-                )
-            }
         }
+        Spacer(Modifier.height(8.dp))
     }
 }
