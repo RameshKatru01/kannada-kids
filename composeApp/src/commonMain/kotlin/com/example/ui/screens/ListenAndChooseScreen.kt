@@ -2,606 +2,249 @@ package com.example.ui.screens
 
 import com.example.platform.*
 
-import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.*
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.filled.List
-import androidx.compose.material.icons.filled.Lock
-import androidx.compose.material.icons.filled.Menu
-import androidx.compose.material.icons.filled.VolumeUp
-import androidx.compose.material3.*
+import androidx.compose.material.icons.automirrored.filled.VolumeUp
+import androidx.compose.material3.Icon
+import androidx.compose.material3.Text
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.scale
-import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.compose.ui.zIndex
 import com.example.ui.audio.NativeAudioPlayer
-import com.example.ui.components.ConfettiEffect
-import com.example.ui.components.PauseMenuDialog
-import com.example.ui.components.SurpriseStickerDialog
+import com.example.ui.audio.SoundEffectsHelper
+import com.example.ui.data.ActivityTracker
+import com.example.ui.progress.GameProgress
+import com.example.ui.progress.LevelResult
+import com.example.ui.progress.LevelTally
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
-data class ListenLevel(
-    val levelNumber: Int,
-    val title: String,
-    val subtitleKannada: String,
-    val letterPool: List<String>,
-    val targetRounds: Int = 5
+/*
+ * Listen & Choose: a parrot says a letter, the child taps the matching letter card.
+ * 6 levels, 6 questions each. Wrong choices come from letters that sound alike, so it gets harder.
+ */
+
+private data class ListenLevel(val label: String, val pool: List<String>, val options: Int)
+
+private val listenLevels = listOf(
+    ListenLevel("Short vowels", listOf("ಅ", "ಇ", "ಉ", "ಎ", "ಒ"), 3),
+    ListenLevel("All vowels", listOf("ಅ", "ಆ", "ಇ", "ಈ", "ಉ", "ಊ", "ಋ", "ಎ", "ಏ", "ಐ", "ಒ", "ಓ", "ಔ", "ಅಂ", "ಅಃ"), 3),
+    ListenLevel("ಕ to ಞ", listOf("ಕ", "ಖ", "ಗ", "ಘ", "ಙ", "ಚ", "ಛ", "ಜ", "ಝ", "ಞ"), 4),
+    ListenLevel("ಟ to ಮ", listOf("ಟ", "ಠ", "ಡ", "ಢ", "ಣ", "ತ", "ಥ", "ದ", "ಧ", "ನ", "ಪ", "ಫ", "ಬ", "ಭ", "ಮ"), 4),
+    ListenLevel("ಯ to ಳ and numbers", listOf("ಯ", "ರ", "ಲ", "ವ", "ಶ", "ಷ", "ಸ", "ಹ", "ಳ", "೧", "೨", "೩", "೪", "೫", "೬", "೭", "೮", "೯"), 4),
+    ListenLevel("Sound-alike letters", listOf("ಕ", "ಖ", "ಗ", "ಘ", "ಟ", "ಠ", "ತ", "ಥ", "ದ", "ಧ", "ಡ", "ಢ", "ಬ", "ಭ", "ಪ", "ಫ", "ಕಾ", "ಕಿ", "ಕೀ", "ಕು", "ಕೂ"), 4)
 )
 
-val listenAndChooseLevels = listOf(
-    ListenLevel(
-        levelNumber = 1,
-        title = "Short Vowels",
-        subtitleKannada = "ಹ್ರಸ್ವ ಸ್ವರಗಳು",
-        letterPool = listOf("ಅ", "ಇ", "ಉ", "ಋ", "ಎ", "ಒ")
-    ),
-    ListenLevel(
-        levelNumber = 2,
-        title = "Long Vowels",
-        subtitleKannada = "ದೀರ್ಘ ಸ್ವರಗಳು",
-        letterPool = listOf("ಆ", "ಈ", "ಊ", "ಏ", "ಐ", "ಓ", "ಔ")
-    ),
-    ListenLevel(
-        levelNumber = 3,
-        title = "Yogavahagalu & Vowels",
-        subtitleKannada = "ಯೋಗವಾಹಗಳು & ಸ್ವರಗಳು",
-        letterPool = listOf("ಅ", "ಆ", "ಅಂ", "ಅಃ", "ಉ", "ಊ")
-    ),
-    ListenLevel(
-        levelNumber = 4,
-        title = "Ka-Varga Consonants",
-        subtitleKannada = "ಕ-ವರ್ಗ ವ್ಯಂಜನಗಳು",
-        letterPool = listOf("ಕ", "ಖ", "ಗ", "ಘ", "ಙ")
-    ),
-    ListenLevel(
-        levelNumber = 5,
-        title = "Cha-Varga Consonants",
-        subtitleKannada = "ಚ-ವರ್ಗ ವ್ಯಂಜನಗಳು",
-        letterPool = listOf("ಚ", "ಛ", "ಜ", "ಝ", "ಞ")
-    ),
-    ListenLevel(
-        levelNumber = 6,
-        title = "Ta-Varga Consonants",
-        subtitleKannada = "ಟ-ವರ್ಗ ವ್ಯಂಜನಗಳು",
-        letterPool = listOf("ಟ", "ಠ", "ಡ", "ಢ", "ಣ")
-    ),
-    ListenLevel(
-        levelNumber = 7,
-        title = "Tha-Varga Consonants",
-        subtitleKannada = "ತ-ವರ್ಗ ವ್ಯಂಜನಗಳು",
-        letterPool = listOf("ತ", "ಥ", "ದ", "ಧ", "ನ")
-    ),
-    ListenLevel(
-        levelNumber = 8,
-        title = "Pa-Varga Consonants",
-        subtitleKannada = "ಪ-ವರ್ಗ ವ್ಯಂಜನಗಳು",
-        letterPool = listOf("ಪ", "ಫ", "ಬ", "ಭ", "ಮ")
-    ),
-    ListenLevel(
-        levelNumber = 9,
-        title = "Semi-vowels & Sibilants",
-        subtitleKannada = "ಅವರ್ಗೀಯ ವ್ಯಂಜನಗಳು",
-        letterPool = listOf("ಯ", "ರ", "ಲ", "ವ", "ಶ", "ಷ", "ಸ", "ಹ", "ಳ")
-    ),
-    ListenLevel(
-        levelNumber = 10,
-        title = "Grand Master Challenge",
-        subtitleKannada = "ಸಂಪೂರ್ಣ ಕನ್ನಡ ಪರೀಕ್ಷೆ",
-        letterPool = listOf("ಅ", "ಆ", "ಇ", "ಈ", "ಉ", "ಕ", "ಗ", "ಚ", "ಜ", "ಟ", "ತ", "ದ", "ಪ", "ಬ", "ಮ", "ಯ", "ರ", "ಲ")
-    ),
-    ListenLevel(
-        levelNumber = 11,
-        title = "Guninthakshari - Ka Series",
-        subtitleKannada = "ಕ ಗುಣಿತಾಕ್ಷರಗಳು",
-        letterPool = listOf("ಕ", "ಕಾ", "ಕಿ", "ಕೀ", "ಕು", "ಕೂ")
-    ),
-    ListenLevel(
-        levelNumber = 12,
-        title = "Guninthakshari - Ke Series",
-        subtitleKannada = "ಕೆ ಗುಣಿತಾಕ್ಷರಗಳು",
-        letterPool = listOf("ಕೃ", "ಕೆ", "ಕೇ", "ಕೈ", "ಕೊ", "ಕೋ", "ಕೌ", "ಕಂ", "ಕಃ")
-    ),
-    ListenLevel(
-        levelNumber = 13,
-        title = "Guninthakshari - Ga Series",
-        subtitleKannada = "ಗ ಗುಣಿತಾಕ್ಷರಗಳು",
-        letterPool = listOf("ಗ", "ಗಾ", "ಗಿ", "ಗೀ", "ಗು", "ಗೂ", "ಗೆ", "ಗೇ", "ಗೈ")
-    ),
-    ListenLevel(
-        levelNumber = 14,
-        title = "Kannada Numbers 1 to 5",
-        subtitleKannada = "ಸಂಖ್ಯೆಗಳು ೧ ರಿಂದ ೫",
-        letterPool = listOf("೧", "೨", "೩", "೪", "೫")
-    ),
-    ListenLevel(
-        levelNumber = 15,
-        title = "Kannada Numbers 6 to 10",
-        subtitleKannada = "ಸಂಖ್ಯೆಗಳು ೬ ರಿಂದ ೧೦",
-        letterPool = listOf("೬", "೭", "೮", "೯", "೧೦")
-    ),
-    ListenLevel(
-        levelNumber = 16,
-        title = "Mahaprana Consonants",
-        subtitleKannada = "ಮಹಾಪ್ರಾಣ ವ್ಯಂಜನಗಳು",
-        letterPool = listOf("ಖ", "ಘ", "ಛ", "ಝ", "ಠ", "ಢ", "ಥ", "ಧ", "ಫ", "ಭ")
-    ),
-    ListenLevel(
-        levelNumber = 17,
-        title = "Alpaprana Consonants",
-        subtitleKannada = "ಅಲ್ಪಪ್ರಾಣ ವ್ಯಂಜನಗಳು",
-        letterPool = listOf("ಕ", "ಗ", "ಚ", "ಜ", "ಟ", "ಡ", "ತ", "ದ", "ಪ", "ಬ")
-    ),
-    ListenLevel(
-        levelNumber = 18,
-        title = "Anunasika Consonants",
-        subtitleKannada = "ಅನುನಾಸಿಕಗಳು",
-        letterPool = listOf("ಙ", "ಞ", "ಣ", "ನ", "ಮ")
-    ),
-    ListenLevel(
-        levelNumber = 19,
-        title = "Common Words",
-        subtitleKannada = "ಸರಳ ಕನ್ನಡ ಪದಗಳು",
-        letterPool = listOf("ಅಮ್ಮ", "ಅಪ್ಪ", "ಆನೆ", "ಗಿಳಿ", "ಮರ", "ಹೂವು", "ಹಾಲು", "ಬಾಳೆ")
-    ),
-    ListenLevel(
-        levelNumber = 20,
-        title = "Ultimate Kannada Master",
-        subtitleKannada = "ಅಲ್ಟಿಮೇಟ್ ಕನ್ನಡ ವಿದ್ವಾಂಸ",
-        letterPool = listOf("ಅ", "ಕ", "ಗ", "ಚ", "ಟ", "ತ", "ಪ", "ಯ", "ರ", "ಲ", "ವ", "ಶ", "ಸ", "ಹ", "ಳ", "೧", "೫", "೧೦")
-    )
-)
+private const val QUESTIONS = 6
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun ListenAndChooseScreen(onBack: () -> Unit) {
+fun ListenAndChooseScreen(firstLevel: Int = 1, onBack: () -> Unit) {
     val context = LocalContext.current
-    val sharedPrefs = remember { getSharedPreferences("GameScores") }
-    var score by remember { mutableIntStateOf(sharedPrefs.getInt("listen_and_choose_score", 0)) }
-    val coroutineScope = rememberCoroutineScope()
+    val scope = rememberCoroutineScope()
+    var level by remember { mutableIntStateOf((firstLevel - 1).coerceIn(0, listenLevels.size - 1)) }
+    val spec = listenLevels[level]
+    var round by remember { mutableIntStateOf(0) }
+    var done by remember { mutableIntStateOf(0) }
+    val tally = remember { LevelTally() }
+    var levelResult by remember { mutableStateOf<LevelResult?>(null) }
+    var showConfetti by remember { mutableStateOf(false) }
 
-    var currentLevelIndex by remember { mutableIntStateOf(0) }
-    val currentLevel = listenAndChooseLevels[currentLevelIndex]
+    val targets = remember(level, round) {
+        val shuffled = spec.pool.shuffled()
+        List(QUESTIONS) { shuffled[it % shuffled.size] }
+    }
+    val target = targets[done.coerceIn(0, QUESTIONS - 1)]
+    val options = remember(level, round, done) {
+        // Neighbours in the list sound most alike, so pick distractors close to the target
+        val i = spec.pool.indexOf(target)
+        val near = spec.pool.filter { it != target }.sortedBy { kotlin.math.abs(spec.pool.indexOf(it) - i) }
+        (near.take(spec.options + 1).shuffled().take(spec.options - 1) + target).shuffled()
+    }
+    var wrong by remember(level, round, done) { mutableStateOf(setOf<String>()) }
+    var picked by remember(level, round, done) { mutableStateOf<String?>(null) }
+    var shakeCount by remember { mutableIntStateOf(0) }
+    var shakeTarget by remember { mutableStateOf<String?>(null) }
+    var talking by remember { mutableStateOf(false) }
 
-    var currentRoundInLevel by remember { mutableIntStateOf(1) }
-    val totalRoundsInLevel = currentLevel.targetRounds
+    fun say() {
+        NativeAudioPlayer.playPhonics(context, target)
+        scope.launch { talking = true; delay(900); talking = false }
+    }
 
-    var correctLetter by remember { mutableStateOf("") }
-    var options by remember { mutableStateOf<List<String>>(emptyList()) }
-    var showSuccess by remember { mutableStateOf(false) }
-    var rewardCharacter by remember { mutableStateOf<String?>(null) }
-    var showLevelComplete by remember { mutableStateOf(false) }
-    var showLevelPicker by remember { mutableStateOf(false) }
-    var showPauseMenu by remember { mutableStateOf(false) }
-    var wrongIndex by remember { mutableIntStateOf(-1) }
-    var ttsInitialized by remember { mutableStateOf(false) }
+    fun startLevel(newLevel: Int) {
+        tally.reset()
+        levelResult = null
+        showConfetti = false
+        done = 0
+        level = newLevel
+        round += 1
+    }
 
-    var tts by remember { mutableStateOf<TextToSpeech?>(null) }
-    val toneGen = remember { ToneGenerator(AudioManager.STREAM_MUSIC, 100) }
-
-    DisposableEffect(Unit) {
-        onDispose {
-            try { toneGen.release() } catch (e: Exception) {}
+    LaunchedEffect(level, round, done) {
+        if (done < QUESTIONS) {
+            delay(600)
+            say()
         }
     }
 
-    // Play letter sound safely via NativeAudioPlayer + TTS
-    fun playLetterSound(letter: String) {
-        if (letter.isEmpty()) return
-        NativeAudioPlayer.playPhonics(context, letter)
-        tts?.speak(letter, TextToSpeech.QUEUE_FLUSH, null, "letter_audio")
-    }
-
-    fun generateRound() {
-        val pool = currentLevel.letterPool.shuffled()
-        val chosen = pool[0]
-        correctLetter = chosen
-
-        // 3 options including correct one
-        val wrongOptions = pool.filter { it != chosen }.shuffled().take(2)
-        val allOptions = (wrongOptions + chosen).shuffled()
-        options = allOptions
-
-        showSuccess = false
-        wrongIndex = -1
-
-        // Play letter audio with slight delay
-        coroutineScope.launch {
-            delay(350)
-            playLetterSound(chosen)
-        }
-    }
-
-    DisposableEffect(context) {
-        val textToSpeech = TextToSpeech(context) { status ->
-            if (status == TextToSpeech.SUCCESS) {
-                tts?.language = Locale("kn", "IN")
-                ttsInitialized = true
-            }
-        }
-        tts = textToSpeech
-        onDispose {
-            try { textToSpeech.stop(); textToSpeech.shutdown() } catch (e: Exception) {}
-        }
-    }
-
-    // Generate first round on launch and whenever level changes
-    LaunchedEffect(currentLevelIndex) {
-        currentRoundInLevel = 1
-        showLevelComplete = false
-        generateRound()
-    }
-
-    // Pulse animation on speaker button
-    val infiniteTransition = rememberInfiniteTransition(label = "speaker_pulse")
-    val pulseScale by infiniteTransition.animateFloat(
-        initialValue = 1f,
-        targetValue = 1.08f,
-        animationSpec = infiniteRepeatable(
-            animation = tween(800, easing = FastOutSlowInEasing),
-            repeatMode = RepeatMode.Reverse
-        ),
-        label = "pulse"
-    )
-
-    if (showPauseMenu) {
-        PauseMenuDialog(
-            onDismiss = { showPauseMenu = false },
-            onRestart = {
-                showPauseMenu = false
-                currentRoundInLevel = 1
-                generateRound()
-            },
-            onMainMenu = onBack
-        )
-    }
-
-    Scaffold(
-        topBar = {
-            TopAppBar(
-                title = {
-                    Column {
-                        Text(
-                            text = "Level ${currentLevel.levelNumber}/10: ${currentLevel.title}",
-                            fontSize = 17.sp,
-                            color = Color.White,
-                            fontWeight = FontWeight.Bold
-                        )
-                        Text(
-                            text = currentLevel.subtitleKannada,
-                            fontSize = 12.sp,
-                            color = Color(0xFFD1C4E9)
-                        )
-                    }
-                },
-                navigationIcon = {
-                    IconButton(onClick = onBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back", tint = Color.White)
-                    }
-                },
-                actions = {
-                    IconButton(onClick = { showLevelPicker = true }) {
-                        Icon(Icons.Default.List, contentDescription = "Select Level", tint = Color.White)
-                    }
-                    IconButton(onClick = { showPauseMenu = true }) {
-                        Icon(Icons.Default.Menu, contentDescription = "Menu", tint = Color.White)
-                    }
-                },
-                colors = TopAppBarDefaults.topAppBarColors(containerColor = Color(0xFF512DA8))
-            )
-        },
-        containerColor = Color(0xFFEDE7F6)
-    ) { paddingValues ->
-        Box(modifier = Modifier.fillMaxSize()) {
-            if (showSuccess) {
-                ConfettiEffect(modifier = Modifier.zIndex(10f))
-            }
-
-            Column(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(paddingValues)
-                    .padding(16.dp),
-                horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.SpaceBetween
-            ) {
-                // Top Progress & Score Card
-                Card(
-                    modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(16.dp),
-                    colors = CardDefaults.cardColors(containerColor = Color.White),
-                    elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
-                ) {
-                    Column(modifier = Modifier.padding(14.dp)) {
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.SpaceBetween,
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Text(
-                                text = "Question $currentRoundInLevel of $totalRoundsInLevel",
-                                fontSize = 14.sp,
-                                fontWeight = FontWeight.Bold,
-                                color = Color(0xFF512DA8)
-                            )
-                            Surface(
-                                color = Color(0xFFEDE7F6),
-                                shape = RoundedCornerShape(12.dp)
-                            ) {
-                                Text(
-                                    text = "🪙 Total Score: $score",
-                                    fontSize = 13.sp,
-                                    fontWeight = FontWeight.ExtraBold,
-                                    color = Color(0xFF673AB7),
-                                    modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp)
-                                )
-                            }
-                        }
-
-                        Spacer(modifier = Modifier.height(8.dp))
-
-                        // Progress Bar
-                        LinearProgressIndicator(
-                            progress = { (currentRoundInLevel.toFloat() / totalRoundsInLevel.toFloat()).coerceIn(0f, 1f) },
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .height(8.dp)
-                                .clip(RoundedCornerShape(4.dp)),
-                            color = Color(0xFF673AB7),
-                            trackColor = Color(0xFFE0E0E0)
-                        )
-                    }
+    fun choose(option: String) {
+        if (picked != null || option in wrong) return
+        if (option == target) {
+            picked = option
+            tally.right()
+            ActivityTracker.recordAnswer(target, true)
+            SoundEffectsHelper.playSuccess(context)
+            scope.launch {
+                delay(1100)
+                if (done + 1 >= QUESTIONS) {
+                    done += 1
+                    showConfetti = true
+                    SoundEffectsHelper.playGameCompletion(context)
+                    val result = GameProgress.recordLevel(context, 19, level + 1, tally.mistakes, tally.streaks)
+                    delay(1200)
+                    showConfetti = false
+                    levelResult = result
+                } else {
+                    done += 1
                 }
+            }
+        } else {
+            wrong = wrong + option
+            tally.wrong()
+            ActivityTracker.recordAnswer(target, false)
+            SoundEffectsHelper.playOops(context)
+            shakeTarget = option
+            shakeCount += 1
+            scope.launch { delay(700); say() }
+        }
+    }
+    val shake = rememberShake(shakeCount)
 
-                // Middle: Big Interactive Speaker Button
-                Column(
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                    modifier = Modifier.padding(vertical = 16.dp)
-                ) {
+    LevelGameScaffold(
+        title = "Listen & Choose",
+        subtitle = "Level ${level + 1}/${listenLevels.size} · ${spec.label}",
+        headerColor = Color(0xFF2EC4B6),
+        background = Color(0xFFE8FBF8),
+        rounds = QUESTIONS,
+        roundsDone = done,
+        showConfetti = showConfetti,
+        levelResult = levelResult,
+        hasNextLevel = level < listenLevels.size - 1,
+        onNextLevel = { startLevel(level + 1) },
+        onPlayAgain = { startLevel(level) },
+        onBack = onBack
+    ) {
+        // Parrot + speech bubble
+        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+            Parrot(talking = talking, happy = picked != null, modifier = Modifier.size(130.dp).clickable { say() })
+            Column(
+                Modifier
+                    .clip(RoundedCornerShape(22.dp))
+                    .background(Color.White)
+                    .clickable { say() }
+                    .padding(horizontal = 16.dp, vertical = 12.dp)
+                    .testTag("listen_again"),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                Text(
+                    if (picked != null) "Yes! $target" else if (wrong.isNotEmpty()) "Listen again!" else "Which one is it?",
+                    fontSize = 18.sp, fontWeight = FontWeight.ExtraBold, color = GameInk
+                )
+                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                    Icon(Icons.AutoMirrored.Filled.VolumeUp, contentDescription = "Hear it again", tint = Color(0xFF168F84))
+                    Text("Tap to hear", fontSize = 13.sp, fontWeight = FontWeight.Bold, color = Color(0xFF168F84))
+                }
+            }
+        }
+
+        Spacer(Modifier.weight(1f))
+
+        // Letter cards
+        val columns = if (options.size == 3) 3 else 2
+        options.chunked(columns).forEach { row ->
+            Row(horizontalArrangement = Arrangement.spacedBy(14.dp), modifier = Modifier.padding(vertical = 7.dp)) {
+                row.forEach { option ->
+                    val i = options.indexOf(option)
+                    val isRight = picked == option
+                    val isWrong = option in wrong
+                    val pop by animateFloatAsState(if (isRight) 1.15f else 1f, spring(dampingRatio = 0.35f), label = "pop")
                     Box(
-                        modifier = Modifier
-                            .size(130.dp)
-                            .scale(pulseScale)
-                            .clip(CircleShape)
-                            .background(
-                                Brush.radialGradient(
-                                    listOf(Color(0xFF7E57C2), Color(0xFF4527A0))
-                                )
-                            )
-                            .border(4.dp, Color.White, CircleShape)
-                            .clickable {
-                                playLetterSound(correctLetter)
+                        Modifier
+                            .size(if (columns == 3) 104.dp else 130.dp)
+                            .graphicsLayer {
+                                scaleX = pop; scaleY = pop
+                                translationX = if (shakeTarget == option) shake * density else 0f
+                                alpha = if (isWrong) 0.35f else 1f
                             }
-                            .testTag("speaker_button"),
+                            .shadow(if (isWrong) 0.dp else 6.dp, RoundedCornerShape(28.dp))
+                            .clip(RoundedCornerShape(28.dp))
+                            .background(if (isRight) Color(0xFF59C173) else CandyColors[(i + done) % CandyColors.size])
+                            .border(5.dp, Color.White, RoundedCornerShape(28.dp))
+                            .clickable(enabled = !isWrong && picked == null) { choose(option) }
+                            .testTag("option_$i"),
                         contentAlignment = Alignment.Center
                     ) {
-                        Icon(
-                            imageVector = Icons.Default.VolumeUp,
-                            contentDescription = "Listen",
-                            tint = Color.White,
-                            modifier = Modifier.size(68.dp)
-                        )
-                    }
-
-                    Spacer(modifier = Modifier.height(18.dp))
-
-                    Text(
-                        text = "Listen carefully & tap the letter!",
-                        fontSize = 20.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = Color(0xFF311B92),
-                        textAlign = TextAlign.Center
-                    )
-
-                    Text(
-                        text = "ಕೇಳಿ ಮತ್ತು ಸರಿಯಾದ ಅಕ್ಷರವನ್ನು ಆರಿಸಿ",
-                        fontSize = 14.sp,
-                        fontWeight = FontWeight.Medium,
-                        color = Color(0xFF7E57C2)
-                    )
-                }
-
-                // Options Row: 3 Big Letter Cards
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(bottom = 16.dp),
-                    horizontalArrangement = Arrangement.SpaceEvenly
-                ) {
-                    options.forEachIndexed { index, letter ->
-                        val isError = (wrongIndex == index)
-                        val isCorrect = (showSuccess && letter == correctLetter)
-
-                        val bgColor by animateColorAsState(
-                            targetValue = when {
-                                isCorrect -> Color(0xFF4CAF50)
-                                isError -> Color(0xFFE53935)
-                                else -> Color.White
-                            },
-                            label = "bgColor"
-                        )
-
-                        val textColor by animateColorAsState(
-                            targetValue = if (isCorrect || isError) Color.White else Color(0xFF311B92),
-                            label = "textColor"
-                        )
-
-                        Card(
-                            modifier = Modifier
-                                .size(100.dp)
-                                .clip(RoundedCornerShape(20.dp))
-                                .border(
-                                    width = 3.dp,
-                                    color = if (isError) Color.Red else Color(0xFF7E57C2),
-                                    shape = RoundedCornerShape(20.dp)
-                                )
-                                .clickable(enabled = !showSuccess) {
-                                    if (letter == correctLetter) {
-                                        showSuccess = true
-                                        rewardCharacter = letter
-                                        com.example.ui.data.ActivityTracker.recordAnswer(correctLetter, true)
-                                        com.example.ui.audio.SoundEffectsHelper.playSuccess(context)
-                                        try { com.example.ui.data.ScoreManager.addCoins(context, "listen_and_choose", 10) } catch (e: Exception) {}
-                                        score += 1
-                                        sharedPrefs.edit().putInt("listen_and_choose_score", score).apply()
-
-                                        coroutineScope.launch {
-                                            delay(1400)
-                                            if (currentRoundInLevel < totalRoundsInLevel) {
-                                                currentRoundInLevel++
-                                                generateRound()
-                                            } else {
-                                                // Completed all 5 rounds of this level!
-                                                showLevelComplete = true
-                                            }
-                                        }
-                                    } else {
-                                        wrongIndex = index
-                                        com.example.ui.data.ActivityTracker.recordAnswer(correctLetter, false)
-                                        com.example.ui.audio.SoundEffectsHelper.playOops(context)
-                                        coroutineScope.launch {
-                                            delay(500)
-                                            if (wrongIndex == index) wrongIndex = -1
-                                        }
-                                    }
-                                }
-                                .testTag("option_$letter"),
-                            shape = RoundedCornerShape(20.dp),
-                            colors = CardDefaults.cardColors(containerColor = bgColor),
-                            elevation = CardDefaults.cardElevation(defaultElevation = 6.dp)
-                        ) {
-                            Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                                Text(
-                                    text = letter,
-                                    fontSize = 48.sp,
-                                    fontWeight = FontWeight.ExtraBold,
-                                    color = textColor
-                                )
-                            }
-                        }
+                        Text(option, fontSize = if (option.length > 1) 40.sp else 52.sp, fontWeight = FontWeight.ExtraBold, color = GameInk)
                     }
                 }
             }
+        }
+        Spacer(Modifier.weight(1f))
+    }
+}
 
-            // Google Pay Style Surprise Sticker Dialog on completing level!
-            if (showLevelComplete) {
-                val authPrefs = getSharedPreferences("AppProgress")
-                val userEmail = authPrefs.getString("last_active_user", "guest") ?: "guest"
-                val isGuest = com.example.ui.data.UserManager.isGuest(userEmail)
-                SurpriseStickerDialog(
-                    userEmail = userEmail,
-                    levelName = "Listen & Choose Level ${currentLevel.levelNumber}",
-                    seedModifier = currentLevelIndex * 7,
-                    onClose = {
-                        showLevelComplete = false
-                        if (isGuest) {
-                            onBack()
-                        } else if (currentLevelIndex < listenAndChooseLevels.size - 1) {
-                            currentLevelIndex++
-                        }
-                    },
-                    onClaimOrNext = {
-                        showLevelComplete = false
-                        if (isGuest) {
-                            Toast.makeText(context, "🔒 Level 1 Complete! Sign in with Gmail to play all levels!", Toast.LENGTH_LONG).show()
-                            onBack()
-                        } else if (currentLevelIndex < listenAndChooseLevels.size - 1) {
-                            currentLevelIndex++
-                        } else {
-                            onBack()
-                        }
-                    }
-                )
-            }
-
-            // Level Selection Sheet
-            if (showLevelPicker) {
-                val authPrefs = getSharedPreferences("AppProgress")
-                val userEmail = authPrefs.getString("last_active_user", "guest") ?: "guest"
-                val isGuest = com.example.ui.data.UserManager.isGuest(userEmail)
-
-                AlertDialog(
-                    onDismissRequest = { showLevelPicker = false },
-                    title = { Text("Choose Level (1 - ${listenAndChooseLevels.size})", fontWeight = FontWeight.Bold) },
-                    text = {
-                        Column(
-                            verticalArrangement = Arrangement.spacedBy(8.dp),
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .heightIn(max = 420.dp)
-                                .verticalScroll(rememberScrollState())
-                        ) {
-                            listenAndChooseLevels.forEachIndexed { idx, lvl ->
-                                val isLevelLocked = isGuest && idx > 0
-                                Surface(
-                                    color = if (isLevelLocked) Color(0xFFEEEEEE) else if (idx == currentLevelIndex) Color(0xFFD1C4E9) else Color(0xFFF5F5F5),
-                                    shape = RoundedCornerShape(10.dp),
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .clickable {
-                                            if (isLevelLocked) {
-                                                Toast.makeText(context, "🔒 Locked: Sign in with Gmail to unlock all levels!", Toast.LENGTH_SHORT).show()
-                                            } else {
-                                                currentLevelIndex = idx
-                                                showLevelPicker = false
-                                            }
-                                        }
-                                ) {
-                                    Row(
-                                        modifier = Modifier.padding(12.dp),
-                                        horizontalArrangement = Arrangement.SpaceBetween,
-                                        verticalAlignment = Alignment.CenterVertically
-                                    ) {
-                                        Column {
-                                            Row(verticalAlignment = Alignment.CenterVertically) {
-                                                Text("Level ${lvl.levelNumber}: ${lvl.title}", fontWeight = FontWeight.Bold, fontSize = 14.sp)
-                                                if (isLevelLocked) {
-                                                    Spacer(modifier = Modifier.width(6.dp))
-                                                    Icon(Icons.Default.Lock, contentDescription = "Locked", tint = Color.Gray, modifier = Modifier.size(16.dp))
-                                                }
-                                            }
-                                            Text(lvl.subtitleKannada, fontSize = 12.sp, color = Color.Gray)
-                                        }
-                                        if (idx == currentLevelIndex) {
-                                            Text("Active", color = Color(0xFF512DA8), fontWeight = FontWeight.Bold, fontSize = 12.sp)
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    },
-                    confirmButton = {
-                        TextButton(onClick = { showLevelPicker = false }) {
-                            Text("Close")
-                        }
-                    }
-                )
-            }
-
-            // Lottie Animation Reward whenever child correctly identifies a Kannada character
-            com.example.ui.components.LottieCharacterRewardOverlay(
-                visible = rewardCharacter != null && !showLevelComplete,
-                character = rewardCharacter ?: "",
-                onDismiss = { rewardCharacter = null }
-            )
+/** A friendly green parrot drawn with shapes; its beak opens while it "talks". */
+@Composable
+private fun Parrot(talking: Boolean, happy: Boolean, modifier: Modifier = Modifier) {
+    val t = rememberInfiniteTransition(label = "parrot")
+    val beak by t.animateFloat(0f, 1f, infiniteRepeatable(tween(160), RepeatMode.Reverse), label = "beak")
+    val bob by t.animateFloat(0f, -5f, infiniteRepeatable(tween(800, easing = FastOutSlowInEasing), RepeatMode.Reverse), label = "bob")
+    val open = if (talking) beak else 0f
+    Canvas(modifier.graphicsLayer { translationY = bob * density; rotationZ = if (happy) -6f else 0f }) {
+        val w = size.width
+        val k = w / 100f
+        // tail + body
+        drawOval(Color(0xFF168F84), Offset(28 * k, 62 * k), androidx.compose.ui.geometry.Size(22 * k, 34 * k))
+        drawOval(Color(0xFF59C173), Offset(22 * k, 30 * k), androidx.compose.ui.geometry.Size(52 * k, 58 * k))
+        drawOval(Color(0xFFFFE082), Offset(34 * k, 52 * k), androidx.compose.ui.geometry.Size(28 * k, 30 * k))
+        // wing
+        drawOval(Color(0xFF2EC4B6), Offset(18 * k, 46 * k), androidx.compose.ui.geometry.Size(22 * k, 32 * k))
+        // head
+        drawCircle(Color(0xFF59C173), 22 * k, Offset(56 * k, 30 * k))
+        drawCircle(Color(0xFFFF6B6B), 6 * k, Offset(44 * k, 14 * k))
+        drawCircle(Color.White, 7 * k, Offset(60 * k, 26 * k))
+        drawCircle(GameInk, 3.5f * k, Offset(61 * k, 26 * k))
+        // beak (upper + lower that opens)
+        val upper = androidx.compose.ui.graphics.Path().apply {
+            moveTo(72 * k, 28 * k); lineTo(90 * k, 34 * k); lineTo(72 * k, 40 * k); close()
+        }
+        drawPath(upper, Color(0xFFFF9F1C))
+        val lower = androidx.compose.ui.graphics.Path().apply {
+            moveTo(72 * k, 40 * k); lineTo((84 + 2 * open) * k, (42 + 8 * open) * k); lineTo(72 * k, (44 + 4 * open) * k); close()
+        }
+        drawPath(lower, Color(0xFFE07F00))
+        // feet
+        drawLine(Color(0xFFFF9F1C), Offset(42 * k, 88 * k), Offset(42 * k, 96 * k), strokeWidth = 4 * k)
+        drawLine(Color(0xFFFF9F1C), Offset(54 * k, 88 * k), Offset(54 * k, 96 * k), strokeWidth = 4 * k)
+        if (talking) {
+            drawArc(Color(0xFF2EC4B6), -40f, 80f, false, Offset(88 * k, 22 * k), androidx.compose.ui.geometry.Size(10 * k, 24 * k), style = Stroke(3 * k))
         }
     }
 }

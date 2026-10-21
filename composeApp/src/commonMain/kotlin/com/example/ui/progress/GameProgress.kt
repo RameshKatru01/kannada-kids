@@ -46,15 +46,14 @@ object GameRegistry {
         GameInfo(8, "scrambled_words", "Scrambled Words", "Build the word", "ಪ", Tangerine, Navy, LEVELS_PER_GAME),
         GameInfo(9, "word_search", "Word Search", "Find hidden words", "ಮ", Violet, Color.White, LEVELS_PER_GAME),
         GameInfo(13, "colour_sort", "Colour Sort", "Pour the colours", "ಹ", Coral, Color.White, LEVELS_PER_GAME),
+        GameInfo(19, "listen_choose", "Listen & Choose", "Hear it, find it", "ಆ", Teal, Navy, LEVELS_PER_GAME),
+        GameInfo(11, "match_letter", "Match the Letter", "Letters and pictures", "ಇ", Sky, Color.White, LEVELS_PER_GAME),
+        GameInfo(20, "swara_adventure", "Swara Adventure", "Find the missing ಸ್ವರ", "ಸ", Leaf, Navy, LEVELS_PER_GAME),
         // Older games: play freely (levels come in a later update)
-        GameInfo(19, "listen_choose", "Listen & Choose", "Just for fun", "ಆ", Sun, Navy),
-        GameInfo(11, "match_letter", "Match the Letter", "Just for fun", "ಇ", Tangerine, Navy),
         GameInfo(12, "balloon_pop", "Musical Balloon Pop", "Just for fun", "ಉ", Berry, Color.White),
         GameInfo(6, "letter_runner", "Letter Runner", "Just for fun", "ಎ", Leaf, Navy),
         GameInfo(7, "vowel_map", "Vowel Map Navigator", "Just for fun", "ಒ", Teal, Navy),
-
         GameInfo(16, "constellation", "Constellation Path", "Just for fun", "ನ", Navy, Color.White),
-        GameInfo(20, "swara_adventure", "Swara Adventure", "Just for fun", "ಸ", Leaf, Navy)
     )
 
     fun byId(id: Int): GameInfo? = games.firstOrNull { it.id == id }

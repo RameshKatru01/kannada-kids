@@ -2,394 +2,236 @@ package com.example.ui.screens
 
 import com.example.platform.*
 
-import androidx.compose.foundation.clickable
+import androidx.compose.animation.core.*
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
-import androidx.compose.foundation.gestures.detectDragGestures
-import androidx.compose.foundation.gestures.detectTapGestures
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material3.*
+import androidx.compose.material3.Text
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.zIndex
-import androidx.compose.ui.draw.alpha
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.graphics.StrokeCap
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.boundsInRoot
 import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.example.ui.theme.BrightCyan
-import kotlin.math.roundToInt
+import com.example.data.KannadaLetter
+import com.example.data.LetterData
+import com.example.ui.audio.NativeAudioPlayer
+import com.example.ui.audio.SoundEffectsHelper
+import com.example.ui.data.ActivityTracker
+import com.example.ui.progress.GameProgress
+import com.example.ui.progress.LevelResult
+import com.example.ui.progress.LevelTally
+import com.example.ui.reference.RefWord
+import com.example.ui.reference.ReferenceInfo
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 
-data class MatchPair(
-    val id: Int,
-    val letter: String,
-    val emoji: String
+/*
+ * Match the Letter: letters on the left, pictures on the right. Tap a letter, then the picture whose
+ * word starts with it; a coloured string joins them. 6 levels, 2 boards each, more pairs as it goes.
+ */
+
+private data class MatchLevel(val label: String, val pairs: Int, val pool: () -> List<KannadaLetter>)
+
+private val matchLevels = listOf(
+    MatchLevel("Vowels · 3 pairs", 3) { LetterData.vowels },
+    MatchLevel("Vowels · 4 pairs", 4) { LetterData.vowels },
+    MatchLevel("ಕ to ನ · 4 pairs", 4) { LetterData.consonants.take(20) },
+    MatchLevel("ಪ to ಹ · 4 pairs", 4) { LetterData.consonants.drop(20) },
+    MatchLevel("Mixed · 5 pairs", 5) { LetterData.vowels + LetterData.consonants },
+    MatchLevel("Mixed · 6 pairs", 6) { LetterData.vowels + LetterData.consonants }
 )
 
-val matchLevels = listOf(
-    listOf(
-        MatchPair(1, "ಅ", "👑"),
-        MatchPair(2, "ಆ", "🐘"),
-        MatchPair(3, "ಇ", "🐁"),
-        MatchPair(4, "ಈ", "🧅"),
-        MatchPair(5, "ಉ", "🎁")
-    ),
-    listOf(
-        MatchPair(6, "ಊ", "🧶"),
-        MatchPair(7, "ಋ", "🐂"),
-        MatchPair(8, "ಎ", "🍃"),
-        MatchPair(9, "ಏ", "🦀"),
-        MatchPair(10, "ಐ", "👁️")
-    ),
-    listOf(
-        MatchPair(11, "ಒ", "🐪"),
-        MatchPair(12, "ಓ", "📖"),
-        MatchPair(13, "ಔ", "💊"),
-        MatchPair(14, "ಅಂ", "🍇"),
-        MatchPair(15, "ಅಃ", "🌅")
-    ),
-    listOf(
-        MatchPair(16, "ಕ", "🪷"),
-        MatchPair(17, "ಖ", "🐦"),
-        MatchPair(18, "ಗ", "🦜"),
-        MatchPair(19, "ಘ", "🕰️"),
-        MatchPair(20, "ಙ", "🐚")
-    ),
-    listOf(
-        MatchPair(21, "ಚ", "🥄"),
-        MatchPair(22, "ಛ", "☂️"),
-        MatchPair(23, "ಜ", "🕷️"),
-        MatchPair(24, "ಝ", "🐟"),
-        MatchPair(25, "ಞ", "🎭")
-    ),
-    listOf(
-        MatchPair(26, "ಟ", "🍅"),
-        MatchPair(27, "ಠ", "🥶"),
-        MatchPair(28, "ಡ", "🥁"),
-        MatchPair(29, "ಢ", "🛡️"),
-        MatchPair(30, "ಣ", "🏹")
-    ),
-    listOf(
-        MatchPair(31, "ತ", "⚖️"),
-        MatchPair(32, "ಥ", "🍽️"),
-        MatchPair(33, "ದ", "🐄"),
-        MatchPair(34, "ಧ", "💰"),
-        MatchPair(35, "ನ", "🦚")
-    ),
-    listOf(
-        MatchPair(36, "ಪ", "🕊️"),
-        MatchPair(37, "ಫ", "🍎"),
-        MatchPair(38, "ಬ", "🦆"),
-        MatchPair(39, "ಭ", "🐻"),
-        MatchPair(40, "ಮ", "🐒")
-    ),
-    listOf(
-        MatchPair(41, "ಯ", "⚙️"),
-        MatchPair(42, "ರ", "🐎"),
-        MatchPair(43, "ಲ", "🍋"),
-        MatchPair(44, "ವ", "💎"),
-        MatchPair(45, "ಶ", "🐇")
-    ),
-    listOf(
-        MatchPair(46, "ಷ", "🐝"),
-        MatchPair(47, "ಸ", "🦁"),
-        MatchPair(48, "ಹ", "🦢"),
-        MatchPair(49, "ಳ", "🔒"),
-        MatchPair(50, "ಕ್ಷ", "⚔️")
-    )
-)
+private const val BOARDS = 2
 
-fun getWordForLetter(letter: String): String {
-    return when(letter) {
-        "ಅ" -> "ಅರಸ"
-        "ಆ" -> "ಆನೆ"
-        "ಇ" -> "ಇಲಿ"
-        "ಈ" -> "ಈರುಳ್ಳಿ"
-        "ಉ" -> "ಉಡುಗೊರೆ"
-        "ಊ" -> "ಉಣ್ಣೆ"
-        "ಋ" -> "ಋಷಭ"
-        "ಎ" -> "ಎಲೆ"
-        "ಏ" -> "ಏಡಿ"
-        "ಐ" -> "ಐನೋಟ"
-        "ಒ" -> "ಒಂಟೆ"
-        "ಓ" -> "ಓದು"
-        "ಔ" -> "ಔಷಧ"
-        "ಅಂ" -> "ಅಂಗೂರು"
-        "ಕ" -> "ಕಮಲ"
-        "ಖ" -> "ಖಗ"
-        "ಗ" -> "ಗಿಣಿ"
-        "ಘ" -> "ಘಂಟೆ"
-        "ಚ" -> "ಚಮಚ"
-        "ಛ" -> "ಛತ್ರಿ"
-        "ಜ" -> "ಜೇಡ"
-        "ಝ" -> "ಝಷ"
-        "ಟ" -> "ಟೊಮೇಟೊ"
-        "ಠ" -> "ಠಳ"
-        "ಡ" -> "ಡಮರು"
-        "ಢ" -> "ಢಾಲು"
-        "ಣ" -> "ಬಾಣ"
-        "ತ" -> "ತಕ್ಕಡಿ"
-        "ಥ" -> "ಥಟ್ಟೆ"
-        "ದ" -> "ದನ"
-        "ಧ" -> "ಧನ"
-        "ನ" -> "ನವಿಲು"
-        "ಪ" -> "ಪಾರಿವಾಳ"
-        "ಫ" -> "ಫಲ"
-        "ಬ" -> "ಬಾತುಕೋಳಿ"
-        "ಭ" -> "ಭಲ್ಲೂಕ"
-        "ಮ" -> "ಮಂಗ"
-        "ಯ" -> "ಯಂತ್ರ"
-        "ರ" -> "ರಥ"
-        "ಲ" -> "ಲೆಮನ್"
-        "ವ" -> "ವಜ್ರ"
-        "ಶ" -> "ಶಶ"
-        "ಷ" -> "ಷಟ್ಪದ"
-        "ಸ" -> "ಸಿಂಹ"
-        "ಹ" -> "ಹಂಸ"
-        "ಳ" -> "ತಾಳ"
-        "ಕ್ಷ" -> "ಕ್ಷತ್ರಿಯ"
-        else -> letter
-    }
-}
+private data class MatchItem(val letter: KannadaLetter, val word: RefWord, val color: Color)
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun MatchLetterScreen(onBack: () -> Unit) {
-    var level by remember { mutableIntStateOf(1) }
-    
+fun MatchLetterScreen(firstLevel: Int = 1, onBack: () -> Unit) {
     val context = LocalContext.current
-    var tts by remember { mutableStateOf<TextToSpeech?>(null) }
-    
-    DisposableEffect(context) {
-        val attrContext = context
-        val textToSpeech = TextToSpeech(attrContext) { status ->
-            if (status == TextToSpeech.SUCCESS) {
-                tts?.language = Locale("kn", "IN")
+    val scope = rememberCoroutineScope()
+    var level by remember { mutableIntStateOf((firstLevel - 1).coerceIn(0, matchLevels.size - 1)) }
+    val spec = matchLevels[level]
+    var round by remember { mutableIntStateOf(0) }
+    var board by remember { mutableIntStateOf(0) }
+    val tally = remember { LevelTally() }
+    var levelResult by remember { mutableStateOf<LevelResult?>(null) }
+    var showConfetti by remember { mutableStateOf(false) }
+
+    val items = remember(level, round, board) {
+        spec.pool().mapNotNull { l -> ReferenceInfo.word(l)?.let { l to it } }
+            .shuffled().take(spec.pairs)
+            .mapIndexed { i, (l, w) -> MatchItem(l, w, CandyColors[(i + board * 2) % CandyColors.size]) }
+    }
+    val pictures = remember(items) { items.shuffled() }
+    var matched by remember(items) { mutableStateOf(listOf<MatchItem>()) }
+    var picked by remember(items) { mutableStateOf<MatchItem?>(null) }
+    var shakeCount by remember { mutableIntStateOf(0) }
+    var shakeTarget by remember { mutableStateOf<String?>(null) }
+    val letterBounds = remember(items) { mutableStateMapOf<String, Rect>() }
+    val pictureBounds = remember(items) { mutableStateMapOf<String, Rect>() }
+    var areaOrigin by remember { mutableStateOf(Offset.Zero) }
+
+    fun startLevel(newLevel: Int) {
+        tally.reset()
+        levelResult = null
+        showConfetti = false
+        board = 0
+        level = newLevel
+        round += 1
+    }
+
+    fun pickPicture(item: MatchItem) {
+        val p = picked ?: run {
+            NativeAudioPlayer.playPhonics(context, item.word.kannada)
+            return
+        }
+        if (item in matched) return
+        if (item.letter.id == p.letter.id) {
+            matched = matched + item
+            picked = null
+            tally.right()
+            ActivityTracker.recordAnswer(item.letter.character, true)
+            SoundEffectsHelper.playSuccess(context)
+            NativeAudioPlayer.playPhonics(context, item.word.kannada)
+            if (matched.size == items.size) {
+                scope.launch {
+                    delay(1000)
+                    if (board + 1 < BOARDS) {
+                        SoundEffectsHelper.playSparkle()
+                        board += 1
+                    } else {
+                        showConfetti = true
+                        SoundEffectsHelper.playGameCompletion(context)
+                        val result = GameProgress.recordLevel(context, 11, level + 1, tally.mistakes, tally.streaks)
+                        delay(1200)
+                        showConfetti = false
+                        levelResult = result
+                    }
+                }
             }
-        }
-        tts = textToSpeech
-        onDispose {
-            textToSpeech.stop()
-            textToSpeech.shutdown()
-        }
-    }
-    
-    // 5 items per level
-    val currentPairs = remember(level) {
-        val index = (level - 1) % matchLevels.size
-        matchLevels[index].shuffled().take(5)
-    }
-    
-    val shuffledPictures = remember(currentPairs) { currentPairs.shuffled() }
-    val shuffledLetters = remember(currentPairs) { currentPairs.shuffled() }
-    
-    var matchedIds by remember(currentPairs) { mutableStateOf(setOf<Int>()) }
-    var targetRects by remember(currentPairs) { mutableStateOf(mapOf<Int, Rect>()) }
-    var dragOffsets by remember(currentPairs) { mutableStateOf(mapOf<Int, Offset>()) }
-    
-    var showSuccess by remember { mutableStateOf(false) }
-    var rewardCharacter by remember { mutableStateOf<String?>(null) }
-    
-    LaunchedEffect(matchedIds) {
-        if (matchedIds.size == currentPairs.size && currentPairs.isNotEmpty()) {
-            showSuccess = true
-            com.example.ui.audio.SoundEffectsHelper.playGameCompletion(context)
-            try { com.example.ui.data.ScoreManager.addCoins(context, "match_letter", 10) } catch (e: Exception) {}
+        } else {
+            tally.wrong()
+            ActivityTracker.recordAnswer(p.letter.character, false)
+            SoundEffectsHelper.playOops(context)
+            shakeTarget = item.word.kannada
+            shakeCount += 1
         }
     }
-    
-    Scaffold(
-        topBar = {
-            TopAppBar(
-                title = { Text("Match the Letter", color = Color.White, fontWeight = FontWeight.Bold) },
-                navigationIcon = {
-                    IconButton(onClick = onBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back", tint = Color.White)
-                    }
-                },
-                colors = TopAppBarDefaults.topAppBarColors(containerColor = BrightCyan)
-            )
-        },
-        containerColor = Color(0xFFE8F5E9)
-    ) { paddingValues ->
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(paddingValues)
-                .padding(16.dp),
-            horizontalAlignment = Alignment.CenterHorizontally
+    val shake = rememberShake(shakeCount)
+    val done = board * spec.pairs + matched.size
+
+    LevelGameScaffold(
+        title = "Match the Letter",
+        subtitle = "Level ${level + 1}/${matchLevels.size} · ${spec.label} · board ${board + 1}/$BOARDS",
+        headerColor = Color(0xFF4DA8FF),
+        background = Color(0xFFEAF6FF),
+        rounds = spec.pairs * BOARDS,
+        roundsDone = done,
+        showConfetti = showConfetti,
+        levelResult = levelResult,
+        hasNextLevel = level < matchLevels.size - 1,
+        onNextLevel = { startLevel(level + 1) },
+        onPlayAgain = { startLevel(level) },
+        onBack = onBack
+    ) {
+        Text(
+            if (picked == null) "Tap a letter, then its picture" else "Now find the picture for ${picked!!.letter.character}",
+            fontSize = 16.sp, fontWeight = FontWeight.ExtraBold, color = GameInk
+        )
+        Spacer(Modifier.height(12.dp))
+
+        Box(
+            Modifier
+                .fillMaxWidth()
+                .weight(1f)
+                .onGloballyPositioned { areaOrigin = it.boundsInRoot().topLeft }
         ) {
-            Text(
-                text = "Drag the letter to its picture!",
-                fontSize = 22.sp,
-                fontWeight = FontWeight.Bold,
-                color = Color(0xFF2E7D32)
-            )
-            
-            Spacer(modifier = Modifier.height(32.dp))
-            
-            if (showSuccess) {
-                val authPrefs = getSharedPreferences("AppProgress")
-                val userEmail = authPrefs.getString("last_active_user", "guest") ?: "guest"
-                val isGuest = com.example.ui.data.UserManager.isGuest(userEmail)
-                com.example.ui.components.SurpriseStickerDialog(
-                    userEmail = userEmail,
-                    levelName = "Match Level $level",
-                    seedModifier = level,
-                    onClose = {
-                        showSuccess = false
-                        if (isGuest) {
-                            onBack()
-                        }
-                    },
-                    onClaimOrNext = {
-                        showSuccess = false
-                        if (isGuest) {
-                            Toast.makeText(context, "🔒 Level 1 Complete! Sign in with Gmail to play all matching levels!", Toast.LENGTH_LONG).show()
-                            onBack()
-                        } else {
-                            level++
+            // Strings between matched pairs (and from the picked letter)
+            Canvas(Modifier.fillMaxSize()) {
+                matched.forEach { m ->
+                    val a = letterBounds[m.letter.character]
+                    val b = pictureBounds[m.word.kannada]
+                    if (a != null && b != null) {
+                        drawLine(
+                            m.color,
+                            Offset(a.right, a.center.y) - areaOrigin,
+                            Offset(b.left, b.center.y) - areaOrigin,
+                            strokeWidth = 10.dp.toPx(),
+                            cap = StrokeCap.Round
+                        )
+                    }
+                }
+            }
+            Row(Modifier.fillMaxSize(), horizontalArrangement = Arrangement.SpaceBetween) {
+                // Letters
+                Column(Modifier.fillMaxHeight(), verticalArrangement = Arrangement.SpaceEvenly) {
+                    items.forEach { item ->
+                        val isMatched = item in matched
+                        val isPicked = picked == item
+                        val lift by animateFloatAsState(if (isPicked) 1.12f else 1f, spring(dampingRatio = 0.4f), label = "lift")
+                        Box(
+                            Modifier
+                                .size(if (items.size >= 6) 62.dp else 76.dp)
+                                .graphicsLayer { scaleX = lift; scaleY = lift }
+                                .onGloballyPositioned { letterBounds[item.letter.character] = it.boundsInRoot() }
+                                .shadow(if (isPicked) 10.dp else 4.dp, RoundedCornerShape(22.dp))
+                                .clip(RoundedCornerShape(22.dp))
+                                .background(item.color)
+                                .border(if (isPicked) 5.dp else 3.dp, if (isPicked) GameInk else Color.White, RoundedCornerShape(22.dp))
+                                .clickable(enabled = !isMatched) {
+                                    picked = if (isPicked) null else item
+                                    NativeAudioPlayer.playPhonics(context, item.letter.character)
+                                }
+                                .testTag("match_letter_${item.letter.id}"),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Text(item.letter.character, fontSize = 34.sp, fontWeight = FontWeight.ExtraBold, color = GameInk)
                         }
                     }
-                )
-            } else {
-                Row(
-                    modifier = Modifier.fillMaxWidth().weight(1f),
-                    horizontalArrangement = Arrangement.SpaceBetween
-                ) {
-                    // Pictures (Targets)
-                    Column(
-                        modifier = Modifier.weight(1f).fillMaxHeight(),
-                        verticalArrangement = Arrangement.SpaceEvenly,
-                        horizontalAlignment = Alignment.CenterHorizontally
-                    ) {
-                        shuffledPictures.forEach { pair ->
-                            val isMatched = matchedIds.contains(pair.id)
-                            Box(
-                                modifier = Modifier
-                                    .size(80.dp)
-                                    .shadow(4.dp, RoundedCornerShape(16.dp))
-                                    .background(if (isMatched) Color(0xFFC8E6C9) else Color.White, RoundedCornerShape(16.dp))
-                                    .border(2.dp, if (isMatched) Color(0xFF4CAF50) else Color.LightGray, RoundedCornerShape(16.dp))
-                                    .clickable {
-                                        val word = getWordForLetter(pair.letter)
-                                        com.example.ui.audio.NativeAudioPlayer.playPhonics(context, word)
-                                    }
-                                    .onGloballyPositioned { coords ->
-                                        val bounds = coords.boundsInRoot()
-                                        if (targetRects[pair.id] != bounds) {
-                                            targetRects = targetRects + (pair.id to bounds)
-                                        }
-                                    },
-                                contentAlignment = Alignment.Center
-                            ) {
-                                if (isMatched) {
-                                    Row(verticalAlignment = Alignment.CenterVertically) {
-                                        Text(pair.emoji, fontSize = 24.sp)
-                                        Spacer(modifier = Modifier.width(4.dp))
-                                        Text(pair.letter, fontSize = 24.sp, fontWeight = FontWeight.Bold, color = Color(0xFF2E7D32))
-                                    }
-                                } else {
-                                    Text(pair.emoji, fontSize = 48.sp)
-                                }
-                            }
-                        }
-                    }
-                    
-                    // Spacer
-                    Spacer(modifier = Modifier.width(32.dp))
-                    
-                    // Letters (Draggables)
-                    Column(
-                        modifier = Modifier.weight(1f).fillMaxHeight(),
-                        verticalArrangement = Arrangement.SpaceEvenly,
-                        horizontalAlignment = Alignment.CenterHorizontally
-                    ) {
-                        shuffledLetters.forEach { pair ->
-                            val isMatched = matchedIds.contains(pair.id)
-                            val offset = dragOffsets[pair.id] ?: Offset.Zero
-                            var localLayoutRect by remember { mutableStateOf(Rect.Zero) }
-                            
-                            Box(
-                                modifier = Modifier
-                                    .size(72.dp)
-                                    .zIndex(if (offset != Offset.Zero) 1f else 0f)
-                                    .offset { IntOffset(offset.x.roundToInt(), offset.y.roundToInt()) }
-                                    .alpha(if (isMatched) 0f else 1f)
-                                    .shadow(if (isMatched) 0.dp else 8.dp, RoundedCornerShape(36.dp))
-                                    .background(if (isMatched) Color.Transparent else Color(0xFFFFCC80), RoundedCornerShape(36.dp))
-                                    .onGloballyPositioned { coords ->
-                                        localLayoutRect = coords.boundsInRoot()
-                                    }
-                                    .pointerInput(isMatched) {
-                                        if (isMatched) return@pointerInput
-                                        detectTapGestures(
-                                            onTap = {
-                                                com.example.ui.audio.SoundEffectsHelper.playButtonTap(context)
-                                                com.example.ui.audio.NativeAudioPlayer.playPhonics(context, pair.letter)
-                                            }
-                                        )
-                                    }
-                                    .pointerInput(isMatched) {
-                                        if (isMatched) return@pointerInput
-                                        detectDragGestures(
-                                            onDragStart = {
-                                                com.example.ui.audio.NativeAudioPlayer.playPhonics(context, pair.letter)
-                                            },
-                                            onDrag = { change, dragAmount ->
-                                                change.consume()
-                                                val current = dragOffsets[pair.id] ?: Offset.Zero
-                                                dragOffsets = dragOffsets + (pair.id to (current + dragAmount))
-                                            },
-                                            onDragEnd = {
-                                                val dropCenter = localLayoutRect.center
-                                                val targetMatch = targetRects.entries.find { it.value.contains(dropCenter) }
-                                                
-                                                if (targetMatch?.key == pair.id) {
-                                                    matchedIds = matchedIds + pair.id
-                                                    rewardCharacter = pair.letter
-                                                    com.example.ui.data.ActivityTracker.recordAnswer(pair.letter, true)
-                                                    com.example.ui.audio.SoundEffectsHelper.playSuccess(context)
-                                                } else if (targetMatch != null) {
-                                                    com.example.ui.data.ActivityTracker.recordAnswer(pair.letter, false)
-                                                    com.example.ui.audio.SoundEffectsHelper.playOops(context)
-                                                }
-                                                // Reset offset
-                                                dragOffsets = dragOffsets - pair.id
-                                            },
-                                            onDragCancel = {
-                                                dragOffsets = dragOffsets - pair.id
-                                            }
-                                        )
-                                    },
-                                contentAlignment = Alignment.Center
-                            ) {
-                                if (!isMatched) {
-                                    Text(pair.letter, fontSize = 36.sp, fontWeight = FontWeight.Bold, color = Color(0xFFE65100))
-                                }
+                }
+                // Pictures
+                Column(Modifier.fillMaxHeight(), verticalArrangement = Arrangement.SpaceEvenly, horizontalAlignment = Alignment.End) {
+                    pictures.forEach { item ->
+                        val isMatched = item in matched
+                        Row(
+                            Modifier
+                                .graphicsLayer { translationX = if (shakeTarget == item.word.kannada) shake * density else 0f }
+                                .onGloballyPositioned { pictureBounds[item.word.kannada] = it.boundsInRoot() }
+                                .shadow(4.dp, RoundedCornerShape(22.dp))
+                                .clip(RoundedCornerShape(22.dp))
+                                .background(if (isMatched) item.color else Color.White)
+                                .clickable(enabled = !isMatched) { pickPicture(item) }
+                                .padding(horizontal = 12.dp, vertical = 6.dp)
+                                .testTag("match_picture_${item.letter.id}"),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            Text(item.word.picture, fontSize = if (items.size >= 6) 34.sp else 42.sp)
+                            Column {
+                                Text(
+                                    if (isMatched) item.word.kannada else item.word.english,
+                                    fontSize = 15.sp, fontWeight = FontWeight.ExtraBold, color = GameInk
+                                )
                             }
                         }
                     }
                 }
             }
-
-            // Lottie Animation Reward whenever child correctly identifies a Kannada character
-            com.example.ui.components.LottieCharacterRewardOverlay(
-                visible = rewardCharacter != null,
-                character = rewardCharacter ?: "",
-                onDismiss = { rewardCharacter = null }
-            )
         }
+        Spacer(Modifier.height(8.dp))
     }
 }
