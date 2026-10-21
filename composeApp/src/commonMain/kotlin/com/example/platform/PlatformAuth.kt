@@ -31,4 +31,7 @@ expect object PlatformAuth {
     suspend fun createUserWithEmail(email: String, password: String): AuthUser
 
     fun signOut()
+
+    /** A fresh Firebase ID token for the signed-in user (used for the online database), or null. */
+    suspend fun idToken(): String?
 }

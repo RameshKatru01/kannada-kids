@@ -50,6 +50,48 @@ actual object PlatformAuth {
         }
     }
 
+    private const val TOKEN_KEY = "kk_auth_id_token"
+    private const val REFRESH_KEY = "kk_auth_refresh_token"
+    private const val EXPIRES_KEY = "kk_auth_token_expires"
+
+    /** Keeps the Firebase tokens from a sign-in / refresh response. */
+    private fun saveTokens(idToken: String?, refreshToken: String?, expiresInSeconds: Long?) {
+        val d = NSUserDefaults.standardUserDefaults
+        if (idToken != null) d.setObject(idToken, forKey = TOKEN_KEY)
+        if (refreshToken != null) d.setObject(refreshToken, forKey = REFRESH_KEY)
+        val expires = currentTimeMillis() + ((expiresInSeconds ?: 3600L) - 120L) * 1000L
+        d.setObject(expires.toString(), forKey = EXPIRES_KEY)
+    }
+
+    private fun JsonObject.saveTokensFromSignIn() = saveTokens(
+        this["idToken"]?.jsonPrimitive?.contentOrNull,
+        this["refreshToken"]?.jsonPrimitive?.contentOrNull,
+        this["expiresIn"]?.jsonPrimitive?.contentOrNull?.toLongOrNull()
+    )
+
+    actual suspend fun idToken(): String? {
+        val d = NSUserDefaults.standardUserDefaults
+        val token = d.stringForKey(TOKEN_KEY)
+        val expires = d.stringForKey(EXPIRES_KEY)?.toLongOrNull() ?: 0L
+        if (token != null && currentTimeMillis() < expires) return token
+        val refresh = d.stringForKey(REFRESH_KEY) ?: return null
+        val key = apiKey ?: return null
+        return try {
+            val response = httpClient.post("https://securetoken.googleapis.com/v1/token?key=$key") {
+                contentType(ContentType.Application.FormUrlEncoded)
+                NSBundle.mainBundle.bundleIdentifier?.let { headers.append("X-Ios-Bundle-Identifier", it) }
+                setBody("grant_type=refresh_token&refresh_token=$refresh")
+            }
+            if (!response.status.isSuccess()) return null
+            val json = Json.parseToJsonElement(response.bodyAsText()).jsonObject
+            val newToken = json["id_token"]?.jsonPrimitive?.contentOrNull
+            saveTokens(newToken, json["refresh_token"]?.jsonPrimitive?.contentOrNull, json["expires_in"]?.jsonPrimitive?.contentOrNull?.toLongOrNull())
+            newToken
+        } catch (e: Exception) {
+            null
+        }
+    }
+
     private fun remember(user: AuthUser): AuthUser {
         val json = buildJsonObject {
             put("uid", user.uid)
@@ -92,6 +134,7 @@ actual object PlatformAuth {
             put("password", password)
             put("returnSecureToken", true)
         })
+        json.saveTokensFromSignIn()
         return remember(json.toAuthUser(email))
     }
 
@@ -101,6 +144,7 @@ actual object PlatformAuth {
             put("password", password)
             put("returnSecureToken", true)
         })
+        json.saveTokensFromSignIn()
         return remember(json.toAuthUser(email))
     }
 
@@ -139,6 +183,7 @@ actual object PlatformAuth {
                     put("returnIdpCredential", true)
                     put("returnSecureToken", true)
                 })
+                json.saveTokensFromSignIn()
                 val user = json.toAuthUser(email)
                 return remember(user.copy(displayName = user.displayName ?: result.displayName))
             } catch (e: Exception) {
@@ -158,6 +203,9 @@ actual object PlatformAuth {
 
     actual fun signOut() {
         NSUserDefaults.standardUserDefaults.removeObjectForKey(USER_KEY)
+        NSUserDefaults.standardUserDefaults.removeObjectForKey(TOKEN_KEY)
+        NSUserDefaults.standardUserDefaults.removeObjectForKey(REFRESH_KEY)
+        NSUserDefaults.standardUserDefaults.removeObjectForKey(EXPIRES_KEY)
         try {
             IosPlatformBridge.googleSignIn?.signOut()
         } catch (_: Throwable) {

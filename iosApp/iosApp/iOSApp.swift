@@ -12,6 +12,9 @@ struct iOSApp: App {
         try? AVAudioSession.sharedInstance().setCategory(.playback, mode: .default, options: [.mixWithOthers])
         try? AVAudioSession.sharedInstance().setActive(true)
 
+        // Subscriptions (StoreKit)
+        IosPlatformBridge.shared.billing = StoreKitBridge()
+
         #if canImport(GoogleSignIn)
         // "Continue with Google" support (only when the GoogleSignIn package is added in Xcode).
         IosPlatformBridge.shared.googleSignIn = GoogleSignInBridge()

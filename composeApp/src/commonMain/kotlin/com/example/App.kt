@@ -3,6 +3,7 @@ package com.example
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
@@ -39,6 +40,13 @@ fun App() {
     MyApplicationTheme(appTheme = currentTheme) {
         Box(modifier = Modifier.fillMaxSize()) {
             com.example.ui.data.TrackActiveTime()
+            LaunchedEffect(Unit) {
+                try {
+                    com.example.ui.data.SubscriptionManager.loadProducts()
+                    com.example.ui.data.SubscriptionManager.refresh()
+                } catch (e: Exception) {
+                }
+            }
             AppNavigation()
             ToastHost()
         }

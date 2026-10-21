@@ -303,6 +303,7 @@ fun RewardsScreen(onBack: () -> Unit, authViewModel: AuthViewModel = viewModel {
 fun ParentCornerScreen(
     onBack: () -> Unit,
     onSignOut: () -> Unit,
+    onOpenPlans: () -> Unit = {},
     authViewModel: AuthViewModel = viewModel { AuthViewModel() }
 ) {
     val context = LocalContext.current
@@ -321,8 +322,6 @@ fun ParentCornerScreen(
     val weak = remember(version) { ActivityTracker.needsPractice() }
     val strong = remember(version) { ActivityTracker.strongLetters() }
 
-    var plan by remember { mutableStateOf(prefs.getString("${langCode}_subscriptionPlan_$userEmail", "Free") ?: "Free") }
-    var pickedPrice by remember { mutableStateOf<String?>(null) }
     var confirmSignOut by remember { mutableStateOf(false) }
 
     Column(
@@ -383,33 +382,33 @@ fun ParentCornerScreen(
         }
 
         // Plan
+        val sub by com.example.ui.data.SubscriptionManager.state.collectAsState()
+        LaunchedEffect(Unit) { com.example.ui.data.SubscriptionManager.refresh() }
         Column(
-            Modifier.fillMaxWidth().background(Color(0xFFFFF6E0), RoundedCornerShape(22.dp)).border(2.dp, Color(0xFFF2DFAE), RoundedCornerShape(22.dp)).padding(14.dp),
+            Modifier.fillMaxWidth().background(Color(0xFFFFF6E0), RoundedCornerShape(22.dp)).border(2.dp, Color(0xFFF2DFAE), RoundedCornerShape(22.dp))
+                .clickable { onOpenPlans() }.padding(14.dp),
             verticalArrangement = Arrangement.spacedBy(10.dp)
         ) {
             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                 Box(Modifier.size(44.dp).background(DashSun, CircleShape), contentAlignment = Alignment.Center) { StarIcon(24.dp, Color.White) }
                 Column(Modifier.weight(1f)) {
-                    Text("$plan plan", fontSize = 16.sp, fontWeight = FontWeight.ExtraBold, color = ScrapbookInk)
-                    Text(if (plan == "Gold") "All letters, games and videos" else "Upgrade to unlock everything", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = ScrapbookInkSoft)
+                    val p = sub.plan
+                    Text(
+                        if (sub.hasPremium && p != null) "Premium · ${p.title}" else if (sub.hasPremium) "Premium (gift)" else "Free plan",
+                        fontSize = 16.sp, fontWeight = FontWeight.ExtraBold, color = ScrapbookInk
+                    )
+                    Text(
+                        when {
+                            sub.hasPremium && p != null && sub.renewsAt > 0 ->
+                                (if (sub.autoRenew) "Renews " else "Ends ") + formatDate(sub.renewsAt)
+                            sub.bonusUntil > currentTimeMillis() -> "Free until " + formatDate(sub.bonusUntil)
+                            else -> "₹99 a month, ₹499 for 6 months or ₹899 a year"
+                        },
+                        fontSize = 12.sp, fontWeight = FontWeight.Bold, color = ScrapbookInkSoft
+                    )
                 }
             }
-            if (plan == "Free") {
-                Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                    PlanButton("₹99 / month", Modifier.weight(1f)) { pickedPrice = "₹99 / month" }
-                    PlanButton("₹699 / year", Modifier.weight(1f)) { pickedPrice = "₹699 / year" }
-                }
-            } else {
-                Text(
-                    "Cancel subscription",
-                    modifier = Modifier.clip(RoundedCornerShape(12.dp)).clickable {
-                        plan = "Free"
-                        prefs.edit().putString("${langCode}_subscriptionPlan_$userEmail", "Free").apply()
-                        com.example.ui.data.UserManager.updateUserPlan(context, userEmail, "Free Explorer", 0)
-                    }.padding(vertical = 6.dp),
-                    fontSize = 14.sp, fontWeight = FontWeight.ExtraBold, color = Color(0xFFB23A3A)
-                )
-            }
+            PlanButton(if (sub.hasPremium) "See my plan" else "See plans", Modifier.fillMaxWidth()) { onOpenPlans() }
         }
 
         // Sign out
@@ -420,23 +419,6 @@ fun ParentCornerScreen(
         Spacer(Modifier.height(8.dp))
     }
 
-    pickedPrice?.let { price ->
-        AlertDialog(
-            onDismissRequest = { pickedPrice = null },
-            title = { Text("Unlock Gold", fontWeight = FontWeight.Bold) },
-            text = { Text("You picked the $price plan. This is a demo, so confirming unlocks Gold straight away.") },
-            confirmButton = {
-                TextButton(onClick = {
-                    plan = "Gold"
-                    prefs.edit().putString("${langCode}_subscriptionPlan_$userEmail", "Gold").apply()
-                    val days = if (price.contains("year")) 365 else 30
-                    com.example.ui.data.UserManager.updateUserPlan(context, userEmail, if (days == 365) "Gold Yearly" else "Gold Monthly", days)
-                    pickedPrice = null
-                }) { Text("Confirm") }
-            },
-            dismissButton = { TextButton(onClick = { pickedPrice = null }) { Text("Cancel") } }
-        )
-    }
     if (confirmSignOut) {
         AlertDialog(
             onDismissRequest = { confirmSignOut = false },

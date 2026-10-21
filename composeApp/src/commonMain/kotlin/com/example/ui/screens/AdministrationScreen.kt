@@ -41,7 +41,8 @@ import com.example.ui.data.UserManager
 fun AdministrationScreen(
     authViewModel: AuthViewModel,
     onBack: () -> Unit,
-    onSignOut: () -> Unit
+    onSignOut: () -> Unit,
+    onOpenSubscriptions: () -> Unit = {}
 ) {
     val context = LocalContext.current
     val authState by authViewModel.authState.collectAsState()
@@ -113,6 +114,12 @@ fun AdministrationScreen(
                     }
                 },
                 actions = {
+                    TextButton(
+                        onClick = onOpenSubscriptions,
+                        modifier = Modifier.testTag("admin_subscriptions_btn")
+                    ) {
+                        Text("Subscriptions", color = Color.White, fontWeight = FontWeight.Bold)
+                    }
                     IconButton(
                         onClick = { showAddUserDialog = true },
                         modifier = Modifier.testTag("admin_add_user_btn")

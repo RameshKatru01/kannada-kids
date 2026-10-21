@@ -1,0 +1,37 @@
+rules_version = '2';
+
+// Firestore security rules for Kannada Kids (project kannadakids-fd92d).
+// Paste into Firebase console > Firestore Database > Rules, then Publish.
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // An admin is anyone with a document at admins/{their email, lower case}.
+    function isAdmin() {
+      return request.auth != null
+        && request.auth.token.email != null
+        && exists(/databases/$(database)/documents/admins/$(request.auth.token.email.lower()));
+    }
+
+    function isOwner(uid) {
+      return request.auth != null && request.auth.uid == uid;
+    }
+
+    // One document per family: their plan, renewal date, payments.
+    // Families can write their own record, but only an admin can give free time (bonusUntil).
+    match /subscriptions/{uid} {
+      allow read: if isOwner(uid) || isAdmin();
+      allow create: if isOwner(uid) && !('bonusUntil' in request.resource.data);
+      allow update: if isAdmin()
+        || (isOwner(uid)
+            && request.resource.data.get('bonusUntil', 0) == resource.data.get('bonusUntil', 0)
+            && request.resource.data.get('bonusNote', '') == resource.data.get('bonusNote', ''));
+      allow delete: if isAdmin();
+    }
+
+    // Admin list: created by hand in the Firebase console.
+    match /admins/{email} {
+      allow read: if request.auth != null && request.auth.token.email.lower() == email;
+      allow write: if false;
+    }
+  }
+}

@@ -162,6 +162,15 @@ actual object PlatformAuth {
         }
     }
 
+    actual suspend fun idToken(): String? {
+        val user = auth?.currentUser ?: return null
+        return suspendCancellableCoroutine { cont ->
+            user.getIdToken(false)
+                .addOnSuccessListener { cont.resume(it.token) }
+                .addOnFailureListener { cont.resume(null) }
+        }
+    }
+
     actual fun signOut() {
         try {
             auth?.signOut()

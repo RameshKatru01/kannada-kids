@@ -111,6 +111,7 @@ fun AppNavigation(authViewModel: AuthViewModel = viewModel { AuthViewModel() }) 
                 ParentCornerScreen(
                     onBack = { navController.popBackStack() },
                     onSignOut = signOutAction,
+                    onOpenPlans = { navController.navigate("paywall") },
                     authViewModel = authViewModel
                 )
             }
@@ -119,8 +120,32 @@ fun AppNavigation(authViewModel: AuthViewModel = viewModel { AuthViewModel() }) 
                 AdministrationScreen(
                     authViewModel = authViewModel,
                     onBack = { navController.popBackStack() },
-                    onSignOut = signOutAction
+                    onSignOut = signOutAction,
+                    onOpenSubscriptions = { navController.navigate("admin_subs") }
                 )
+            }
+            composable("admin_subs") {
+                AdminSubscriptionsScreen(
+                    onBack = { navController.popBackStack() },
+                    onOpen = { uid -> navController.navigate("admin_sub/$uid") },
+                    onRenewals = { navController.navigate("admin_renewals") }
+                )
+            }
+            composable(
+                "admin_sub/{uid}",
+                arguments = listOf(navArgument("uid") { type = NavType.StringType })
+            ) { backStackEntry ->
+                val uid = backStackEntry.arguments?.read { getStringOrNull("uid") } ?: ""
+                AdminSubscriberScreen(uid = uid, onBack = { navController.popBackStack() })
+            }
+            composable("admin_renewals") {
+                AdminRenewalsScreen(
+                    onBack = { navController.popBackStack() },
+                    onOpen = { uid -> navController.navigate("admin_sub/$uid") }
+                )
+            }
+            composable("paywall") {
+                PaywallScreen(onBack = { navController.popBackStack() })
             }
 
             composable("reference") {
