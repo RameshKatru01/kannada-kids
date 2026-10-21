@@ -11,6 +11,7 @@
 .env
 *.jks
 *.keystore
+!composeApp/debug.keystore
 
 # Xcode
 iosApp/iosApp.xcodeproj/xcuserdata/

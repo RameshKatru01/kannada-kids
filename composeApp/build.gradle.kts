@@ -88,6 +88,14 @@ android {
     }
 
     signingConfigs {
+        // A fixed debug key (committed on purpose) so every debug APK, on any machine or on GitHub,
+        // has the same SHA-1 fingerprint. Google Sign-In only works for fingerprints registered in Firebase.
+        getByName("debug") {
+            storeFile = file("debug.keystore")
+            storePassword = "android"
+            keyAlias = "androiddebugkey"
+            keyPassword = "android"
+        }
         create("release") {
             val keystorePath = System.getenv("KEYSTORE_PATH") ?: "${rootDir}/my-upload-key.jks"
             storeFile = file(keystorePath)

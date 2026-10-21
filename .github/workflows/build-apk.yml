@@ -21,6 +21,21 @@ jobs:
 
       - uses: gradle/actions/setup-gradle@v4
 
+      - name: Use Firebase settings from repository secrets (if set)
+        shell: bash
+        env:
+          GOOGLE_SERVICES_JSON: ${{ secrets.GOOGLE_SERVICES_JSON }}
+          WEB_CLIENT_ID: ${{ secrets.WEB_CLIENT_ID }}
+        run: |
+          if [ -n "$GOOGLE_SERVICES_JSON" ]; then
+            printf '%s' "$GOOGLE_SERVICES_JSON" > composeApp/google-services.json
+            echo "Using google-services.json from secrets"
+          fi
+          if [ -n "$WEB_CLIENT_ID" ]; then
+            echo "WEB_CLIENT_ID=$WEB_CLIENT_ID" > .env
+            echo "Using WEB_CLIENT_ID from secrets"
+          fi
+
       - name: Build debug APK
         shell: bash
         run: |

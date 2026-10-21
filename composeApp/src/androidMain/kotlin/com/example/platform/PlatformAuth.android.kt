@@ -21,9 +21,6 @@ import kotlin.coroutines.resume
 import kotlin.coroutines.resumeWithException
 
 actual object PlatformAuth {
-    private const val FALLBACK_WEB_CLIENT_ID =
-        "9146775799-bbh5cob9boe2vj81j5l81of6tu941apc.apps.googleusercontent.com"
-
     private val auth: FirebaseAuth? by lazy {
         try {
             Firebase.auth
@@ -37,6 +34,14 @@ actual object PlatformAuth {
 
     actual fun isAvailable(): Boolean = auth != null
 
+    /** False while google-services.json is still the placeholder that came with the project. */
+    private fun firebaseConfigured(context: Context): Boolean = try {
+        val projectId = com.google.firebase.FirebaseApp.getInstance().options.projectId
+        !projectId.isNullOrBlank() && !projectId.contains("remixed")
+    } catch (e: Exception) {
+        false
+    }
+
     actual fun currentUser(): AuthUser? = try {
         auth?.currentUser?.toAuthUser()
     } catch (e: Exception) {
@@ -45,19 +50,17 @@ actual object PlatformAuth {
 
     actual suspend fun signInWithGoogle(context: Context): AuthUser {
         // Resolve Web Client ID from BuildConfig, R.string.default_web_client_id, or fallback
-        val webClientId = try {
-            val configured = BuildConfig.WEB_CLIENT_ID
-            if (configured.isNotBlank() && configured != "dummy_client_id") {
-                configured
-            } else {
-                context.getString(R.string.default_web_client_id)
-            }
-        } catch (e: Exception) {
-            FALLBACK_WEB_CLIENT_ID
-        }
+        fun usable(id: String?) = !id.isNullOrBlank() && id != "dummy_client_id" && !id.contains("example")
+        val webClientId = listOf(
+            runCatching { BuildConfig.WEB_CLIENT_ID }.getOrNull(),
+            runCatching { context.getString(R.string.default_web_client_id) }.getOrNull()
+        ).firstOrNull { usable(it) }
 
-        if (webClientId.isBlank()) {
-            throw AuthException("Web Client ID is not configured. You can explore as a guest instead.")
+        if (webClientId == null || auth == null || !firebaseConfigured(context)) {
+            throw AuthException(
+                "Google sign-in isn't set up in this build yet (the Firebase settings file is a placeholder). " +
+                    "You can explore as a guest for now."
+            )
         }
 
         val credentialManager = CredentialManager.create(context)
