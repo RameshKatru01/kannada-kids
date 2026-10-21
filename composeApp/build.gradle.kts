@@ -66,6 +66,13 @@ kotlin {
         iosMain.dependencies {
             implementation(libs.ktor.client.darwin)
         }
+        // Apple (cinterop) APIs used by the iOS platform code
+        all {
+            if (name.startsWith("ios")) {
+                languageSettings.optIn("kotlinx.cinterop.ExperimentalForeignApi")
+                languageSettings.optIn("kotlinx.cinterop.BetaInteropApi")
+            }
+        }
     }
 }
 
