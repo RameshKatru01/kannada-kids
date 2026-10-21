@@ -52,8 +52,6 @@ object GameRegistry {
         // Older games: play freely (levels come in a later update)
         GameInfo(12, "balloon_pop", "Musical Balloon Pop", "Just for fun", "ಉ", Berry, Color.White),
         GameInfo(6, "letter_runner", "Letter Runner", "Just for fun", "ಎ", Leaf, Navy),
-        GameInfo(7, "vowel_map", "Vowel Map Navigator", "Just for fun", "ಒ", Teal, Navy),
-        GameInfo(16, "constellation", "Constellation Path", "Just for fun", "ನ", Navy, Color.White),
     )
 
     fun byId(id: Int): GameInfo? = games.firstOrNull { it.id == id }
