@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>CLIENT_ID</key>
+	<string>17747908903-eedhi26m1it5s2ktvm9ivcc07md09ddu.apps.googleusercontent.com</string>
+	<key>REVERSED_CLIENT_ID</key>
+	<string>com.googleusercontent.apps.17747908903-eedhi26m1it5s2ktvm9ivcc07md09ddu</string>
+	<key>ANDROID_CLIENT_ID</key>
+	<string>17747908903-tf4ohgvcvd8sldhd7f6jh9k80l00fjsp.apps.googleusercontent.com</string>
+	<key>API_KEY</key>
+	<string>AIzaSyC-qcMGiWj7ek5x6XsytYEkt8DwWGVjoBs</string>
+	<key>GCM_SENDER_ID</key>
+	<string>17747908903</string>
+	<key>PLIST_VERSION</key>
+	<string>1</string>
+	<key>BUNDLE_ID</key>
+	<string>com.aistudio.kannadakids.ios</string>
+	<key>PROJECT_ID</key>
+	<string>kannadakids-fd92d</string>
+	<key>STORAGE_BUCKET</key>
+	<string>kannadakids-fd92d.firebasestorage.app</string>
+	<key>IS_ADS_ENABLED</key>
+	<false></false>
+	<key>IS_ANALYTICS_ENABLED</key>
+	<false></false>
+	<key>IS_APPINVITE_ENABLED</key>
+	<true></true>
+	<key>IS_GCM_ENABLED</key>
+	<true></true>
+	<key>IS_SIGNIN_ENABLED</key>
+	<true></true>
+	<key>GOOGLE_APP_ID</key>
+	<string>1:17747908903:ios:07c1ca8e4019df4738f102</string>
+</dict>
+</plist>

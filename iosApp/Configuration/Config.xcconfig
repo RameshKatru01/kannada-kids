@@ -9,11 +9,6 @@ PRODUCT_NAME=KannadaKids
 MARKETING_VERSION=1.1
 CURRENT_PROJECT_VERSION=1
 
-// Optional: Firebase "Web API key" (Firebase console > Project settings > General).
-// When set, Gmail sign-in on iPhone uses the same Firebase project as Android.
-FIREBASE_API_KEY=
-
-// Optional: Google Sign-In for iOS (see README). Leave empty to hide Google sign-in errors behind
-// a friendly message; users can still sign in with their Gmail address or as a guest.
-GOOGLE_IOS_CLIENT_ID=
-GOOGLE_REVERSED_CLIENT_ID=kannadakids-google-signin-not-configured
+// Firebase / Google Sign-In settings (project kannadakids-fd92d) are written straight into
+// iosApp/Info.plist (GIDClientID, GIDServerClientID, FIREBASE_API_KEY, URL scheme).
+// They belong to the bundle ID above: if you change it, add a new iOS app in Firebase.

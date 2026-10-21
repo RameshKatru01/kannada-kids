@@ -1,27 +1,47 @@
 {
   "project_info": {
-    "project_id": "remixed-project-id",
-    "project_number": "1234567890"
+    "project_number": "17747908903",
+    "project_id": "kannadakids-fd92d",
+    "storage_bucket": "kannadakids-fd92d.firebasestorage.app"
   },
   "client": [
     {
       "client_info": {
-        "mobilesdk_app_id": "1:1234567890:android:remixedappid",
+        "mobilesdk_app_id": "1:17747908903:android:270e9fbf608813f638f102",
         "android_client_info": {
           "package_name": "com.aistudio.kannadakids.ycpceg"
         }
       },
       "oauth_client": [
         {
-          "client_id": "1234567890-examplewebclientid.apps.googleusercontent.com",
+          "client_id": "17747908903-tf4ohgvcvd8sldhd7f6jh9k80l00fjsp.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.aistudio.kannadakids.ycpceg",
+            "certificate_hash": "5c0006fd5ded8943aee3ef5b5dc1ce4e01b73930"
+          }
+        },
+        {
+          "client_id": "17747908903-8babsr3j3bk126kiivdfdl7jlehojfap.apps.googleusercontent.com",
           "client_type": 3
         }
       ],
       "api_key": [
         {
-          "current_key": "remixed-api-key"
+          "current_key": "AIzaSyAqULn8CPJFKXaGCxFv-N3O7DXZwCPtvyw"
         }
-      ]
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "17747908903-8babsr3j3bk126kiivdfdl7jlehojfap.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
     }
-  ]
+  ],
+  "configuration_version": "1"
 }

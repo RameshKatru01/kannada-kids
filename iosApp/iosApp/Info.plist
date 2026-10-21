@@ -27,14 +27,16 @@
 			<string>Editor</string>
 			<key>CFBundleURLSchemes</key>
 			<array>
-				<string>$(GOOGLE_REVERSED_CLIENT_ID)</string>
+				<string>com.googleusercontent.apps.17747908903-eedhi26m1it5s2ktvm9ivcc07md09ddu</string>
 			</array>
 		</dict>
 	</array>
 	<key>GIDClientID</key>
-	<string>$(GOOGLE_IOS_CLIENT_ID)</string>
+	<string>17747908903-eedhi26m1it5s2ktvm9ivcc07md09ddu.apps.googleusercontent.com</string>
+	<key>GIDServerClientID</key>
+	<string>17747908903-8babsr3j3bk126kiivdfdl7jlehojfap.apps.googleusercontent.com</string>
 	<key>FIREBASE_API_KEY</key>
-	<string>$(FIREBASE_API_KEY)</string>
+	<string>AIzaSyC-qcMGiWj7ek5x6XsytYEkt8DwWGVjoBs</string>
 	<key>CADisableMinimumFrameDurationOnPhone</key>
 	<true/>
 	<key>ITSAppUsesNonExemptEncryption</key>

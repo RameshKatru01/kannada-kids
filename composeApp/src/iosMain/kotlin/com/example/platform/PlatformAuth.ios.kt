@@ -64,6 +64,7 @@ actual object PlatformAuth {
         val key = apiKey ?: throw AuthException("Firebase unavailable")
         val response = httpClient.post("https://identitytoolkit.googleapis.com/v1/accounts:$endpoint?key=$key") {
             contentType(ContentType.Application.Json)
+            NSBundle.mainBundle.bundleIdentifier?.let { headers.append("X-Ios-Bundle-Identifier", it) }
             setBody(body.toString())
         }
         val text = response.bodyAsText()
