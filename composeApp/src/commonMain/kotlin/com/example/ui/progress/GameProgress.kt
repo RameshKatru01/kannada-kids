@@ -51,6 +51,7 @@ object GameRegistry {
         GameInfo(20, "swara_adventure", "Swara Adventure", "Find the missing ಸ್ವರ", "ಸ", Leaf, Navy, LEVELS_PER_GAME),
         // Older games: play freely (levels come in a later update)
         GameInfo(12, "balloon_pop", "Musical Balloon Pop", "Just for fun", "ಉ", Berry, Color.White),
+        GameInfo(23, "letter_dash", "Letter Dash", "Endless run · beat your best!", "ಡ", Tangerine, Navy),
         GameInfo(6, "letter_runner", "Letter Runner", "Just for fun", "ಎ", Leaf, Navy),
     )
 
