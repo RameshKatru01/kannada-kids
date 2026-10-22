@@ -94,6 +94,13 @@ fun AppNavigation(authViewModel: AuthViewModel = viewModel { AuthViewModel() }) 
                     onNavigateToNumbers = { navController.navigate("list/numbers") },
                     onNavigateToLeaderboard = { navController.navigate("leaderboard") },
                     onNavigateToProfile = { navController.navigate("profile") },
+                    onOpenLetter = { type, index -> navController.navigate("letter_flow/$type/$index") },
+                    onOpenGame = { game ->
+                        navController.navigate(if (game.hasLevels) "levels/${game.id}" else "game/${game.id}")
+                    },
+                    onSeeAllGames = { navController.navigate("games") { launchSingleTop = true } },
+                    onOpenVideos = { folder -> navController.navigate("video_player/${Uri.encode(folder)}") },
+                    onSeeAllVideos = { navController.navigate("fun_videos") { launchSingleTop = true } },
                     onSignOut = signOutAction
                 )
             }

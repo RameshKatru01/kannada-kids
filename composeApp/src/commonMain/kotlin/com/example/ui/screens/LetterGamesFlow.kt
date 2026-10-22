@@ -114,6 +114,7 @@ fun LetterGameFlowScreen(
                     targetLetter = letter,
                     onSpeakText = speakText,
                     onComplete = {
+                        com.example.ui.data.ActivityTracker.markLearned(type, index)
                         val maxItems = if (type == "guninthakshari") com.example.data.LetterData.consonants.size else items.size
                         val previousBadges = com.example.ui.data.BadgeManager.badges.count { it.isUnlocked(prefs, userEmail, langCode) }
                         
