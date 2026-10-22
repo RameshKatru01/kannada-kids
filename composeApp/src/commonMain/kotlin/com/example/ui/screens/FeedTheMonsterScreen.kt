@@ -180,7 +180,7 @@ fun FeedTheMonsterScreen(mode: Int, firstLevel: Int = 1, onBack: () -> Unit) {
                 tally.right()
                 com.example.ui.data.ActivityTracker.recordAnswer(wanted.character, true)
                 SoundEffectsHelper.playSuccess(context)
-                NativeAudioPlayer.playPhonics(context, letter.character)
+                // No letter sound here: it overlapped with the next letter being asked for
                 choices = choices.filter { it.id != letter.id }
                 delay(900)
                 fed += 1
