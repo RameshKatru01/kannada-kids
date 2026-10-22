@@ -30,7 +30,9 @@ import com.example.ui.data.LanguageManager
 import com.example.ui.progress.GameProgress
 import com.example.ui.progress.LevelResult
 import com.example.ui.progress.LevelTally
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.withContext
 import kotlinx.coroutines.launch
 
 /*
@@ -47,11 +49,60 @@ private val sortLevels = listOf(
     SortLevel(3, 4, 2, "3 colours, taller jars"),
     SortLevel(4, 4, 2, "4 colours"),
     SortLevel(5, 4, 2, "5 colours"),
-    SortLevel(6, 4, 2, "6 colours")
+    SortLevel(6, 4, 3, "6 colours, 3 empty jars")
 )
 
-/** Bright, easy-to-tell-apart colours (from Paint the Monster's list, with names). */
-private val sortColourIds = listOf("red", "blue", "yellow", "green", "orange", "purple", "pink")
+/**
+ * Six clearly different colours (pink was too close to red). Each also gets its own white symbol,
+ * so children (and colour-blind players) can tell them apart.
+ */
+private val sortColourIds = listOf("red", "blue", "yellow", "green", "purple", "orange")
+private val sortSymbols = listOf("●", "▲", "■", "★", "♥", "◆")
+
+/**
+ * Finds a way to finish from [jars] (depth-first search with memory). Returns the first pour
+ * (from, to), or null if the jars can no longer be sorted. Used to check new puzzles and for hints.
+ */
+private fun solveFirstMove(jars: List<List<Int>>, cap: Int, colours: Int, limit: Int = 80_000): Pair<Int, Int>? {
+    fun done(s: List<List<Int>>) = s.count { it.size == cap && it.distinct().size == 1 } == colours
+    if (done(jars)) return null
+    fun key(s: List<List<Int>>) = s.map { it.joinToString(",") }.sorted().joinToString("|")
+    val seen = HashSet<String>()
+    data class Frame(val state: List<List<Int>>, val first: Pair<Int, Int>?)
+    val stack = ArrayDeque<Frame>()
+    stack.addLast(Frame(jars, null))
+    seen += key(jars)
+    while (stack.isNotEmpty() && seen.size < limit) {
+        val (state, first) = stack.removeLast()
+        val moves = mutableListOf<Pair<Pair<Int, Int>, Int>>()   // move to priority (higher = tried first)
+        for (a in state.indices) {
+            val src = state[a]
+            if (src.isEmpty()) continue
+            if (src.size == cap && src.distinct().size == 1) continue
+            val c = src.last()
+            val run = src.reversed().takeWhile { it == c }.size
+            for (b in state.indices) {
+                if (a == b) continue
+                val dst = state[b]
+                val room = cap - dst.size
+                if (room == 0 || (dst.isNotEmpty() && dst.last() != c)) continue
+                if (dst.isEmpty() && run == src.size) continue          // moving a whole one-colour pile to an empty jar is pointless
+                moves += (a to b) to (if (dst.isNotEmpty()) 2 else 1)
+            }
+        }
+        // Push lower-priority moves first so better moves are explored first
+        for ((mv, _) in moves.sortedBy { it.second }) {
+            val (a, b) = mv
+            val c = state[a].last()
+            val n = minOf(cap - state[b].size, state[a].reversed().takeWhile { it == c }.size)
+            val next = state.mapIndexed { i, j -> when (i) { a -> j.dropLast(n); b -> j + List(n) { c }; else -> j } }
+            val f = first ?: mv
+            if (done(next)) return f
+            if (seen.add(key(next))) stack.addLast(Frame(next, f))
+        }
+    }
+    return null
+}
 
 /** Builds a puzzle that can always be solved, by scrambling a solved one with "backwards" pours. */
 private fun makeJars(spec: SortLevel, colours: List<Int>): List<List<Int>> {
@@ -79,7 +130,7 @@ private fun makeJars(spec: SortLevel, colours: List<Int>): List<List<Int>> {
             last = a to b
         }
         val sortedJars = jars.count { it.size == spec.capacity && it.distinct().size == 1 }
-        if (sortedJars == 0) {
+        if (sortedJars == 0 && solveFirstMove(jars, spec.capacity, spec.colours) != null) {
             // Keep the empty jars at the end so the puzzle looks tidy
             return jars.sortedBy { if (it.isEmpty()) 1 else 0 }
         }
@@ -112,6 +163,8 @@ fun ColourSortScreen(firstLevel: Int = 1, onBack: () -> Unit) {
     var levelResult by remember { mutableStateOf<LevelResult?>(null) }
     var showConfetti by remember { mutableStateOf(false) }
     var finished by remember(level, round) { mutableStateOf(false) }
+    var hint by remember(level, round) { mutableStateOf<Pair<Int, Int>?>(null) }
+    var hintMessage by remember(level, round) { mutableStateOf<String?>(null) }
 
     fun isComplete(j: List<Int>) = j.size == spec.capacity && j.distinct().size == 1
     val completeCount = jars.count { isComplete(it) }
@@ -170,6 +223,8 @@ fun ColourSortScreen(firstLevel: Int = 1, onBack: () -> Unit) {
 
     fun tapJar(i: Int) {
         if (finished) return
+        hint = null
+        hintMessage = null
         val sel = selected
         when {
             sel == null -> if (jars[i].isNotEmpty() && !isComplete(jars[i])) { selected = i; SoundEffectsHelper.playClick() }
@@ -179,6 +234,28 @@ fun ColourSortScreen(firstLevel: Int = 1, onBack: () -> Unit) {
     }
 
     val shake = rememberShake(shakeCount)
+
+    fun symbolFor(colourIndex: Int): String =
+        sortSymbols.getOrElse(sortColourIds.indexOf(palette[colourIndex].id)) { "●" }
+
+    fun showHint() {
+        if (finished) return
+        selected = null
+        scope.launch {
+            val snapshot = jars
+            val move = withContext(Dispatchers.Default) { solveFirstMove(snapshot, spec.capacity, spec.colours) }
+            if (snapshot != jars) return@launch
+            if (move == null) {
+                hint = null
+                hintMessage = "Oh no, stuck! Tap Undo a few times and try another way."
+            } else {
+                hint = move
+                hintMessage = "Pour from the bouncing jar into the one with the arrow ⬇"
+                delay(3000)
+                if (hint == move) { hint = null; hintMessage = null }
+            }
+        }
+    }
 
     LevelGameScaffold(
         title = "Colour Sort",
@@ -196,85 +273,125 @@ fun ColourSortScreen(firstLevel: Int = 1, onBack: () -> Unit) {
     ) {
         Text("Tap a jar, then tap where to pour", fontSize = 15.sp, fontWeight = FontWeight.ExtraBold, color = GameInk)
         Text("Make every jar one colour!", fontSize = 13.sp, fontWeight = FontWeight.Bold, color = GameInk.copy(alpha = 0.6f))
-        Spacer(Modifier.weight(1f))
+        Spacer(Modifier.height(8.dp))
 
-        val scoop = if (spec.capacity == 3) 52.dp else 46.dp
-        FlowRow(
-            horizontalArrangement = Arrangement.spacedBy(14.dp, Alignment.CenterHorizontally),
-            verticalArrangement = Arrangement.spacedBy(26.dp),
-            modifier = Modifier.fillMaxWidth()
-        ) {
-            jars.forEachIndexed { i, jar ->
-                val lifted = selected == i
-                val lift by animateFloatAsState(if (lifted) -22f else 0f, spring(dampingRatio = 0.5f), label = "lift")
-                val complete = isComplete(jar)
-                Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    Box(Modifier.height(26.dp), contentAlignment = Alignment.Center) {
-                        if (complete) Icon(Icons.Default.Star, contentDescription = null, tint = Color(0xFFFFB300), modifier = Modifier.size(26.dp))
-                    }
-                    Column(
-                        Modifier
-                            .graphicsLayer {
-                                translationY = lift * density
-                                translationX = if (shakeJar == i) shake * density else 0f
-                            }
-                            .width(66.dp)
-                            .height(scoop * spec.capacity + 18.dp)
-                            .clip(RoundedCornerShape(topStart = 10.dp, topEnd = 10.dp, bottomStart = 30.dp, bottomEnd = 30.dp))
-                            .background(Color.White.copy(alpha = 0.85f))
-                            .border(
-                                4.dp,
-                                if (lifted) Color(0xFFFFC93C) else if (complete) palette[jar.first()].color else Color(0xFFB8C7D4),
-                                RoundedCornerShape(topStart = 10.dp, topEnd = 10.dp, bottomStart = 30.dp, bottomEnd = 30.dp)
-                            )
-                            .clickable { tapJar(i) }
-                            .padding(start = 7.dp, end = 7.dp, bottom = 7.dp)
-                            .testTag("jar_$i"),
-                        verticalArrangement = Arrangement.Bottom
-                    ) {
-                        jar.reversed().forEachIndexed { k, colourIndex ->
-                            val isBottom = k == jar.size - 1
-                            Box(
-                                Modifier
-                                    .fillMaxWidth()
-                                    .height(scoop)
-                                    .clip(
-                                        if (isBottom) RoundedCornerShape(bottomStart = 24.dp, bottomEnd = 24.dp, topStart = 4.dp, topEnd = 4.dp)
-                                        else RoundedCornerShape(4.dp)
-                                    )
-                                    .background(palette[colourIndex].color)
-                            ) {
-                                // little shine
-                                Box(Modifier.padding(start = 6.dp, top = 6.dp).size(8.dp, 16.dp).background(Color.White.copy(alpha = 0.35f), CircleShape))
+        // Jars: up to 2 rows, sized to fit the screen so every jar can be reached
+        BoxWithConstraints(Modifier.fillMaxWidth().weight(1f), contentAlignment = Alignment.Center) {
+            val n = jars.size
+            val rows = if (n <= 5) 1 else 2
+            val perRow = (n + rows - 1) / rows
+            val gap = 10.dp
+            val jarW = minOf(66.dp, (maxWidth - gap * (perRow - 1)) / perRow)
+            val rowH = (maxHeight - 18.dp * (rows - 1)) / rows
+            val jarH = minOf(rowH - 50.dp, 52.dp * spec.capacity + 18.dp)
+            val scoop = ((jarH - 18.dp) / spec.capacity).coerceAtLeast(22.dp)
+            Column(verticalArrangement = Arrangement.spacedBy(18.dp), horizontalAlignment = Alignment.CenterHorizontally) {
+                jars.indices.chunked(perRow).forEach { rowIdx ->
+                    Row(horizontalArrangement = Arrangement.spacedBy(gap)) {
+                        rowIdx.forEach { i ->
+                            val jar = jars[i]
+                            val lifted = selected == i
+                            val hinted = hint?.let { it.first == i || it.second == i } == true
+                            val lift by animateFloatAsState(if (lifted || hint?.first == i) -18f else 0f, spring(dampingRatio = 0.5f), label = "lift")
+                            val complete = isComplete(jar)
+                            val shape = RoundedCornerShape(topStart = 10.dp, topEnd = 10.dp, bottomStart = 26.dp, bottomEnd = 26.dp)
+                            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                Box(Modifier.height(24.dp), contentAlignment = Alignment.Center) {
+                                    if (complete) Icon(Icons.Default.Star, contentDescription = null, tint = Color(0xFFFFB300), modifier = Modifier.size(24.dp))
+                                    else if (hint?.second == i) Text("⬇", fontSize = 20.sp, color = Color(0xFFFF9F1C), fontWeight = FontWeight.ExtraBold)
+                                }
+                                Column(
+                                    Modifier
+                                        .graphicsLayer {
+                                            translationY = lift * density
+                                            translationX = if (shakeJar == i) shake * density else 0f
+                                        }
+                                        .width(jarW)
+                                        .height(scoop * spec.capacity + 18.dp)
+                                        .clip(shape)
+                                        .background(Color.White.copy(alpha = 0.85f))
+                                        .border(
+                                            4.dp,
+                                            when {
+                                                lifted -> Color(0xFFFFC93C)
+                                                hinted -> Color(0xFFFF9F1C)
+                                                complete -> palette[jar.first()].color
+                                                else -> Color(0xFFB8C7D4)
+                                            },
+                                            shape
+                                        )
+                                        .clickable { tapJar(i) }
+                                        .padding(start = 6.dp, end = 6.dp, bottom = 6.dp)
+                                        .testTag("jar_$i"),
+                                    verticalArrangement = Arrangement.Bottom
+                                ) {
+                                    jar.reversed().forEachIndexed { k, colourIndex ->
+                                        val isBottom = k == jar.size - 1
+                                        Box(
+                                            Modifier
+                                                .fillMaxWidth()
+                                                .height(scoop)
+                                                .clip(
+                                                    if (isBottom) RoundedCornerShape(bottomStart = 20.dp, bottomEnd = 20.dp, topStart = 4.dp, topEnd = 4.dp)
+                                                    else RoundedCornerShape(4.dp)
+                                                )
+                                                .background(palette[colourIndex].color),
+                                            contentAlignment = Alignment.Center
+                                        ) {
+                                            Text(symbolFor(colourIndex), fontSize = (scoop.value * 0.42f).sp, color = Color.White.copy(alpha = 0.9f), fontWeight = FontWeight.ExtraBold)
+                                        }
+                                    }
+                                }
+                                Spacer(Modifier.height(4.dp))
+                                Text(
+                                    if (complete) palette[jar.first()].name(lang) else " ",
+                                    fontSize = 13.sp, fontWeight = FontWeight.ExtraBold, color = GameInk, maxLines = 1
+                                )
                             }
                         }
                     }
-                    Spacer(Modifier.height(6.dp))
-                    Text(
-                        if (complete) palette[jar.first()].name(lang) else " ",
-                        fontSize = 14.sp, fontWeight = FontWeight.ExtraBold, color = GameInk
-                    )
                 }
             }
         }
-        Spacer(Modifier.weight(1f))
-        Row(
-            Modifier
-                .clip(RoundedCornerShape(22.dp))
-                .background(if (history.isEmpty() || finished) Color(0xFFE3E7EE) else Color.White)
-                .clickable(enabled = history.isNotEmpty() && !finished) {
-                    jars = history.last()
-                    history = history.dropLast(1)
-                    selected = null
-                }
-                .padding(horizontal = 18.dp, vertical = 10.dp)
-                .testTag("sort_undo"),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(6.dp)
-        ) {
-            Icon(Icons.AutoMirrored.Filled.Undo, contentDescription = null, tint = GameInk)
-            Text("Undo", fontSize = 15.sp, fontWeight = FontWeight.ExtraBold, color = GameInk)
+
+        hintMessage?.let {
+            Text(it, fontSize = 14.sp, fontWeight = FontWeight.ExtraBold, color = Color(0xFFB55F00))
+            Spacer(Modifier.height(6.dp))
         }
-        Spacer(Modifier.height(16.dp))
+        Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+            Row(
+                Modifier
+                    .clip(RoundedCornerShape(22.dp))
+                    .background(if (history.isEmpty() || finished) Color(0xFFE3E7EE) else Color.White)
+                    .clickable(enabled = history.isNotEmpty() && !finished) {
+                        jars = history.last()
+                        history = history.dropLast(1)
+                        selected = null
+                        hint = null
+                        hintMessage = null
+                    }
+                    .padding(horizontal = 18.dp, vertical = 10.dp)
+                    .testTag("sort_undo"),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(6.dp)
+            ) {
+                Icon(Icons.AutoMirrored.Filled.Undo, contentDescription = null, tint = GameInk)
+                Text("Undo", fontSize = 15.sp, fontWeight = FontWeight.ExtraBold, color = GameInk)
+            }
+            Row(
+                Modifier
+                    .clip(RoundedCornerShape(22.dp))
+                    .background(if (finished) Color(0xFFE3E7EE) else Color(0xFFFFF0C2))
+                    .clickable(enabled = !finished) { showHint() }
+                    .padding(horizontal = 18.dp, vertical = 10.dp)
+                    .testTag("sort_hint"),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(6.dp)
+            ) {
+                Text("💡", fontSize = 16.sp)
+                Text("Hint", fontSize = 15.sp, fontWeight = FontWeight.ExtraBold, color = GameInk)
+            }
+        }
+        Spacer(Modifier.height(12.dp))
     }
 }
