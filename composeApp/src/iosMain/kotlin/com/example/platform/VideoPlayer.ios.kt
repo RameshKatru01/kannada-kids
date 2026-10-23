@@ -18,6 +18,9 @@ import platform.CoreMedia.CMTimeMakeWithSeconds
 import platform.Foundation.NSNotificationCenter
 import platform.Foundation.NSOperationQueue
 import platform.Foundation.NSURL
+import platform.Foundation.NSData
+import platform.Foundation.create
+import platform.Foundation.writeToFile
 import platform.darwin.NSObjectProtocol
 
 class IosVideoPlayerController(val player: AVPlayer, private val loop: Boolean, private var fallbackUrl: String? = null) : VideoPlayerController {
@@ -135,7 +138,7 @@ private object IosVideoCache {
         if (!downloading.add(url)) return
         // Download on a background queue, then save the file
         platform.darwin.dispatch_async(platform.darwin.dispatch_get_global_queue(platform.darwin.DISPATCH_QUEUE_PRIORITY_BACKGROUND.toLong(), 0u)) {
-            val data = platform.Foundation.NSData.dataWithContentsOfURL(remote)
+            val data = NSData.create(contentsOfURL = remote)
             if (data != null && data.length > 10_000uL) {
                 data.writeToFile(f, atomically = true)
             }
