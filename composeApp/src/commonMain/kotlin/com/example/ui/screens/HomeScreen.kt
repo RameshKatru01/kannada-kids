@@ -9,12 +9,8 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.lazy.LazyRow
-import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AdminPanelSettings
 import androidx.compose.material.icons.filled.Dashboard
@@ -43,6 +39,8 @@ import androidx.compose.ui.graphics.PathEffect
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.layout.ContentScale
+import com.example.ui.components.GameArt
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
@@ -137,22 +135,30 @@ fun HomeScreen(
         if (current.type == "guninthakshari") current.open() else onOpenLetter(current.type, current.nextIndex)
     }
 
+    // Everything fits on one screen (no scrolling): the two shelves take a fixed height and the
+    // map gets whatever is left. All three share the same 16dp side margins so their edges line up.
     BoxWithConstraints(Modifier.fillMaxSize().background(HomeSky)) {
-        val mapHeight: Dp = (maxHeight * 0.52f).coerceIn(300.dp, 460.dp)
+        val side = 16.dp
+        val gap = 10.dp
+        val inner = maxWidth - side * 2
+        // 3 cards per row on phones, more on tablets
+        val perRow = (inner / 120.dp).toInt().coerceIn(3, 6)
+        val cardWidth = (inner - gap * (perRow - 1)) / perRow
+        val pictureHeight = (cardWidth * 0.66f).coerceAtMost(130.dp)
+        val picks = remember { listOf(1, 21, 23, 22, 12, 13).mapNotNull { GameRegistry.byId(it) } }
         Column(
             Modifier
                 .fillMaxSize()
-                .verticalScroll(rememberScrollState())
                 .windowInsetsPadding(WindowInsets.statusBars)
-                .padding(top = 10.dp, bottom = 16.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp)
+                .padding(top = 8.dp, bottom = 10.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
             HomeTopBar(
                 coins = coins,
                 streak = streak,
                 onProfile = onNavigateToProfile,
                 onPoints = onNavigateToLeaderboard,
-                modifier = Modifier.padding(horizontal = 16.dp)
+                modifier = Modifier.padding(horizontal = side)
             )
             IslandMap(
                 islands = islands,
@@ -160,25 +166,20 @@ fun HomeScreen(
                 nextGlyph = nextGlyph,
                 onNext = openNext,
                 modifier = Modifier
-                    .padding(horizontal = 16.dp)
+                    .padding(horizontal = side)
                     .fillMaxWidth()
-                    .height(mapHeight)
+                    .weight(1f)
             )
-            ShelfTitle("Games", onSeeAll = onSeeAllGames)
-            val picks = remember { listOf(1, 21, 23, 22, 12, 13, 8, 11).mapNotNull { GameRegistry.byId(it) } }
-            LazyRow(
-                contentPadding = PaddingValues(horizontal = 16.dp),
-                horizontalArrangement = Arrangement.spacedBy(10.dp)
-            ) {
-                items(picks, key = { it.id }) { game -> HomeGameCard(game) { onOpenGame(game) } }
+            ShelfTitle("Games", onSeeAll = onSeeAllGames, side = side)
+            Row(Modifier.fillMaxWidth().padding(horizontal = side), horizontalArrangement = Arrangement.spacedBy(gap)) {
+                picks.take(perRow).forEach { game ->
+                    HomeGameCard(game, pictureHeight, Modifier.width(cardWidth)) { onOpenGame(game) }
+                }
             }
-            ShelfTitle("Fun Videos", onSeeAll = onSeeAllVideos)
-            LazyRow(
-                contentPadding = PaddingValues(horizontal = 16.dp),
-                horizontalArrangement = Arrangement.spacedBy(10.dp)
-            ) {
-                items(homeVideos, key = { it.first }) { (folder, photo) ->
-                    HomeVideoCard(folder, photo) { onOpenVideos(folder) }
+            ShelfTitle("Fun Videos", onSeeAll = onSeeAllVideos, side = side)
+            Row(Modifier.fillMaxWidth().padding(horizontal = side), horizontalArrangement = Arrangement.spacedBy(gap)) {
+                homeVideos.take(perRow).forEach { (folder, photo) ->
+                    HomeVideoCard(folder, photo, pictureHeight, Modifier.width(cardWidth)) { onOpenVideos(folder) }
                 }
             }
         }
@@ -279,7 +280,9 @@ private fun IslandMap(islands: List<Island>, currentIndex: Int, nextGlyph: Strin
 
         islands.forEachIndexed { i, island ->
             val isCurrent = i == currentIndex
-            val ring = if (isCurrent) 92.dp else 74.dp
+            // Rings shrink on short screens so the islands never overlap
+            val bigRing = (h * 0.26f).coerceIn(56.dp, 96.dp)
+            val ring = if (isCurrent) bigRing else bigRing * 0.8f
             val spot = islandSpots[i]
             val labelWidth = 130.dp
             Column(
@@ -302,10 +305,10 @@ private fun IslandMap(islands: List<Island>, currentIndex: Int, nextGlyph: Strin
                         modifier = Modifier.fillMaxSize()
                     )
                     Box(
-                        Modifier.fillMaxSize().padding(10.dp).clip(CircleShape).background(island.tint),
+                        Modifier.fillMaxSize().padding(ring * 0.11f).clip(CircleShape).background(island.tint),
                         contentAlignment = Alignment.Center
                     ) {
-                        Text(island.glyph, fontSize = if (isCurrent) 30.sp else 24.sp, fontWeight = FontWeight.ExtraBold, color = HomeInk)
+                        Text(island.glyph, fontSize = (ring.value * 0.32f).sp, fontWeight = FontWeight.ExtraBold, color = HomeInk)
                     }
                     if (isCurrent) {
                         Text(
@@ -378,12 +381,12 @@ private fun ProgressRing(fraction: Float, color: Color, modifier: Modifier = Mod
 }
 
 @Composable
-private fun ShelfTitle(title: String, onSeeAll: () -> Unit) {
+private fun ShelfTitle(title: String, onSeeAll: () -> Unit, side: Dp = 16.dp) {
     Row(
-        Modifier.fillMaxWidth().padding(horizontal = 16.dp),
+        Modifier.fillMaxWidth().padding(start = side, end = side - 6.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        Text(title, fontSize = 19.sp, fontWeight = FontWeight.ExtraBold, color = HomeInk, modifier = Modifier.weight(1f))
+        Text(title, fontSize = 18.sp, fontWeight = FontWeight.ExtraBold, color = HomeInk, modifier = Modifier.weight(1f))
         Text(
             "See all",
             fontSize = 13.sp, fontWeight = FontWeight.ExtraBold, color = HomeInk,
@@ -392,60 +395,86 @@ private fun ShelfTitle(title: String, onSeeAll: () -> Unit) {
     }
 }
 
+/** A game card: its drawn picture (same art as the Games tab) with the name below, like a video card. */
 @Composable
-private fun HomeGameCard(game: GameInfo, onClick: () -> Unit) {
-    Column(
-        Modifier
-            .width(110.dp)
-            .height(96.dp)
-            .shadow(3.dp, RoundedCornerShape(20.dp))
-            .clip(RoundedCornerShape(20.dp))
-            .background(game.color)
-            .clickable {
-                com.example.ui.audio.SoundEffectsHelper.playButtonTap()
-                onClick()
-            }
-            .padding(10.dp)
-            .testTag("home_game_${game.id}"),
-        verticalArrangement = Arrangement.SpaceBetween
+private fun HomeGameCard(game: GameInfo, pictureHeight: Dp, modifier: Modifier = Modifier, onClick: () -> Unit) {
+    HomeCard(
+        label = game.name,
+        pictureHeight = pictureHeight,
+        modifier = modifier.testTag("home_game_${game.id}"),
+        onClick = onClick
     ) {
-        Text(game.glyph, fontSize = 28.sp, fontWeight = FontWeight.ExtraBold, color = game.ink)
-        Text(
-            game.name,
-            fontSize = 12.sp, fontWeight = FontWeight.ExtraBold, color = game.ink,
-            maxLines = 2, overflow = TextOverflow.Ellipsis, lineHeight = 14.sp
-        )
+        // The art is drawn for a ~150x112dp box; scale it to whatever size the card has
+        BoxWithConstraints(
+            Modifier.fillMaxSize().background(lerpColor(game.color, Color.White, 0.82f)),
+            contentAlignment = Alignment.Center
+        ) {
+            val scale = minOf(maxWidth / 150.dp, maxHeight / 112.dp)
+            Box(
+                Modifier
+                    .requiredSize(150.dp, 112.dp)
+                    .graphicsLayer { scaleX = scale; scaleY = scale }
+            ) {
+                GameArt(
+                    kind = artFor(game),
+                    color = game.color,
+                    background = lerpColor(game.color, Color.White, 0.82f),
+                    glyph = game.glyph,
+                    ink = game.ink
+                )
+            }
+        }
     }
 }
 
 @Composable
-private fun HomeVideoCard(folder: String, photo: DrawableResource, onClick: () -> Unit) {
+private fun HomeVideoCard(folder: String, photo: DrawableResource, pictureHeight: Dp, modifier: Modifier = Modifier, onClick: () -> Unit) {
+    HomeCard(
+        label = folder,
+        pictureHeight = pictureHeight,
+        modifier = modifier.testTag("home_video_$folder"),
+        onClick = onClick
+    ) {
+        Image(
+            painter = painterResource(photo),
+            contentDescription = "$folder videos",
+            contentScale = ContentScale.Crop,
+            modifier = Modifier.fillMaxSize()
+        )
+        Box(
+            Modifier.align(Alignment.BottomEnd).padding(6.dp).size(24.dp).background(HomeInk.copy(alpha = 0.8f), CircleShape),
+            contentAlignment = Alignment.Center
+        ) {
+            Icon(Icons.Default.PlayArrow, contentDescription = null, tint = Color.White, modifier = Modifier.size(16.dp))
+        }
+    }
+}
+
+/** Shared card frame for the Home shelves: rounded picture on top, one-line name below. */
+@Composable
+private fun HomeCard(label: String, pictureHeight: Dp, modifier: Modifier, onClick: () -> Unit, picture: @Composable BoxScope.() -> Unit) {
     Column(
-        Modifier
-            .width(110.dp)
+        modifier
             .clip(RoundedCornerShape(16.dp))
             .clickable {
                 com.example.ui.audio.SoundEffectsHelper.playButtonTap()
                 onClick()
-            }
-            .testTag("home_video_$folder"),
-        verticalArrangement = Arrangement.spacedBy(4.dp)
+            },
+        verticalArrangement = Arrangement.spacedBy(3.dp)
     ) {
-        Box(Modifier.fillMaxWidth().height(78.dp).clip(RoundedCornerShape(16.dp)).background(lerpColor(HomeInk, Color.White, 0.8f))) {
-            Image(
-                painter = painterResource(photo),
-                contentDescription = "$folder videos",
-                contentScale = ContentScale.Crop,
-                modifier = Modifier.fillMaxSize()
-            )
-            Box(
-                Modifier.align(Alignment.BottomEnd).padding(6.dp).size(24.dp).background(HomeInk.copy(alpha = 0.8f), CircleShape),
-                contentAlignment = Alignment.Center
-            ) {
-                Icon(Icons.Default.PlayArrow, contentDescription = null, tint = Color.White, modifier = Modifier.size(16.dp))
-            }
-        }
-        Text(folder, fontSize = 12.sp, fontWeight = FontWeight.ExtraBold, color = HomeInk, maxLines = 1)
+        Box(
+            Modifier
+                .fillMaxWidth()
+                .height(pictureHeight)
+                .clip(RoundedCornerShape(16.dp))
+                .background(lerpColor(HomeInk, Color.White, 0.8f)),
+            content = picture
+        )
+        Text(
+            label,
+            fontSize = 12.sp, fontWeight = FontWeight.ExtraBold, color = HomeInk,
+            maxLines = 1, overflow = TextOverflow.Ellipsis
+        )
     }
 }
 

@@ -102,7 +102,7 @@ fun GamesListScreen(
     }
 }
 
-private fun artFor(game: GameInfo): GameArtKind = when (game.id) {
+internal fun artFor(game: GameInfo): GameArtKind = when (game.id) {
     in 1..4 -> GameArtKind.Monster
     21 -> GameArtKind.Train
     22 -> GameArtKind.Paint
