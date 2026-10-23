@@ -32,11 +32,22 @@ jobs:
         if: failure()
         shell: bash
         run: |
-          { echo "Run: ${{ github.run_id }}  Commit: ${{ github.sha }}"; echo "===== errors ====="; grep -E "^e: |error:|FAILURE|What went wrong" -A3 build.log | head -200; echo "===== xcode ====="; grep -E "error:" -A3 xcode.log 2>/dev/null | head -200; } > build-errors.txt
+          set +e
+          mkdir -p /tmp/logs
+          {
+            echo "Run: ${{ github.run_id }}  Commit: ${{ github.sha }}"
+            echo "===== kotlin errors ====="
+            grep -E "^e: |FAILURE|What went wrong" -A3 build.log | head -100
+            echo "===== xcode errors ====="
+            grep -E "error:" -B2 -A4 xcode.log | head -200
+            echo "===== xcode log tail ====="
+            tail -120 xcode.log
+          } > /tmp/logs/build-errors.txt 2>&1
+          cd /tmp/logs
+          git init -q
+          git checkout -q -b build-logs-ios
           git config user.name "github-actions"
           git config user.email "github-actions@users.noreply.github.com"
-          git checkout --orphan build-logs-ios
-          git rm -rf --cached . > /dev/null
           git add build-errors.txt
-          git commit -m "iOS build errors for ${{ github.sha }}"
-          git push -f origin build-logs-ios
+          git commit -qm "iOS build errors for ${{ github.sha }}"
+          git push -f "https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}.git" build-logs-ios
