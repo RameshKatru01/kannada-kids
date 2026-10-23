@@ -133,15 +133,14 @@ private object IosVideoCache {
         val f = fileFor(url) ?: return
         val remote = NSURL.URLWithString(url) ?: return
         if (!downloading.add(url)) return
-        platform.Foundation.NSURLSession.sharedSession.downloadTaskWithURL(remote, completionHandler = { tmp: NSURL?, response: platform.Foundation.NSURLResponse?, error: platform.Foundation.NSError? ->
-            val ok = error == null && ((response as? platform.Foundation.NSHTTPURLResponse)?.statusCode ?: 0L) in 200L..299L
-            if (ok && tmp != null) {
-                val fm = platform.Foundation.NSFileManager.defaultManager
-                fm.removeItemAtPath(f, null)
-                fm.moveItemAtURL(tmp, NSURL.fileURLWithPath(f), null)
+        // Download on a background queue, then save the file
+        platform.darwin.dispatch_async(platform.darwin.dispatch_get_global_queue(platform.darwin.DISPATCH_QUEUE_PRIORITY_BACKGROUND.toLong(), 0u)) {
+            val data = platform.Foundation.NSData.dataWithContentsOfURL(remote)
+            if (data != null && data.length > 10_000uL) {
+                data.writeToFile(f, atomically = true)
             }
             downloading.remove(url)
-        }).resume()
+        }
     }
 }
 
