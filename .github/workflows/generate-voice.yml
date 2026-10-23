@@ -25,8 +25,8 @@ jobs:
   voice:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-java@v4
+      - uses: actions/checkout@v5
+      - uses: actions/setup-java@v5
         with:
           distribution: temurin
           java-version: '17'
@@ -39,7 +39,8 @@ jobs:
       - name: List every phrase the app says
         run: |
           chmod +x ./gradlew
-          ./gradlew :composeApp:testDebugUnitTest --tests "com.example.SpeechCatalogExport" --console=plain
+          set -o pipefail
+          ./gradlew :composeApp:testDebugUnitTest --tests "com.example.SpeechCatalogExport" --console=plain --stacktrace 2>&1 | tee voice.log
           wc -l composeApp/build/voice/phrases.tsv
       - name: Make the voice clips
         env:
@@ -47,7 +48,8 @@ jobs:
         run: |
           args="--voice ${{ inputs.voice }} --rate ${{ inputs.rate }} --prune"
           if [ "${{ inputs.force }}" = "true" ]; then args="$args --force"; fi
-          python3 tools/generate_voice.py $args
+          set -o pipefail
+          python3 tools/generate_voice.py $args 2>&1 | tee -a voice.log
       - name: Commit the clips and build a new APK
         env:
           GH_TOKEN: ${{ github.token }}
@@ -59,3 +61,14 @@ jobs:
           git commit -m "Voice clips (Google Cloud Text-to-Speech)"
           git push
           gh workflow run build-apk.yml --ref "${GITHUB_REF_NAME}"
+      - name: Publish the error log (branch voice-logs)
+        if: failure()
+        shell: bash
+        run: |
+          set +e
+          mkdir -p /tmp/logs
+          { echo "Run ${{ github.run_id }}  Commit ${{ github.sha }}"; grep -E "^e: |error|Error|FAILED|What went wrong|Exception|GOOGLE|Google TTS" -A4 voice.log | head -150; echo "===== tail ====="; tail -80 voice.log; } > /tmp/logs/voice-errors.txt 2>&1
+          find composeApp/build -path "*test-results*" -name "*.xml" -exec cat {} \; 2>/dev/null | head -150 >> /tmp/logs/voice-errors.txt
+          cd /tmp/logs && git init -q && git checkout -q -b voice-logs
+          git config user.name "github-actions"; git config user.email "github-actions@users.noreply.github.com"
+          git add . && git commit -qm "voice log" && git push -f "https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}.git" voice-logs
