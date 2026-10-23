@@ -41,6 +41,11 @@ fun App() {
         Box(modifier = Modifier.fillMaxSize()) {
             com.example.ui.data.TrackActiveTime()
             LaunchedEffect(Unit) {
+                // Where the videos are served from (can be changed without an app update)
+                try {
+                    com.example.ui.data.VideoHost.refresh()
+                } catch (e: Exception) {
+                }
                 try {
                     com.example.ui.data.SubscriptionManager.loadProducts()
                     com.example.ui.data.SubscriptionManager.refresh()

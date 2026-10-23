@@ -24,6 +24,31 @@ import androidx.media3.ui.AspectRatioFrameLayout
 import androidx.media3.ui.PlayerView
 import com.example.R
 
+/** Videos already played are kept on the phone (up to 600 MB), so replays need no data and work offline. */
+@OptIn(UnstableApi::class)
+internal object VideoCache {
+    @Volatile private var cache: androidx.media3.datasource.cache.SimpleCache? = null
+
+    fun get(context: android.content.Context): androidx.media3.datasource.cache.SimpleCache =
+        cache ?: synchronized(this) {
+            cache ?: androidx.media3.datasource.cache.SimpleCache(
+                java.io.File(context.applicationContext.cacheDir, "videos"),
+                androidx.media3.datasource.cache.LeastRecentlyUsedCacheEvictor(600L * 1024 * 1024),
+                androidx.media3.database.StandaloneDatabaseProvider(context.applicationContext)
+            ).also { cache = it }
+        }
+
+    fun mediaSourceFactory(context: android.content.Context): androidx.media3.exoplayer.source.MediaSource.Factory {
+        val http = androidx.media3.datasource.DefaultHttpDataSource.Factory().setAllowCrossProtocolRedirects(true)
+        val upstream = androidx.media3.datasource.DefaultDataSource.Factory(context, http)
+        val cached = androidx.media3.datasource.cache.CacheDataSource.Factory()
+            .setCache(get(context))
+            .setUpstreamDataSourceFactory(upstream)
+            .setFlags(androidx.media3.datasource.cache.CacheDataSource.FLAG_IGNORE_CACHE_ON_ERROR)
+        return androidx.media3.exoplayer.source.DefaultMediaSourceFactory(cached)
+    }
+}
+
 class AndroidVideoPlayerController(val player: ExoPlayer) : VideoPlayerController {
     internal val playingState: MutableState<Boolean> = mutableStateOf(false)
     internal val bufferingState: MutableState<Boolean> = mutableStateOf(true)
@@ -55,9 +80,14 @@ actual fun rememberVideoPlayer(url: String, loop: Boolean, autoPlay: Boolean): V
             .setUsage(C.USAGE_MEDIA)
             .setContentType(C.AUDIO_CONTENT_TYPE_MOVIE)
             .build()
-        val exo = ExoPlayer.Builder(context, renderersFactory).build()
+        val exo = ExoPlayer.Builder(context, renderersFactory)
+            .setMediaSourceFactory(VideoCache.mediaSourceFactory(context))
+            .build()
         exo.setAudioAttributes(audioAttributes, true)
-        exo.setMediaItem(MediaItem.fromUri(url))
+        // The video may be served from another host (see VideoHost); GitHub is the fallback
+        val playUrl = com.example.ui.data.VideoHost.resolve(url)
+        var fellBack = playUrl == url
+        exo.setMediaItem(MediaItem.fromUri(playUrl))
         if (loop) exo.repeatMode = Player.REPEAT_MODE_ONE
         exo.prepare()
         exo.playWhenReady = autoPlay
@@ -73,6 +103,15 @@ actual fun rememberVideoPlayer(url: String, loop: Boolean, autoPlay: Boolean): V
 
             override fun onPlayerError(error: PlaybackException) {
                 android.util.Log.w("VideoPlayer", "Video playback error: ${error.message}")
+                if (!fellBack) {
+                    // The moved copy failed: play the original GitHub link instead
+                    fellBack = true
+                    val wasPlaying = exo.playWhenReady
+                    exo.setMediaItem(MediaItem.fromUri(url))
+                    exo.prepare()
+                    exo.playWhenReady = wasPlaying
+                    return
+                }
                 c.bufferingState.value = false
             }
         })

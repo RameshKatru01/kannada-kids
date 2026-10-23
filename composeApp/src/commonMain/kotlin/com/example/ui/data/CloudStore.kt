@@ -37,6 +37,15 @@ object CloudStore {
         return fromFields(Json.parseToJsonElement(text).jsonObject["fields"]?.jsonObject)
     }
 
+    /** Reads a document that the rules let anyone read (no sign-in needed), or null. */
+    suspend fun getPublic(path: String): Map<String, Any?>? {
+        val response = http.get("$BASE/$path")
+        if (response.status.value == 404) return null
+        val text = response.bodyAsText()
+        if (!response.status.isSuccess()) throw CloudException(errorMessage(text, response.status.value), response.status.value)
+        return fromFields(Json.parseToJsonElement(text).jsonObject["fields"]?.jsonObject)
+    }
+
     /** All documents of a collection (id -> fields). */
     suspend fun list(collection: String): Map<String, Map<String, Any?>> {
         val out = linkedMapOf<String, Map<String, Any?>>()

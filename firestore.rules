@@ -26,6 +26,13 @@ service cloud.firestore {
       return request.auth != null && request.auth.uid == uid;
     }
 
+    // App settings anyone can read (e.g. config/app.videoBase = where videos are played from).
+    // Only admins can change them.
+    match /config/{doc} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
     // One document per family: their plan, renewal date, payments.
     // Families can write their own record, but only an admin can give free time (bonusUntil).
     match /subscriptions/{uid} {

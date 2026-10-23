@@ -1,0 +1,17 @@
+rules_version = '2';
+
+// Firebase Storage rules for Kannada Kids (project kannadakids-fd92d).
+// Paste into Firebase console > Storage > Rules, then Publish.
+service firebase.storage {
+  match /b/{bucket}/o {
+    // Learning videos: anyone with the app can watch them. Uploads only by the "Upload videos"
+    // GitHub action (it uses a service account, which these rules don't limit).
+    match /videos/{allPaths=**} {
+      allow read: if true;
+      allow write: if false;
+    }
+    match /{allPaths=**} {
+      allow read, write: if false;
+    }
+  }
+}

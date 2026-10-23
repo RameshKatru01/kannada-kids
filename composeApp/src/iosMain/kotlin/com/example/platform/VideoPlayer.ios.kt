@@ -20,7 +20,7 @@ import platform.Foundation.NSOperationQueue
 import platform.Foundation.NSURL
 import platform.darwin.NSObjectProtocol
 
-class IosVideoPlayerController(val player: AVPlayer, private val loop: Boolean) : VideoPlayerController {
+class IosVideoPlayerController(val player: AVPlayer, private val loop: Boolean, private var fallbackUrl: String? = null) : VideoPlayerController {
     internal val playingState: MutableState<Boolean> = mutableStateOf(false)
     internal val bufferingState: MutableState<Boolean> = mutableStateOf(true)
     private var endObserver: NSObjectProtocol? = null
@@ -45,6 +45,18 @@ class IosVideoPlayerController(val player: AVPlayer, private val loop: Boolean) 
 
     /** Called periodically to mirror AVPlayer's state into Compose state. */
     fun refreshState() {
+        // The moved copy failed to load: switch to the original GitHub link once
+        val failed = player.currentItem?.status == AVPlayerItemStatusFailed
+        val fb = fallbackUrl
+        if (failed && fb != null) {
+            fallbackUrl = null
+            NSURL.URLWithString(fb)?.let { u ->
+                endObserver?.let { NSNotificationCenter.defaultCenter.removeObserver(it) }
+                player.replaceCurrentItemWithPlayerItem(AVPlayerItem(u))
+                attachLoopObserver()
+                if (wantsToPlay) player.play()
+            }
+        }
         playingState.value = player.rate > 0f
         val item = player.currentItem
         bufferingState.value = item != null && !item.playbackLikelyToKeepUp && player.rate == 0f && wantsToPlay
@@ -88,12 +100,61 @@ class IosVideoPlayerController(val player: AVPlayer, private val loop: Boolean) 
     }
 }
 
+/**
+ * Videos already played are kept in the app's Caches folder, so replays need no data and work
+ * offline. The first play streams; a copy is downloaded alongside it.
+ */
+@OptIn(ExperimentalForeignApi::class)
+private object IosVideoCache {
+    private val dir: String? by lazy {
+        val caches = platform.Foundation.NSSearchPathForDirectoriesInDomains(
+            platform.Foundation.NSCachesDirectory, platform.Foundation.NSUserDomainMask, true
+        ).firstOrNull() as? String ?: return@lazy null
+        val d = "$caches/videos"
+        platform.Foundation.NSFileManager.defaultManager.createDirectoryAtPath(d, true, null, null)
+        d
+    }
+    private val downloading = mutableSetOf<String>()
+
+    private fun fileFor(url: String): String? {
+        var h = 0xcbf29ce484222325uL
+        for (b in url.encodeToByteArray()) { h = h xor b.toUByte().toULong(); h *= 0x100000001b3uL }
+        return dir?.let { "$it/${h.toString(16)}.mp4" }
+    }
+
+    /** A local file URL when the video is already saved, else null. */
+    fun cached(url: String): NSURL? {
+        val f = fileFor(url) ?: return null
+        return if (platform.Foundation.NSFileManager.defaultManager.fileExistsAtPath(f)) NSURL.fileURLWithPath(f) else null
+    }
+
+    /** Saves a copy of [url] in the background (once). */
+    fun save(url: String) {
+        val f = fileFor(url) ?: return
+        val remote = NSURL.URLWithString(url) ?: return
+        if (!downloading.add(url)) return
+        platform.Foundation.NSURLSession.sharedSession.downloadTaskWithURL(remote) { tmp, response, error ->
+            val ok = error == null && ((response as? platform.Foundation.NSHTTPURLResponse)?.statusCode ?: 0L) in 200L..299L
+            if (ok && tmp != null) {
+                val fm = platform.Foundation.NSFileManager.defaultManager
+                fm.removeItemAtPath(f, null)
+                fm.moveItemAtURL(tmp, NSURL.fileURLWithPath(f), null)
+            }
+            downloading.remove(url)
+        }.resume()
+    }
+}
+
 @Composable
 actual fun rememberVideoPlayer(url: String, loop: Boolean, autoPlay: Boolean): VideoPlayerController {
     val controller = remember(url) {
-        val nsUrl = NSURL.URLWithString(url)
+        // The video may be served from another host (see VideoHost); GitHub is the fallback
+        val playUrl = com.example.ui.data.VideoHost.resolve(url)
+        val local = IosVideoCache.cached(playUrl)
+        val nsUrl = local ?: NSURL.URLWithString(playUrl)
+        if (local == null) IosVideoCache.save(playUrl)
         val player = if (nsUrl != null) AVPlayer(AVPlayerItem(nsUrl)) else AVPlayer()
-        IosVideoPlayerController(player, loop).also {
+        IosVideoPlayerController(player, loop, fallbackUrl = url.takeIf { it != playUrl && local == null }).also {
             it.attachLoopObserver()
             if (autoPlay) it.play()
         }

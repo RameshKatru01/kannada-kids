@@ -1,0 +1,66 @@
+name: Upload videos
+
+# Run by hand (Actions > Upload videos > Run workflow). Copies every video the app uses from the
+# GitHub assets repo to Firebase Storage and (optionally) switches the app to play from there.
+# Needs the repository secret FIREBASE_UPLOAD_KEY (a service-account JSON key with the roles
+# "Storage Object Admin" and "Cloud Datastore User").
+on:
+  workflow_dispatch:
+    inputs:
+      bucket:
+        description: 'Firebase Storage bucket'
+        default: kannadakids-fd92d.firebasestorage.app
+      switch:
+        description: 'Switch the app to play videos from Firebase after uploading'
+        type: boolean
+        default: true
+
+permissions:
+  contents: write
+
+jobs:
+  upload:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: google-github-actions/auth@v2
+        with:
+          credentials_json: ${{ secrets.FIREBASE_UPLOAD_KEY }}
+      - uses: google-github-actions/setup-gcloud@v2
+      - name: Copy the videos
+        shell: bash
+        run: |
+          set -eo pipefail
+          python3 tools/collect_video_urls.py > videos.tsv
+          gcloud storage ls -r "gs://${{ inputs.bucket }}/videos/**" 2>/dev/null | sed "s#gs://${{ inputs.bucket }}/##" | sort > existing.txt || true
+          mkdir -p dl
+          new=0; kept=0
+          while IFS=$'\t' read -r url object; do
+            if grep -qxF "$object" existing.txt; then kept=$((kept+1)); continue; fi
+            curl -sfL --retry 3 -o dl/v.mp4 "$url" || { echo "Could not download $url"; exit 1; }
+            gcloud storage cp dl/v.mp4 "gs://${{ inputs.bucket }}/$object" \
+              --content-type=video/mp4 --cache-control="public, max-age=31536000" --quiet
+            new=$((new+1))
+          done < videos.tsv
+          echo "Uploaded $new videos, $kept were already there ($(wc -l < videos.tsv) in total)"
+      - name: Switch the app to Firebase
+        if: ${{ inputs.switch }}
+        shell: bash
+        run: |
+          set -eo pipefail
+          base="https://firebasestorage.googleapis.com/v0/b/${{ inputs.bucket }}/o/{object}?alt=media"
+          # Check one video plays from Firebase before switching
+          first=$(head -1 <(python3 tools/collect_video_urls.py) | cut -f2)
+          enc=$(python3 -c "import sys,urllib.parse;print(urllib.parse.quote(sys.argv[1], safe=''))" "$first")
+          test_url="${base/\{object\}/$enc}"
+          code=$(curl -s -o /dev/null -w "%{http_code}" "$test_url")
+          if [ "$code" != "200" ]; then
+            echo "A test video returned HTTP $code from Firebase Storage. Check the Storage rules (storage.rules in the repo) were published. Not switching."
+            exit 1
+          fi
+          token=$(gcloud auth print-access-token)
+          curl -sf -X PATCH \
+            -H "Authorization: Bearer $token" -H "Content-Type: application/json" \
+            "https://firestore.googleapis.com/v1/projects/kannadakids-fd92d/databases/(default)/documents/config/app?updateMask.fieldPaths=videoBase" \
+            -d "{\"fields\":{\"videoBase\":{\"stringValue\":\"$base\"}}}" > /dev/null
+          echo "The app now plays videos from Firebase Storage (setting config/app.videoBase)."
