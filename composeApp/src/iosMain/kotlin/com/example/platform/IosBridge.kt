@@ -7,8 +7,24 @@ object IosPlatformBridge {
     /** Set from Swift when the GoogleSignIn package has been added to the Xcode project. */
     var googleSignIn: IosGoogleSignInHandler? = null
 
+    /** Set from Swift (AuthenticationServices) for "Sign in with Apple". */
+    var appleSignIn: IosAppleSignInHandler? = null
+
     /** Set from Swift (StoreKit) for subscriptions. */
     var billing: IosBillingHandler? = null
+}
+
+/** Implemented in Swift with AuthenticationServices (see iosApp/iosApp/AppleSignInBridge.swift). */
+interface IosAppleSignInHandler {
+    fun signIn(callback: AppleSignInCallback)
+}
+
+/**
+ * Swift calls this once. [idToken] + [rawNonce] go to Firebase; [authorizationCode] is used to
+ * revoke Apple tokens when the account is deleted. [fullName] / [email] only come the first time.
+ */
+interface AppleSignInCallback {
+    fun onResult(idToken: String?, rawNonce: String?, authorizationCode: String?, email: String?, fullName: String?, errorMessage: String?)
 }
 
 /** Implemented in Swift with the GoogleSignIn SDK. */

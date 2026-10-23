@@ -10,6 +10,7 @@
 		726BD13CDFD2E4EC937951D9 /* iOSApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9355003E092CC37D7E9C4B20 /* iOSApp.swift */; };
 		FB73BE2A7887F32D512EC848 /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4D2D059072C1E33E64D7DCDF /* ContentView.swift */; };
 		6B2D1F3C0A4E5B7C9D8F1A21 /* StoreKitBridge.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6B2D1F3C0A4E5B7C9D8F1A22 /* StoreKitBridge.swift */; };
+		7C3E2A4D1B5F6C8D0E9A2B31 /* AppleSignInBridge.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7C3E2A4D1B5F6C8D0E9A2B32 /* AppleSignInBridge.swift */; };
 		2EC8701DD4B355F6DB20A872 /* GoogleSignInBridge.swift in Sources */ = {isa = PBXBuildFile; fileRef = A8B860EA8831F5D537BB11DD /* GoogleSignInBridge.swift */; };
 		73EC906678F06B0611143396 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = D40126822D0756BB2C22C0E3 /* Assets.xcassets */; };
 		5A1C0E2B9F3D4A6B8C7E0F11 /* GoogleSignIn in Frameworks */ = {isa = PBXBuildFile; productRef = 5A1C0E2B9F3D4A6B8C7E0F13 /* GoogleSignIn */; };
@@ -20,6 +21,8 @@
 		9355003E092CC37D7E9C4B20 /* iOSApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = iOSApp.swift; sourceTree = "<group>"; };
 		4D2D059072C1E33E64D7DCDF /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
 		6B2D1F3C0A4E5B7C9D8F1A22 /* StoreKitBridge.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StoreKitBridge.swift; sourceTree = "<group>"; };
+		7C3E2A4D1B5F6C8D0E9A2B32 /* AppleSignInBridge.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppleSignInBridge.swift; sourceTree = "<group>"; };
+		7C3E2A4D1B5F6C8D0E9A2B33 /* iosApp.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = iosApp.entitlements; sourceTree = "<group>"; };
 		A8B860EA8831F5D537BB11DD /* GoogleSignInBridge.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GoogleSignInBridge.swift; sourceTree = "<group>"; };
 		D40126822D0756BB2C22C0E3 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		5A1C0E2B9F3D4A6B8C7E0F15 /* GoogleService-Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = "GoogleService-Info.plist"; sourceTree = "<group>"; };
@@ -64,6 +67,8 @@
 				4D2D059072C1E33E64D7DCDF /* ContentView.swift */,
 				A8B860EA8831F5D537BB11DD /* GoogleSignInBridge.swift */,
 				6B2D1F3C0A4E5B7C9D8F1A22 /* StoreKitBridge.swift */,
+				7C3E2A4D1B5F6C8D0E9A2B32 /* AppleSignInBridge.swift */,
+				7C3E2A4D1B5F6C8D0E9A2B33 /* iosApp.entitlements */,
 				D40126822D0756BB2C22C0E3 /* Assets.xcassets */,
 				E34671B84360ABBFBBB0C5D2 /* Info.plist */,
 				5A1C0E2B9F3D4A6B8C7E0F15 /* GoogleService-Info.plist */,
@@ -181,6 +186,7 @@
 				FB73BE2A7887F32D512EC848 /* ContentView.swift in Sources */,
 				2EC8701DD4B355F6DB20A872 /* GoogleSignInBridge.swift in Sources */,
 				6B2D1F3C0A4E5B7C9D8F1A21 /* StoreKitBridge.swift in Sources */,
+				7C3E2A4D1B5F6C8D0E9A2B31 /* AppleSignInBridge.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -254,6 +260,7 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_IDENTITY = "Apple Development";
+				CODE_SIGN_ENTITLEMENTS = iosApp/iosApp.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = "$(CURRENT_PROJECT_VERSION)";
 				DEVELOPMENT_TEAM = "$(TEAM_ID)";
@@ -288,6 +295,7 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_IDENTITY = "Apple Development";
+				CODE_SIGN_ENTITLEMENTS = iosApp/iosApp.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = "$(CURRENT_PROJECT_VERSION)";
 				DEVELOPMENT_TEAM = "$(TEAM_ID)";

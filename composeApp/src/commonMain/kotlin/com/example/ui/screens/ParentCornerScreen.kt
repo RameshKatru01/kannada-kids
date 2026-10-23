@@ -48,6 +48,7 @@ import com.example.ui.progress.StarGold
 import com.example.ui.progress.StarIcon
 import com.example.ui.progress.formatPoints
 import kotlin.random.Random
+import kotlinx.coroutines.launch
 
 // ---------------------------------------------------------------------------------------------
 // Grown-ups check: a two-digit addition with carrying (too hard for young children)
@@ -326,6 +327,10 @@ fun ParentCornerScreen(
     val strong = remember(version) { ActivityTracker.strongLetters() }
 
     var confirmSignOut by remember { mutableStateOf(false) }
+    var confirmDelete by remember { mutableStateOf(false) }
+    var deleting by remember { mutableStateOf(false) }
+    var deleteError by remember { mutableStateOf<String?>(null) }
+    val scope = rememberCoroutineScope()
 
     Column(
         modifier = Modifier
@@ -444,7 +449,75 @@ fun ParentCornerScreen(
             Modifier.fillMaxWidth().height(52.dp).clip(RoundedCornerShape(26.dp)).border(2.dp, ScrapbookInk, RoundedCornerShape(26.dp)).clickable { confirmSignOut = true },
             contentAlignment = Alignment.Center
         ) { Text("Sign out", fontSize = 16.sp, fontWeight = FontWeight.ExtraBold, color = ScrapbookInk) }
+
+        // Delete account (required by Google Play and the App Store)
+        val hasAccount = remember(authState) { PlatformAuth.currentUser() != null }
+        if (hasAccount) {
+            Text(
+                "Delete account",
+                modifier = Modifier
+                    .align(Alignment.CenterHorizontally)
+                    .clip(RoundedCornerShape(12.dp))
+                    .clickable { confirmDelete = true }
+                    .padding(horizontal = 16.dp, vertical = 10.dp)
+                    .testTag("delete_account"),
+                fontSize = 14.sp, fontWeight = FontWeight.ExtraBold, color = Color(0xFFD94848)
+            )
+        }
         Spacer(Modifier.height(8.dp))
+    }
+
+    if (confirmDelete) {
+        val uriHandler = androidx.compose.ui.platform.LocalUriHandler.current
+        val appStore = PlatformBilling.storeName() == "App Store"
+        AlertDialog(
+            onDismissRequest = { if (!deleting) confirmDelete = false },
+            title = { Text("Delete account?", fontWeight = FontWeight.Bold) },
+            text = {
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Text("This permanently deletes your Kannada Kids account, your subscription record with us and all progress saved on this device (letters, stars, points, settings). It can't be undone.")
+                    Text(
+                        "Deleting the account does not cancel a subscription. Cancel it in ${if (appStore) "the App Store" else "Google Play"} so you're not charged again.",
+                        fontWeight = FontWeight.Bold
+                    )
+                    Text(
+                        "Manage subscriptions",
+                        modifier = Modifier.clip(RoundedCornerShape(8.dp)).clickable {
+                            uriHandler.openUri(
+                                if (appStore) "https://apps.apple.com/account/subscriptions"
+                                else "https://play.google.com/store/account/subscriptions"
+                            )
+                        }.padding(vertical = 4.dp),
+                        color = Color(0xFF1565C0), fontWeight = FontWeight.ExtraBold
+                    )
+                    deleteError?.let { Text(it, color = Color(0xFFD94848), fontWeight = FontWeight.Bold) }
+                    if (deleting) Text("Deleting… you may be asked to sign in once more.", fontWeight = FontWeight.Bold)
+                }
+            },
+            confirmButton = {
+                TextButton(
+                    enabled = !deleting,
+                    onClick = {
+                        deleting = true
+                        deleteError = null
+                        scope.launch {
+                            when (val r = authViewModel.deleteAccount(context)) {
+                                is AuthViewModel.DeleteResult.Done -> {
+                                    deleting = false
+                                    confirmDelete = false
+                                    onSignOut()
+                                }
+                                is AuthViewModel.DeleteResult.Failed -> {
+                                    deleting = false
+                                    deleteError = r.message
+                                }
+                            }
+                        }
+                    }
+                ) { Text("Delete permanently", color = Color(0xFFD94848), fontWeight = FontWeight.Bold) }
+            },
+            dismissButton = { TextButton(enabled = !deleting, onClick = { confirmDelete = false }) { Text("Cancel") } }
+        )
     }
 
     if (confirmSignOut) {

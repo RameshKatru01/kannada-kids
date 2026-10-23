@@ -175,7 +175,7 @@ fun LoginScreen(
                             onLongPress = {
                                 if (!isLoading) {
                                     haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-                                    showAdminLogin = true
+                                    // (Hidden e-mail login removed: it let anyone sign in as any address.)
                                 }
                             }
                         )
@@ -280,6 +280,39 @@ fun LoginScreen(
                             text = "Continue with Google",
                             color = Ink,
                             fontWeight = FontWeight.ExtraBold,
+                            fontSize = 17.sp
+                        )
+                    }
+                }
+            }
+
+            // Sign in with Apple (iPhone / iPad). Apple asks apps that offer Google sign-in to offer this too.
+            if (remember { PlatformAuth.appleSignInSupported() }) {
+                Spacer(modifier = Modifier.height(12.dp))
+                Surface(
+                    onClick = {
+                        com.example.ui.audio.SoundEffectsHelper.playButtonTap(context)
+                        viewModel.signInWithApple(context)
+                    },
+                    enabled = !isLoading,
+                    shape = RoundedCornerShape(28.dp),
+                    color = Color.Black,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(56.dp)
+                        .testTag("apple_login_button")
+                ) {
+                    Row(
+                        modifier = Modifier.fillMaxSize(),
+                        horizontalArrangement = Arrangement.Center,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text("\uF8FF", color = Color.White, fontSize = 20.sp) // Apple logo (iOS system font)
+                        Spacer(modifier = Modifier.width(10.dp))
+                        Text(
+                            text = "Sign in with Apple",
+                            color = Color.White,
+                            fontWeight = FontWeight.Bold,
                             fontSize = 17.sp
                         )
                     }

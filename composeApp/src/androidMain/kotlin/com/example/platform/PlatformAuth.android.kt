@@ -171,6 +171,41 @@ actual object PlatformAuth {
         }
     }
 
+    actual fun appleSignInSupported(): Boolean = false
+
+    actual suspend fun signInWithApple(context: Context): AuthUser =
+        throw AuthException("Sign in with Apple is available on iPhone and iPad.")
+
+    actual suspend fun deleteAccount(context: Context) {
+        val firebaseAuth = auth ?: throw AuthException("Firebase unavailable")
+        val user = firebaseAuth.currentUser ?: throw AuthException("Not signed in")
+        val uid = user.uid
+        try {
+            deleteUser(user)
+        } catch (e: com.google.firebase.auth.FirebaseAuthRecentLoginRequiredException) {
+            // Firebase wants a fresh sign-in before deleting: sign in with Google again
+            if (user.providerData.none { it.providerId == "google.com" }) {
+                throw AuthException("Please sign out, sign in again and then delete the account.", needsRecentLogin = true)
+            }
+            val again = signInWithGoogle(context)
+            if (again.uid != uid) {
+                signOut()
+                throw AuthException("That was a different Google account. Please choose the same account to delete it.")
+            }
+            deleteUser(firebaseAuth.currentUser ?: throw AuthException("Not signed in"))
+        }
+        try {
+            CredentialManager.create(context).clearCredentialState(androidx.credentials.ClearCredentialStateRequest())
+        } catch (_: Exception) {
+        }
+    }
+
+    private suspend fun deleteUser(user: FirebaseUser) = suspendCancellableCoroutine<Unit> { cont ->
+        user.delete()
+            .addOnSuccessListener { cont.resume(Unit) }
+            .addOnFailureListener { e -> cont.resumeWithException(e) }
+    }
+
     actual fun signOut() {
         try {
             auth?.signOut()

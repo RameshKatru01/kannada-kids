@@ -7,7 +7,12 @@ data class AuthUser(
     val displayName: String?
 )
 
-class AuthException(message: String, val noAccountOnDevice: Boolean = false) : Exception(message)
+class AuthException(
+    message: String,
+    val noAccountOnDevice: Boolean = false,
+    /** The account can only be deleted right after signing in again. */
+    val needsRecentLogin: Boolean = false
+) : Exception(message)
 
 /**
  * Platform sign-in layer.
@@ -25,6 +30,18 @@ expect object PlatformAuth {
     fun currentUser(): AuthUser?
 
     suspend fun signInWithGoogle(context: Context): AuthUser
+
+    /** "Sign in with Apple" is offered on this device (iPhone / iPad). */
+    fun appleSignInSupported(): Boolean
+
+    suspend fun signInWithApple(context: Context): AuthUser
+
+    /**
+     * Permanently deletes the signed-in account from Firebase Authentication. If the sign-in is
+     * too old, signs in again with the same provider (Google / Apple) first. For Apple accounts it
+     * also revokes the app's Apple tokens, as Apple requires.
+     */
+    suspend fun deleteAccount(context: Context)
 
     suspend fun signInWithEmail(email: String, password: String): AuthUser
 

@@ -92,7 +92,10 @@ actual object PlatformAuth {
         }
     }
 
-    private fun remember(user: AuthUser): AuthUser {
+    private const val PROVIDER_KEY = "kk_auth_provider"
+
+    private fun remember(user: AuthUser, provider: String = "google.com"): AuthUser {
+        NSUserDefaults.standardUserDefaults.setObject(provider, forKey = PROVIDER_KEY)
         val json = buildJsonObject {
             put("uid", user.uid)
             put("email", user.email)
@@ -135,7 +138,7 @@ actual object PlatformAuth {
             put("returnSecureToken", true)
         })
         json.saveTokensFromSignIn()
-        return remember(json.toAuthUser(email))
+        return remember(json.toAuthUser(email), provider = "password")
     }
 
     actual suspend fun createUserWithEmail(email: String, password: String): AuthUser {
@@ -145,7 +148,7 @@ actual object PlatformAuth {
             put("returnSecureToken", true)
         })
         json.saveTokensFromSignIn()
-        return remember(json.toAuthUser(email))
+        return remember(json.toAuthUser(email), provider = "password")
     }
 
     private data class GoogleResult(
@@ -201,7 +204,108 @@ actual object PlatformAuth {
         )
     }
 
+    // ---- Sign in with Apple ----
+
+    actual fun appleSignInSupported(): Boolean = IosPlatformBridge.appleSignIn != null
+
+    private data class AppleResult(
+        val idToken: String?,
+        val rawNonce: String?,
+        val authorizationCode: String?,
+        val email: String?,
+        val fullName: String?,
+        val error: String?
+    )
+
+    private suspend fun appleCredential(): AppleResult {
+        val handler = IosPlatformBridge.appleSignIn
+            ?: throw AuthException("Sign in with Apple is not available on this device.")
+        val result = suspendCancellableCoroutine<AppleResult> { cont ->
+            handler.signIn(object : AppleSignInCallback {
+                override fun onResult(idToken: String?, rawNonce: String?, authorizationCode: String?, email: String?, fullName: String?, errorMessage: String?) {
+                    if (cont.isActive) cont.resume(AppleResult(idToken, rawNonce, authorizationCode, email, fullName, errorMessage))
+                }
+            })
+        }
+        if (result.error != null || result.idToken.isNullOrBlank() || result.rawNonce.isNullOrBlank()) {
+            throw AuthException(result.error ?: "Sign in with Apple failed")
+        }
+        return result
+    }
+
+    /** Signs in to Firebase with an Apple credential. */
+    private suspend fun firebaseApple(apple: AppleResult): JsonObject = firebaseCall("signInWithIdp", buildJsonObject {
+        put("postBody", "id_token=${apple.idToken}&providerId=apple.com&nonce=${apple.rawNonce}")
+        put("requestUri", "http://localhost")
+        put("returnIdpCredential", true)
+        put("returnSecureToken", true)
+    })
+
+    actual suspend fun signInWithApple(context: Context): AuthUser {
+        if (apiKey == null) throw AuthException("Sign in is not set up in this build yet.")
+        val apple = appleCredential()
+        val json = firebaseApple(apple)
+        json.saveTokensFromSignIn()
+        val user = json.toAuthUser(apple.email)
+        val name = user.displayName ?: apple.fullName?.takeIf { it.isNotBlank() }
+        return remember(user.copy(displayName = name ?: "Little learner"), provider = "apple.com")
+    }
+
+    // ---- Delete account ----
+
+    actual suspend fun deleteAccount(context: Context) {
+        val current = currentUser() ?: throw AuthException("Not signed in")
+        val provider = NSUserDefaults.standardUserDefaults.stringForKey(PROVIDER_KEY) ?: "google.com"
+        if (provider == "apple.com") {
+            // Apple: sign in again (fresh login + an authorization code), revoke the Apple tokens, delete.
+            val apple = appleCredential()
+            val json = firebaseApple(apple)
+            val uid = json["localId"]?.jsonPrimitive?.contentOrNull
+            if (uid != current.uid) throw AuthException("That was a different Apple ID. Please use the same one to delete it.")
+            json.saveTokensFromSignIn()
+            val idToken = json["idToken"]?.jsonPrimitive?.contentOrNull ?: throw AuthException("Sign in with Apple failed")
+            apple.authorizationCode?.let { code ->
+                try {
+                    revokeAppleToken(code, idToken)
+                } catch (e: Exception) {
+                    println("PlatformAuth: Apple token revoke failed - ${e.message}")
+                }
+            }
+            firebaseCall("delete", buildJsonObject { put("idToken", idToken) })
+        } else {
+            val token = idToken() ?: throw AuthException("Please sign in again and then delete the account.", needsRecentLogin = true)
+            try {
+                firebaseCall("delete", buildJsonObject { put("idToken", token) })
+            } catch (e: AuthException) {
+                if (e.message?.contains("CREDENTIAL_TOO_OLD") != true && e.message?.contains("TOKEN_EXPIRED") != true) throw e
+                // Too long since sign-in: sign in with Google again, then delete
+                val again = signInWithGoogle(context)
+                if (again.uid != current.uid) throw AuthException("That was a different Google account. Please choose the same account to delete it.")
+                val fresh = idToken() ?: throw AuthException("Please sign in again and then delete the account.", needsRecentLogin = true)
+                firebaseCall("delete", buildJsonObject { put("idToken", fresh) })
+            }
+        }
+        signOut()
+    }
+
+    /** Firebase revokes the Apple refresh token (needs the Apple provider set up in Firebase with a key). */
+    private suspend fun revokeAppleToken(authorizationCode: String, idToken: String) {
+        val key = apiKey ?: return
+        val response = httpClient.post("https://identitytoolkit.googleapis.com/v2/accounts:revokeToken?key=$key") {
+            contentType(ContentType.Application.Json)
+            NSBundle.mainBundle.bundleIdentifier?.let { headers.append("X-Ios-Bundle-Identifier", it) }
+            setBody(buildJsonObject {
+                put("providerId", "apple.com")
+                put("tokenType", "CODE")
+                put("token", authorizationCode)
+                put("idToken", idToken)
+            }.toString())
+        }
+        if (!response.status.isSuccess()) println("PlatformAuth: revokeToken ${response.status.value} ${response.bodyAsText()}")
+    }
+
     actual fun signOut() {
+        NSUserDefaults.standardUserDefaults.removeObjectForKey(PROVIDER_KEY)
         NSUserDefaults.standardUserDefaults.removeObjectForKey(USER_KEY)
         NSUserDefaults.standardUserDefaults.removeObjectForKey(TOKEN_KEY)
         NSUserDefaults.standardUserDefaults.removeObjectForKey(REFRESH_KEY)

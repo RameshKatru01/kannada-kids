@@ -22,11 +22,17 @@ jobs:
         run: |
           chmod +x ./gradlew
           ./gradlew :composeApp:compileKotlinIosSimulatorArm64 --stacktrace --console=plain 2>&1 | tee build.log
+      - name: Build the iOS app (Swift + Kotlin, simulator, no signing)
+        shell: bash
+        run: |
+          set -o pipefail
+          xcodebuild -project iosApp/iosApp.xcodeproj -target iosApp -configuration Debug \
+            -sdk iphonesimulator -arch arm64 CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO build 2>&1 | tee xcode.log | grep -E "error:|warning: .*Swift|BUILD (SUCCEEDED|FAILED)" | head -100
       - name: Publish build errors
         if: failure()
         shell: bash
         run: |
-          { echo "Run: ${{ github.run_id }}  Commit: ${{ github.sha }}"; echo "===== errors ====="; grep -E "^e: |error:|FAILURE|What went wrong" -A3 build.log | head -200; } > build-errors.txt
+          { echo "Run: ${{ github.run_id }}  Commit: ${{ github.sha }}"; echo "===== errors ====="; grep -E "^e: |error:|FAILURE|What went wrong" -A3 build.log | head -200; echo "===== xcode ====="; grep -E "error:" -A3 xcode.log 2>/dev/null | head -200; } > build-errors.txt
           git config user.name "github-actions"
           git config user.email "github-actions@users.noreply.github.com"
           git checkout --orphan build-logs-ios

@@ -35,7 +35,8 @@ service cloud.firestore {
         || (isOwner(uid)
             && request.resource.data.get('bonusUntil', 0) == resource.data.get('bonusUntil', 0)
             && request.resource.data.get('bonusNote', '') == resource.data.get('bonusNote', ''));
-      allow delete: if isAdmin();
+      // Admins, or the family itself when they delete their account
+      allow delete: if isAdmin() || isOwner(uid);
     }
 
     // Admin list. The owner's own record is created by the app the first time

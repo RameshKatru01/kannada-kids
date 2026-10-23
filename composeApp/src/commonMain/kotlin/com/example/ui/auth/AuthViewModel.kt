@@ -71,6 +71,74 @@ class AuthViewModel : ViewModel() {
         }
     }
 
+    /** "Sign in with Apple" (iPhone / iPad). */
+    fun signInWithApple(context: Context) {
+        viewModelScope.launch {
+            _authState.value = AuthState.Loading
+            try {
+                val user = PlatformAuth.signInWithApple(context)
+                // Apple may hide the e-mail; the Firebase user id keeps progress separate per account
+                val email = user.email ?: "apple_${user.uid}@privaterelay.appleid.com"
+                rememberLogin(context, email, user.displayName)
+                _authState.value = AuthState.Authenticated(user.uid, user.displayName, email)
+            } catch (e: Exception) {
+                Log.e("AuthViewModel", "Apple sign in failed", e)
+                _authState.value = AuthState.Error(e.message ?: "Sign in with Apple failed")
+            }
+        }
+    }
+
+    sealed class DeleteResult {
+        object Done : DeleteResult()
+        data class Failed(val message: String) : DeleteResult()
+    }
+
+    /**
+     * Permanently deletes the account: the online subscription record, the sign-in account and
+     * everything this app saved on this device for it. Store subscriptions are not cancelled by
+     * this (the parent does that in Google Play / the App Store).
+     */
+    suspend fun deleteAccount(context: Context): DeleteResult {
+        val user = PlatformAuth.currentUser() ?: return DeleteResult.Failed("You are not signed in with an account.")
+        val email = (authState.value as? AuthState.Authenticated)?.email ?: user.email
+        // 1. Online data (must happen while still signed in)
+        try {
+            com.example.ui.data.CloudStore.delete("subscriptions/${user.uid}")
+        } catch (e: Exception) {
+            Log.e("AuthViewModel", "Could not delete subscription record", e)
+        }
+        // 2. The sign-in account
+        try {
+            PlatformAuth.deleteAccount(context)
+        } catch (e: Exception) {
+            Log.e("AuthViewModel", "Account delete failed", e)
+            return DeleteResult.Failed(e.message ?: "Could not delete the account. Please try again.")
+        }
+        // 3. Everything saved on this device for this account
+        try {
+            clearLocalData(context, email, user.uid)
+        } catch (e: Exception) {
+            Log.e("AuthViewModel", "Local data clear failed", e)
+        }
+        signOut(context)
+        return DeleteResult.Done
+    }
+
+    private fun clearLocalData(context: Context, email: String?, uid: String) {
+        val keys = listOfNotNull(email?.trim()?.lowercase()?.takeIf { it.isNotBlank() }, email?.trim()?.takeIf { it.isNotBlank() }, uid)
+        // Stores whose keys include the account's e-mail (progress, stars, letters learned, settings…)
+        listOf("AppProgress", "GameProgress", "ReferenceProgress", "ActivityStats", "GamePrefs").forEach { name ->
+            val prefs = getSharedPreferences(name)
+            val editor = prefs.edit()
+            prefs.all.keys.filter { k -> keys.any { k.contains(it) } }.forEach { editor.remove(it) }
+            editor.apply()
+        }
+        // Points are kept per device, not per account: reset them too
+        getSharedPreferences("GameScores").edit().clear().apply()
+        com.example.ui.data.ScoreManager.init(context)
+        if (email != null) com.example.ui.data.UserManager.deleteUser(context, email)
+    }
+
     /**
      * Direct Gmail Address Authentication.
      * Allows users to authenticate using their Gmail address (e.g. Neeraja.katru@gmail.com).

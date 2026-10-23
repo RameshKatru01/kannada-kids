@@ -1106,17 +1106,12 @@ private fun AccessRestrictedView(
             )
         }
 
-        Spacer(modifier = Modifier.height(24.dp))
+        Spacer(modifier = Modifier.height(16.dp))
 
-        Button(
-            onClick = onSwitchToAdmin,
-            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF1E3A8A)),
-            shape = RoundedCornerShape(14.dp),
-            modifier = Modifier.fillMaxWidth(0.85f)
-        ) {
-            Icon(Icons.Default.AdminPanelSettings, contentDescription = null, tint = Color.White)
-            Spacer(modifier = Modifier.width(8.dp))
-            Text("Sign In as Assigned Admin", fontWeight = FontWeight.Bold)
-        }
+        Text(
+            text = "Sign out and sign in with an admin Google account to manage the app.",
+            fontSize = 13.sp,
+            color = Color(0xFF475569)
+        )
     }
 }

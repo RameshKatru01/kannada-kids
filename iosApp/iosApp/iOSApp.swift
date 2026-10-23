@@ -15,6 +15,9 @@ struct iOSApp: App {
         // Subscriptions (StoreKit)
         IosPlatformBridge.shared.billing = StoreKitBridge()
 
+        // Sign in with Apple
+        IosPlatformBridge.shared.appleSignIn = AppleSignInBridge()
+
         #if canImport(GoogleSignIn)
         // "Continue with Google" support (only when the GoogleSignIn package is added in Xcode).
         IosPlatformBridge.shared.googleSignIn = GoogleSignInBridge()
