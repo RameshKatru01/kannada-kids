@@ -133,7 +133,7 @@ private object IosVideoCache {
         val f = fileFor(url) ?: return
         val remote = NSURL.URLWithString(url) ?: return
         if (!downloading.add(url)) return
-        platform.Foundation.NSURLSession.sharedSession.downloadTaskWithURL(remote) { tmp, response, error ->
+        platform.Foundation.NSURLSession.sharedSession.downloadTaskWithURL(remote, completionHandler = { tmp: NSURL?, response: platform.Foundation.NSURLResponse?, error: platform.Foundation.NSError? ->
             val ok = error == null && ((response as? platform.Foundation.NSHTTPURLResponse)?.statusCode ?: 0L) in 200L..299L
             if (ok && tmp != null) {
                 val fm = platform.Foundation.NSFileManager.defaultManager
@@ -141,7 +141,7 @@ private object IosVideoCache {
                 fm.moveItemAtURL(tmp, NSURL.fileURLWithPath(f), null)
             }
             downloading.remove(url)
-        }.resume()
+        }).resume()
     }
 }
 
