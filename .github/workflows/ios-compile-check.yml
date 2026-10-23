@@ -26,8 +26,9 @@ jobs:
         shell: bash
         run: |
           set -o pipefail
-          xcodebuild -project iosApp/iosApp.xcodeproj -target iosApp -configuration Debug \
-            -sdk iphonesimulator -arch arm64 CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO build 2>&1 | tee xcode.log | grep -E "error:|warning: .*Swift|BUILD (SUCCEEDED|FAILED)" | head -100
+          xcodebuild -project iosApp/iosApp.xcodeproj -scheme iosApp -configuration Debug \
+            -destination 'generic/platform=iOS Simulator' ARCHS=arm64 ONLY_ACTIVE_ARCH=YES \
+            CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO build 2>&1 | tee xcode.log | grep -E "error:|warning: .*Swift|BUILD (SUCCEEDED|FAILED)" | head -100
       - name: Publish build errors
         if: failure()
         shell: bash
@@ -39,7 +40,7 @@ jobs:
             echo "===== kotlin errors ====="
             grep -E "^e: |FAILURE|What went wrong" -A3 build.log | head -100
             echo "===== xcode errors ====="
-            grep -E "error:" -B2 -A4 xcode.log | head -200
+            grep -E "error:" xcode.log | sort | uniq -c | sort -rn | head -60
             echo "===== xcode log tail ====="
             tail -120 xcode.log
           } > /tmp/logs/build-errors.txt 2>&1
