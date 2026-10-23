@@ -66,6 +66,10 @@ kotlin {
         iosMain.dependencies {
             implementation(libs.ktor.client.darwin)
         }
+        // Only used by the "Generate voice" action to export the list of spoken phrases
+        androidUnitTest.dependencies {
+            implementation("junit:junit:4.13.2")
+        }
         // Apple (cinterop) APIs used by the iOS platform code
         all {
             if (name.startsWith("ios")) {

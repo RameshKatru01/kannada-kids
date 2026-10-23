@@ -123,6 +123,9 @@ object ReferenceInfo {
 
     fun word(letter: KannadaLetter): RefWord? = words[letter.character]
 
+    /** Every example word (for the voice clips). */
+    fun allWords(): List<RefWord> = words.values.toList()
+
     /** A short tip on how to say the letter. */
     fun tip(letter: KannadaLetter, tab: RefTab): String {
         val c = letter.character

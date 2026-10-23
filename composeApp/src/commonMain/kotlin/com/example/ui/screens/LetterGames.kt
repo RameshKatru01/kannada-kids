@@ -446,7 +446,7 @@ fun BubbleGame(
     )
 
     LaunchedEffect(Unit) {
-        onSpeakText("Pop " + targetLetter.character)
+        onSpeakText(targetLetter.character)
         while (score < targetScore) {
             delay(1200) // Spawns bubbles a bit slower since we need 20
             val isTarget = Random.nextFloat() > 0.4f
@@ -572,7 +572,7 @@ fun CatchGame(
     val targetScore = 20
 
     LaunchedEffect(Unit) {
-        onSpeakText("Catch " + targetLetter.character)
+        onSpeakText(targetLetter.character)
         while (score < targetScore) {
             delay(1500)
             val isTarget = Random.nextFloat() > 0.4f

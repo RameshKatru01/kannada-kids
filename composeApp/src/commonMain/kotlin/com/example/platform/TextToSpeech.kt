@@ -8,7 +8,7 @@ package com.example.platform
  *   tts.speak("ಅ", TextToSpeech.QUEUE_FLUSH, null, null)
  *
  * Android uses the system TextToSpeech engine; iOS uses AVSpeechSynthesizer and falls back to
- * online Kannada speech when the device has no Kannada voice installed.
+ * the Kannada clips built into the app when the device has no Kannada voice installed.
  */
 class TextToSpeech(context: Context, listener: ((Int) -> Unit)? = null) {
 

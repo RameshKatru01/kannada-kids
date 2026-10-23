@@ -36,9 +36,9 @@ import kotlinx.coroutines.launch
  * 6 levels: short/long vowel pairs first, then more choices, and finally "listen only" (picture hidden).
  */
 
-private data class VowelWord(val vowel: String, val word: String, val picture: String, val english: String)
+internal data class VowelWord(val vowel: String, val word: String, val picture: String, val english: String)
 
-private val vowelWords = listOf(
+internal val vowelWords = listOf(
     VowelWord("ಅ", "ಅಮ್ಮ", "👩‍👧", "mother"), VowelWord("ಅ", "ಅರಸ", "👑", "king"),
     VowelWord("ಆ", "ಆನೆ", "🐘", "elephant"), VowelWord("ಆ", "ಆಮೆ", "🐢", "turtle"),
     VowelWord("ಇ", "ಇಲಿ", "🐭", "mouse"), VowelWord("ಇ", "ಇರುವೆ", "🐜", "ant"),

@@ -55,7 +55,7 @@ private data class Cell(val r: Int, val c: Int)
 private data class Placed(val word: PictureWord, val cells: List<Cell>, val color: Color)
 private data class Puzzle(val grid: List<List<String>>, val placed: List<Placed>)
 
-private val fillerSyllables = listOf(
+internal val fillerSyllables = listOf(
     "ಅ", "ಆ", "ಇ", "ಉ", "ಎ", "ಒ", "ಕ", "ಗ", "ಚ", "ಜ", "ಟ", "ಡ", "ತ", "ದ", "ನ", "ಪ", "ಬ", "ಮ", "ಯ", "ರ", "ಲ", "ವ", "ಸ", "ಹ",
     "ಕಾ", "ಮಾ", "ನಿ", "ರು", "ಲೆ", "ಬೆ", "ಗೆ", "ಹು", "ತೆ"
 )

@@ -1,6 +1,6 @@
 package com.example.platform
 
-import com.example.ui.audio.NativeAudioPlayer
+import com.example.ui.audio.SpeechBank
 import platform.AVFAudio.*
 import platform.darwin.dispatch_async
 import platform.darwin.dispatch_get_main_queue
@@ -30,8 +30,8 @@ private class IosTtsEngine : PlatformTtsEngine {
         val voice = findVoice(languageTag)
         val lang = languageTag.substringBefore("-").lowercase()
         if (voice == null && (lang == "kn" || lang == "hi")) {
-            // Most iPhones have no Kannada voice installed: use online Kannada speech instead.
-            NativeAudioPlayer.playOnlineSpeech(text, lang)
+            // Most iPhones have no Kannada voice installed: use the clips built into the app.
+            SpeechBank.playClip(text)
             return
         }
         if (flush && synthesizer.speaking) {
