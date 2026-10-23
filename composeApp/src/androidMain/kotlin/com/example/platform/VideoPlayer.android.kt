@@ -99,6 +99,17 @@ actual fun VideoSurface(
             view.player = player
             view.useController = showNativeControls
             view.controllerAutoShow = false
+            if (showNativeControls) {
+                // Controls stay hidden while the video plays; a tap shows them for 3 seconds.
+                view.controllerHideOnTouch = true
+                view.controllerShowTimeoutMs = 3000
+                view.hideController()
+                player.addListener(object : androidx.media3.common.Player.Listener {
+                    override fun onIsPlayingChanged(isPlaying: Boolean) {
+                        if (isPlaying) view.hideController()
+                    }
+                })
+            }
             view.resizeMode = AspectRatioFrameLayout.RESIZE_MODE_FIT
             if (!showNativeControls) view.setBackgroundColor(android.graphics.Color.TRANSPARENT)
             view
