@@ -1,0 +1,19 @@
+Run: 39988970802  Commit: c428fd45d4d1d2c3621556fd79303696f00e3ca6
+===== kotlin errors =====
+e: file:///Users/runner/work/kannada-kids/kannada-kids/composeApp/src/iosMain/kotlin/com/example/platform/VideoPlayer.ios.kt:138:51 Unresolved reference 'dataWithContentsOfURL'.
+e: file:///Users/runner/work/kannada-kids/kannada-kids/composeApp/src/iosMain/kotlin/com/example/platform/VideoPlayer.ios.kt:139:38 Unresolved reference 'length'.
+e: file:///Users/runner/work/kannada-kids/kannada-kids/composeApp/src/iosMain/kotlin/com/example/platform/VideoPlayer.ios.kt:140:22 Unresolved reference 'writeToFile'.
+
+> Task :composeApp:compileKotlinIosSimulatorArm64 FAILED
+gradle/actions: Writing build results to /Users/runner/work/_temp/.gradle-actions/build-results/__run-1792773768100.json
+--
+FAILURE: Build failed with an exception.
+
+* What went wrong:
+Execution failed for task ':composeApp:compileKotlinIosSimulatorArm64'.
+> Compilation finished with errors
+
+===== xcode errors =====
+grep: xcode.log: No such file or directory
+===== xcode log tail =====
+tail: xcode.log: No such file or directory
