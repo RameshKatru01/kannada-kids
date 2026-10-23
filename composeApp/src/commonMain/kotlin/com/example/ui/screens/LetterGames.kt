@@ -111,30 +111,16 @@ fun TraceGame(
         "ಳ" -> "$baseAssets/Vowel_lha.mp4"
         else -> null
     }
-    var strokes by remember { mutableStateOf(listOf<List<Offset>>()) }
-    var currentStroke by remember { mutableStateOf(listOf<Offset>()) }
-    var traceCount by remember { mutableStateOf(0) }
-    val requiredTraces = 5
-
     Column(
         modifier = Modifier.fillMaxSize().padding(horizontal = 12.dp, vertical = 6.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        Text(
-            text = "Trace the letter (${traceCount + 1}/$requiredTraces)",
-            fontSize = 20.sp,
-            fontWeight = FontWeight.Bold,
-            color = BentoTitle,
-            modifier = Modifier.padding(vertical = 4.dp)
-        )
-
         if (vowelVideoUrl != null) {
-            // 2 Horizontal Sections for letter with video:
-            // SECTION 1 (ABOVE): Video displayed
+            // Video on top (smaller), big tracing area below
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .weight(1f)
+                    .weight(0.7f)
                     .padding(bottom = 6.dp)
             ) {
                 com.example.ui.components.LetterTraceVideoPlayer(
@@ -144,210 +130,13 @@ fun TraceGame(
                     videoUrl = vowelVideoUrl
                 )
             }
-
-            // SECTION 2 (BELOW): Tracing exercise displayed
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .weight(1.1f)
-                    .clip(RoundedCornerShape(16.dp))
-                    .background(Color(0xFFF5F5F5))
-                    .pointerInput(Unit) {
-                        detectDragGestures(
-                            onDragStart = { offset ->
-                                currentStroke = listOf(offset)
-                            },
-                            onDrag = { change, _ ->
-                                change.consume()
-                                currentStroke = currentStroke + change.position
-                            },
-                            onDragEnd = {
-                                if (currentStroke.isNotEmpty()) {
-                                    strokes = strokes + listOf(currentStroke)
-                                    currentStroke = emptyList()
-                                }
-                            },
-                            onDragCancel = {
-                                currentStroke = emptyList()
-                            }
-                        )
-                    }
-            ) {
-                Text(
-                    text = letter.character,
-                    fontSize = 150.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = Color.LightGray.copy(alpha = 0.5f),
-                    modifier = Modifier
-                        .align(Alignment.Center)
-                        .clickable { onSpeakText(letter.character) }
-                )
-                IconButton(
-                    onClick = { onSpeakText(letter.character) },
-                    modifier = Modifier
-                        .align(Alignment.TopEnd)
-                        .padding(8.dp)
-                        .background(Color.White.copy(alpha = 0.8f), CircleShape)
-                ) {
-                    Icon(Icons.AutoMirrored.Filled.VolumeUp, contentDescription = "Play sound", tint = BentoTitle)
-                }
-
-                Canvas(modifier = Modifier.fillMaxSize()) {
-                    val strokeColor = BentoTitle
-                    val strokeWidth = 24f
-
-                    strokes.forEach { stroke ->
-                        if (stroke.size > 1) {
-                            val path = Path().apply {
-                                moveTo(stroke.first().x, stroke.first().y)
-                                for (i in 1 until stroke.size) {
-                                    lineTo(stroke[i].x, stroke[i].y)
-                                }
-                            }
-                            drawPath(
-                                path = path,
-                                color = strokeColor,
-                                style = Stroke(width = strokeWidth, cap = StrokeCap.Round, join = StrokeJoin.Round)
-                            )
-                        } else if (stroke.size == 1) {
-                            drawCircle(color = strokeColor, radius = strokeWidth / 2, center = stroke.first())
-                        }
-                    }
-
-                    if (currentStroke.size > 1) {
-                        val path = Path().apply {
-                            moveTo(currentStroke.first().x, currentStroke.first().y)
-                            for (i in 1 until currentStroke.size) {
-                                lineTo(currentStroke[i].x, currentStroke[i].y)
-                            }
-                        }
-                        drawPath(
-                            path = path,
-                            color = strokeColor,
-                            style = Stroke(width = strokeWidth, cap = StrokeCap.Round, join = StrokeJoin.Round)
-                        )
-                    } else if (currentStroke.size == 1) {
-                        drawCircle(color = strokeColor, radius = strokeWidth / 2, center = currentStroke.first())
-                    }
-                }
-            }
-        } else {
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .weight(1f)
-                    .padding(8.dp)
-                    .background(Color(0xFFF5F5F5), RoundedCornerShape(16.dp))
-                    .pointerInput(Unit) {
-                        detectDragGestures(
-                            onDragStart = { offset ->
-                                currentStroke = listOf(offset)
-                            },
-                            onDrag = { change, _ ->
-                                change.consume()
-                                currentStroke = currentStroke + change.position
-                            },
-                            onDragEnd = {
-                                if (currentStroke.isNotEmpty()) {
-                                    strokes = strokes + listOf(currentStroke)
-                                    currentStroke = emptyList()
-                                }
-                            },
-                            onDragCancel = {
-                                currentStroke = emptyList()
-                            }
-                        )
-                    }
-            ) {
-                Text(
-                    text = letter.character,
-                    fontSize = 180.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = Color.LightGray.copy(alpha = 0.5f),
-                    modifier = Modifier
-                        .align(Alignment.Center)
-                        .clickable { onSpeakText(letter.character) }
-                )
-                IconButton(
-                    onClick = { onSpeakText(letter.character) },
-                    modifier = Modifier
-                        .align(Alignment.TopEnd)
-                        .padding(8.dp)
-                        .background(Color.White.copy(alpha = 0.8f), CircleShape)
-                ) {
-                    Icon(Icons.AutoMirrored.Filled.VolumeUp, contentDescription = "Play sound", tint = BentoTitle)
-                }
-
-                Canvas(modifier = Modifier.fillMaxSize()) {
-                    val strokeColor = BentoTitle
-                    val strokeWidth = 24f
-
-                    strokes.forEach { stroke ->
-                        if (stroke.size > 1) {
-                            val path = Path().apply {
-                                moveTo(stroke.first().x, stroke.first().y)
-                                for (i in 1 until stroke.size) {
-                                    lineTo(stroke[i].x, stroke[i].y)
-                                }
-                            }
-                            drawPath(
-                                path = path,
-                                color = strokeColor,
-                                style = Stroke(width = strokeWidth, cap = StrokeCap.Round, join = StrokeJoin.Round)
-                            )
-                        } else if (stroke.size == 1) {
-                            drawCircle(color = strokeColor, radius = strokeWidth / 2, center = stroke.first())
-                        }
-                    }
-
-                    if (currentStroke.size > 1) {
-                        val path = Path().apply {
-                            moveTo(currentStroke.first().x, currentStroke.first().y)
-                            for (i in 1 until currentStroke.size) {
-                                lineTo(currentStroke[i].x, currentStroke[i].y)
-                            }
-                        }
-                        drawPath(
-                            path = path,
-                            color = strokeColor,
-                            style = Stroke(width = strokeWidth, cap = StrokeCap.Round, join = StrokeJoin.Round)
-                        )
-                    } else if (currentStroke.size == 1) {
-                        drawCircle(color = strokeColor, radius = strokeWidth / 2, center = currentStroke.first())
-                    }
-                }
-            }
         }
-
-        Row(
-            modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp),
-            horizontalArrangement = Arrangement.SpaceEvenly
-        ) {
-            Button(
-                onClick = { strokes = emptyList() },
-                colors = ButtonDefaults.buttonColors(containerColor = Color.Gray)
-            ) {
-                Icon(Icons.Default.Refresh, contentDescription = "Clear", tint = Color.White)
-                Spacer(Modifier.width(8.dp))
-                Text("Clear")
-            }
-            Button(
-                onClick = {
-                    TraceRepository.addTrace(letter.character, strokes)
-                    traceCount++
-                    strokes = emptyList()
-                    if (traceCount >= requiredTraces) {
-                        onComplete()
-                    }
-                },
-                colors = ButtonDefaults.buttonColors(containerColor = BrightGreen),
-                enabled = strokes.isNotEmpty()
-            ) {
-                Icon(Icons.Default.Check, contentDescription = "Done", tint = Color.White)
-                Spacer(Modifier.width(8.dp))
-                Text(if (traceCount == requiredTraces - 1) "Done" else "Next")
-            }
-        }
+        TraceExercise(
+            letter = letter,
+            onSpeakText = onSpeakText,
+            onComplete = onComplete,
+            modifier = Modifier.fillMaxWidth().weight(if (vowelVideoUrl != null) 1.5f else 1f)
+        )
     }
 }
 
