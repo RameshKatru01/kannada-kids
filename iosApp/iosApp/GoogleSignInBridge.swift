@@ -12,7 +12,7 @@ import ComposeApp
 
 final class GoogleSignInBridge: NSObject, IosGoogleSignInHandler {
 
-    func signIn(callback: GoogleSignInCallback) {
+    func signIn(callback_ callback: GoogleSignInCallback) {
         DispatchQueue.main.async {
             let clientId = (Bundle.main.object(forInfoDictionaryKey: "GIDClientID") as? String) ?? ""
             if clientId.isEmpty || clientId.hasPrefix("$(") {

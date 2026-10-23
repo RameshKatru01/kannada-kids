@@ -14,7 +14,7 @@ final class AppleSignInBridge: NSObject, IosAppleSignInHandler,
     private var callback: AppleSignInCallback?
     private var rawNonce: String?
 
-    func signIn(callback: AppleSignInCallback) {
+    func signIn(callback_ callback: AppleSignInCallback) {
         DispatchQueue.main.async {
             self.callback = callback
             let nonce = AppleSignInBridge.randomNonce()
