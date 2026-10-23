@@ -15,6 +15,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.scale
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.StrokeCap
@@ -33,7 +34,11 @@ import com.example.ui.auth.AuthViewModel
 import com.example.ui.auth.AuthState
 import kotlin.random.Random
 
-@OptIn(ExperimentalMaterial3Api::class)
+/*
+ * The letters of one island (Vowels / Consonants / Numbers) as big tiles:
+ * learned (✓), next (highlighted), not reached yet (🔒, letter still shown) or Gold pack (👑).
+ * Tapping a locked tile says what to do; the card on top shows the way to the next island.
+ */
 @Composable
 fun LetterListScreen(
     type: String,
@@ -41,68 +46,185 @@ fun LetterListScreen(
     onNavigateToGameFlow: (String, Int) -> Unit,
     authViewModel: AuthViewModel = viewModel { AuthViewModel() }
 ) {
-    val isVowels = type == "vowels"
-    val items = when(type) { "vowels" -> LetterData.vowels; "consonants" -> LetterData.consonants; "numbers" -> LetterData.numbers; else -> emptyList() }
-    val title = when(type) { "vowels" -> "Vowels"; "consonants" -> "Consonants"; "numbers" -> "Numbers"; else -> "" }
-    val topBarColor = when(type) { "vowels" -> BrightCyan; "consonants" -> BrightGreen; "numbers" -> Color(0xFFFF9800); else -> BrightCyan }
-    
+    val letters = when (type) { "vowels" -> LetterData.vowels; "consonants" -> LetterData.consonants; "numbers" -> LetterData.numbers; else -> emptyList() }
+    val title = when (type) { "vowels" -> "Vowels · ಸ್ವರಗಳು"; "consonants" -> "Consonants · ವ್ಯಂಜನಗಳು"; "numbers" -> "Numbers · ಅಂಕೆಗಳು"; else -> "" }
+    val accent = when (type) { "vowels" -> Color(0xFF2EC4B6); "consonants" -> Color(0xFF6C63FF); else -> Color(0xFFFF9F1C) }
+    val tint = when (type) { "vowels" -> Color(0xFFD9F6F2); "consonants" -> Color(0xFFE6E4FF); else -> Color(0xFFFFE6CC) }
+    val ink = Color(0xFF0B3B66)
+    val inkSoft = Color(0xFF3A5F82)
     val context = LocalContext.current
-    var tts by remember { mutableStateOf<TextToSpeech?>(null) }
-    
-    val authState by authViewModel.authState.collectAsState()
-    val userEmail = (authState as? AuthState.Authenticated)?.email ?: "guest"
-    val prefs = getSharedPreferences("AppProgress")
-    val currentLanguage by com.example.ui.data.LanguageManager.currentLanguage.collectAsState()
-    val langCode = currentLanguage.code
-    val subscriptionPlan = prefs.getString("${langCode}_subscriptionPlan_$userEmail", "Free") ?: "Free"
-    
-    val progressUnlocked = when(type) {
-        "vowels" -> prefs.getInt("${userEmail}_vowels_unlocked", 0)
-        "consonants" -> prefs.getInt("${userEmail}_consonants_unlocked", 0)
-        "numbers" -> prefs.getInt("${userEmail}_numbers_unlocked", 0)
-        else -> 0
+
+    val version by com.example.ui.data.ActivityTracker.version.collectAsState()
+    val pathVersion by com.example.ui.data.Access.version.collectAsState()
+    val sub by com.example.ui.data.SubscriptionManager.state.collectAsState()
+    val learned = remember(version, type) { com.example.ui.data.ActivityTracker.learned(type) }
+    val states = remember(version, pathVersion, sub, type, letters.size) {
+        letters.indices.map { com.example.ui.data.Access.letter(type, it) }
     }
-    
-    val isGuest = com.example.ui.data.UserManager.isGuest(userEmail)
-    val highestUnlocked = if (com.example.ui.data.FeatureFlags.UNLOCK_ALL) items.size else if (isGuest) 0 else if (subscriptionPlan == "Gold") items.size else progressUnlocked
-    
-    DisposableEffect(context) {
-        var textToSpeech: TextToSpeech? = null
-        val attrContext = context
-        textToSpeech = TextToSpeech(attrContext) { status ->
-            if (status == TextToSpeech.SUCCESS) {
-                textToSpeech?.language = Locale.Builder().setLanguage("kn").setRegion("IN").build()
+    val premium = remember(sub, pathVersion) { com.example.ui.data.Access.isPremium() }
+    val next = remember(version, type) { com.example.ui.data.Access.nextIndex(type) }
+    val done = learned.count { it in letters.indices }
+
+    Column(
+        Modifier
+            .fillMaxSize()
+            .background(Color(0xFFEAF6FF))
+            .safeDrawingPadding()
+            .padding(horizontal = 16.dp, vertical = 10.dp),
+        verticalArrangement = Arrangement.spacedBy(12.dp)
+    ) {
+        // Header
+        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+            Box(
+                Modifier.size(44.dp).clip(CircleShape).background(Color.White).clickable { onBack() },
+                contentAlignment = Alignment.Center
+            ) { Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back", tint = ink) }
+            Column {
+                Text(title, fontSize = 22.sp, fontWeight = FontWeight.ExtraBold, color = ink, maxLines = 1)
+                Text("$done of ${letters.size} learned", fontSize = 13.sp, fontWeight = FontWeight.ExtraBold, color = inkSoft)
             }
         }
-        tts = textToSpeech
-        onDispose {
-            textToSpeech?.stop()
-            textToSpeech?.shutdown()
+
+        // Goal card
+        val (goal, goalFraction) = when {
+            !premium -> "Try ${letters.firstOrNull()?.character ?: ""} for free. Gold 👑 opens every letter!" to (done.toFloat() / letters.size.coerceAtLeast(1))
+            type == "vowels" && done < letters.size -> "Learn all ${letters.size} vowels to open the Consonants island 🏝️" to (done.toFloat() / letters.size)
+            type == "vowels" -> "All vowels learned! The Consonants island is open 🎉" to 1f
+            type == "consonants" && done < letters.size -> "Learn all ${letters.size} consonants to open the Ka-kaa island 🏝️" to (done.toFloat() / letters.size)
+            type == "consonants" -> "All consonants learned! The Ka-kaa island is open 🎉" to 1f
+            else -> "$done of ${letters.size} numbers learned" to (done.toFloat() / letters.size.coerceAtLeast(1))
+        }
+        Row(
+            Modifier
+                .fillMaxWidth()
+                .clip(RoundedCornerShape(22.dp))
+                .background(Color.White)
+                .clickable(enabled = !premium) { com.example.ui.data.Access.askGrownUp() }
+                .padding(12.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            Box(Modifier.size(46.dp).background(if (premium) tint else Color(0xFFFFF1C4), CircleShape), contentAlignment = Alignment.Center) {
+                if (premium) Icon(Icons.Default.Lock, contentDescription = null, tint = accent) else Text("👑", fontSize = 22.sp)
+            }
+            Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                Text(goal, fontSize = 14.sp, fontWeight = FontWeight.ExtraBold, color = ink, lineHeight = 18.sp)
+                Box(Modifier.fillMaxWidth().height(10.dp).clip(RoundedCornerShape(5.dp)).background(Color(0xFFE6ECF1))) {
+                    Box(Modifier.fillMaxWidth(goalFraction.coerceIn(0f, 1f)).fillMaxHeight().background(accent))
+                }
+            }
+        }
+
+        // Letter tiles
+        androidx.compose.foundation.lazy.grid.LazyVerticalGrid(
+            columns = androidx.compose.foundation.lazy.grid.GridCells.Adaptive(78.dp),
+            modifier = Modifier.fillMaxWidth().weight(1f),
+            contentPadding = PaddingValues(top = 6.dp, bottom = 16.dp),
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
+            verticalArrangement = Arrangement.spacedBy(14.dp)
+        ) {
+            items(letters.size) { index ->
+                val letter = letters[index]
+                val state = states[index]
+                val isLearned = index in learned
+                val isNext = state == com.example.ui.data.Access.State.Open && index == next && !isLearned
+                LetterTile(
+                    glyph = letter.character,
+                    state = state,
+                    learned = isLearned,
+                    next = isNext,
+                    accent = accent,
+                    tint = tint,
+                    onClick = {
+                        when (state) {
+                            com.example.ui.data.Access.State.Open -> {
+                                com.example.ui.audio.NativeAudioPlayer.playPhonics(context, letter.character)
+                                onNavigateToGameFlow(type, index)
+                            }
+                            com.example.ui.data.Access.State.NeedsPremium ->
+                                com.example.ui.data.Access.askGrownUp("${letter.character} and all the other letters are in the Gold pack.")
+                            com.example.ui.data.Access.State.NeedsProgress -> {
+                                val first = letters.getOrNull(next)?.character ?: ""
+                                com.example.ui.data.Access.showHint(
+                                    if (index == next + 1) "Finish $first first, then ${letter.character} opens!"
+                                    else "Letters open one by one. Next up is $first!"
+                                )
+                            }
+                        }
+                    }
+                )
+            }
         }
     }
+}
 
-    Scaffold(
-        topBar = {
-            TopAppBar(
-                title = { Text(title, fontWeight = FontWeight.Bold, color = Color.White) },
-                navigationIcon = {
-                    IconButton(onClick = onBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back", tint = Color.White)
+@Composable
+private fun LetterTile(
+    glyph: String,
+    state: com.example.ui.data.Access.State,
+    learned: Boolean,
+    next: Boolean,
+    accent: Color,
+    tint: Color,
+    onClick: () -> Unit
+) {
+    val ink = Color(0xFF0B3B66)
+    val locked = state != com.example.ui.data.Access.State.Open
+    val pulse = rememberInfiniteTransition(label = "next")
+    val grow by pulse.animateFloat(1f, 1.06f, infiniteRepeatable(tween(700), RepeatMode.Reverse), label = "grow")
+    val shape = RoundedCornerShape(22.dp)
+    Box(Modifier.fillMaxWidth().aspectRatio(0.95f)) {
+        Box(
+            Modifier
+                .fillMaxSize()
+                .scale(if (next) grow else 1f)
+                .clip(shape)
+                .background(
+                    when {
+                        next -> accent
+                        learned -> tint
+                        locked -> Color(0xFFE9EEF3)
+                        else -> Color.White
                     }
-                },
-                colors = TopAppBarDefaults.topAppBarColors(containerColor = topBarColor)
+                )
+                .border(
+                    if (next) 4.dp else 2.dp,
+                    when {
+                        next -> Color.White
+                        state == com.example.ui.data.Access.State.NeedsPremium -> Color(0xFFF2C94C)
+                        locked -> Color(0xFFB8C4CF)
+                        else -> Color.Transparent
+                    },
+                    shape
+                )
+                .clickable { onClick() },
+            contentAlignment = Alignment.Center
+        ) {
+            Text(
+                glyph,
+                fontSize = 36.sp,
+                fontWeight = FontWeight.ExtraBold,
+                color = if (locked) Color(0xFF4E6276) else ink
             )
         }
-    ) { paddingValues ->
-        LetterAdventureMap(
-            modifier = Modifier.fillMaxSize().padding(paddingValues),
-            items = items,
-            highestUnlocked = highestUnlocked,
-            onLetterClick = { index, letter ->
-                com.example.ui.audio.NativeAudioPlayer.playPhonics(context, letter.character)
-                onNavigateToGameFlow(type, index)
-            }
-        )
+        when {
+            learned && !locked -> Box(
+                Modifier.align(Alignment.TopEnd).offset(x = 4.dp, y = (-4).dp).size(24.dp).background(accent, CircleShape),
+                contentAlignment = Alignment.Center
+            ) { Text("✓", fontSize = 13.sp, fontWeight = FontWeight.ExtraBold, color = Color.White) }
+            locked -> AccessBadge(state, Modifier.align(Alignment.TopEnd).offset(x = 4.dp, y = (-4).dp), size = 26.dp)
+        }
+        if (next) {
+            Text(
+                "Next!",
+                fontSize = 11.sp, fontWeight = FontWeight.ExtraBold, color = Color.White,
+                modifier = Modifier
+                    .align(Alignment.BottomCenter)
+                    .offset(y = 8.dp)
+                    .background(Color(0xFFFF6B6B), RoundedCornerShape(10.dp))
+                    .padding(horizontal = 9.dp, vertical = 2.dp)
+            )
+        }
     }
 }
 

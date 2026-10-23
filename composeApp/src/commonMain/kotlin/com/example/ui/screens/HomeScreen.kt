@@ -55,6 +55,7 @@ import com.example.resources.thumb_colours
 import com.example.resources.thumb_consonants
 import com.example.resources.thumb_numbers
 import com.example.resources.thumb_vowels
+import com.example.ui.data.Access
 import com.example.ui.data.ActivityTracker
 import com.example.ui.data.ScoreManager
 import com.example.ui.progress.GameInfo
@@ -86,7 +87,8 @@ private data class Island(
     val tint: Color,
     val total: Int,
     val learned: Set<Int>,
-    val open: () -> Unit
+    val open: () -> Unit,
+    val state: Access.State = Access.State.Open
 ) {
     val done: Int get() = learned.count { it in 0 until total }
     val finished: Boolean get() = total > 0 && done >= total
@@ -112,28 +114,42 @@ fun HomeScreen(
     val coins by ScoreManager.totalCoins.collectAsState()
     val currentLanguage by com.example.ui.data.LanguageManager.currentLanguage.collectAsState()
 
-    val islands = remember(version, currentLanguage) {
+    val pathVersion by Access.version.collectAsState()
+    val sub by com.example.ui.data.SubscriptionManager.state.collectAsState()
+    val premium = remember(sub, pathVersion) { Access.isPremium() }
+    val islands = remember(version, currentLanguage, pathVersion, sub) {
         listOf(
             Island("vowels", "Vowels", "ಅ", Color(0xFF2EC4B6), Color(0xFFD9F6F2), LetterData.vowels.size, ActivityTracker.learned("vowels"), onNavigateToVowels),
             Island("consonants", "Consonants", "ಕ", Color(0xFF6C63FF), Color(0xFFE6E4FF), LetterData.consonants.size, ActivityTracker.learned("consonants"), onNavigateToConsonants),
             Island("guninthakshari", "Ka-kaa", "ಕಾ", HomeCoral, Color(0xFFFFE1E1), LetterData.consonants.size, ActivityTracker.learned("guninthakshari"), onNavigateToGunninthakshari),
             Island("numbers", "Numbers", "೧", Color(0xFFFF9F1C), Color(0xFFFFE6CC), LetterData.numbers.size, ActivityTracker.learned("numbers"), onNavigateToNumbers)
-        )
+        ).map { it.copy(state = Access.island(it.type)) }
     }
     val streak = remember(version) { ActivityTracker.streakDays() }
     // The island to work on now: the first one that isn't finished (or the last one when all are done)
-    val currentIndex = islands.indexOfFirst { !it.finished }.let { if (it < 0) islands.size - 1 else it }
+    // Free users: the first island whose free letter isn't done yet; Gold: the first open, unfinished island
+    val currentIndex = islands.indexOfFirst {
+        it.state == Access.State.Open && (if (premium) !it.finished else 0 !in it.learned)
+    }.let { if (it < 0) islands.indexOfFirst { i -> i.state == Access.State.Open && !i.finished }.coerceAtLeast(0) else it }
     val current = islands[currentIndex]
+    val nextIdx = current.nextIndex
+    val nextState = remember(current.type, nextIdx, version, pathVersion, sub) { Access.letter(current.type, nextIdx) }
     val nextGlyph = when (current.type) {
-        "vowels" -> LetterData.vowels.getOrNull(current.nextIndex)?.character
-        "consonants", "guninthakshari" -> LetterData.consonants.getOrNull(current.nextIndex)?.character
-        else -> LetterData.numbers.getOrNull(current.nextIndex)?.character
+        "vowels" -> LetterData.vowels.getOrNull(nextIdx)?.character
+        "consonants", "guninthakshari" -> LetterData.consonants.getOrNull(nextIdx)?.character
+        else -> LetterData.numbers.getOrNull(nextIdx)?.character
     } ?: current.glyph
     val openNext: () -> Unit = {
         com.example.ui.audio.SoundEffectsHelper.playButtonTap()
-        // Ka-kaa lessons are picked from their own chart (consonant + vowel sign)
-        if (current.type == "guninthakshari") current.open() else onOpenLetter(current.type, current.nextIndex)
+        when (nextState) {
+            // Ka-kaa lessons are picked from their own chart (consonant + vowel sign)
+            Access.State.Open -> if (current.type == "guninthakshari") current.open() else onOpenLetter(current.type, nextIdx)
+            Access.State.NeedsPremium -> Access.askGrownUp("$nextGlyph and all the other letters are in the Gold pack.")
+            Access.State.NeedsProgress -> Access.showHint(Access.islandHint(current.type).ifEmpty { "Keep going!" })
+        }
     }
+    // "New island opened!" once, when the child unlocks Consonants / Ka-kaa by learning
+    val celebrate = remember(version, pathVersion, sub) { Access.newlyOpenedIsland() }
 
     // Everything fits on one screen (no scrolling): the two shelves take a fixed height and the
     // map gets whatever is left. All three share the same 16dp side margins so their edges line up.
@@ -164,6 +180,7 @@ fun HomeScreen(
                 islands = islands,
                 currentIndex = currentIndex,
                 nextGlyph = nextGlyph,
+                nextState = nextState,
                 onNext = openNext,
                 modifier = Modifier
                     .padding(horizontal = side)
@@ -173,15 +190,25 @@ fun HomeScreen(
             ShelfTitle("Games", onSeeAll = onSeeAllGames, side = side)
             Row(Modifier.fillMaxWidth().padding(horizontal = side), horizontalArrangement = Arrangement.spacedBy(gap)) {
                 picks.take(perRow).forEach { game ->
-                    HomeGameCard(game, pictureHeight, Modifier.width(cardWidth)) { onOpenGame(game) }
+                    HomeGameCard(game, pictureHeight, Modifier.width(cardWidth), remember(sub) { Access.game(game) }) { onOpenGame(game) }
                 }
             }
             ShelfTitle("Fun Videos", onSeeAll = onSeeAllVideos, side = side)
             Row(Modifier.fillMaxWidth().padding(horizontal = side), horizontalArrangement = Arrangement.spacedBy(gap)) {
                 homeVideos.take(perRow).forEach { (folder, photo) ->
-                    HomeVideoCard(folder, photo, pictureHeight, Modifier.width(cardWidth)) { onOpenVideos(folder) }
+                    HomeVideoCard(folder, photo, pictureHeight, Modifier.width(cardWidth), remember(sub) { Access.videoFolder(folder) }) { onOpenVideos(folder) }
                 }
             }
+        }
+        if (celebrate != null) {
+            IslandOpenedCard(
+                type = celebrate,
+                onGo = {
+                    Access.markCelebrated(celebrate)
+                    islands.firstOrNull { it.type == celebrate }?.open?.invoke()
+                },
+                onLater = { Access.markCelebrated(celebrate) }
+            )
         }
     }
 }
@@ -246,7 +273,7 @@ private fun HomePill(onClick: (() -> Unit)? = null, content: @Composable RowScop
 private val islandSpots = listOf(Offset(0.20f, 0.74f), Offset(0.70f, 0.53f), Offset(0.22f, 0.31f), Offset(0.72f, 0.12f))
 
 @Composable
-private fun IslandMap(islands: List<Island>, currentIndex: Int, nextGlyph: String, onNext: () -> Unit, modifier: Modifier = Modifier) {
+private fun IslandMap(islands: List<Island>, currentIndex: Int, nextGlyph: String, nextState: Access.State, onNext: () -> Unit, modifier: Modifier = Modifier) {
     val pulse = rememberInfiniteTransition(label = "island")
     val bob by pulse.animateFloat(1f, 1.07f, infiniteRepeatable(tween(900, easing = FastOutSlowInEasing), RepeatMode.Reverse), label = "bob")
     val dash by pulse.animateFloat(0f, 40f, infiniteRepeatable(tween(1600, easing = LinearEasing)), label = "dash")
@@ -280,6 +307,7 @@ private fun IslandMap(islands: List<Island>, currentIndex: Int, nextGlyph: Strin
 
         islands.forEachIndexed { i, island ->
             val isCurrent = i == currentIndex
+            val locked = island.state == Access.State.NeedsProgress
             // Rings shrink on short screens so the islands never overlap
             val bigRing = (h * 0.26f).coerceIn(56.dp, 96.dp)
             val ring = if (isCurrent) bigRing else bigRing * 0.8f
@@ -294,23 +322,26 @@ private fun IslandMap(islands: List<Island>, currentIndex: Int, nextGlyph: Strin
                     .clip(RoundedCornerShape(20.dp))
                     .clickable {
                         com.example.ui.audio.SoundEffectsHelper.playButtonTap()
-                        island.open()
+                        if (locked) Access.showHint(Access.islandHint(island.type)) else island.open()
                     }
                     .testTag("home_island_${island.type}")
             ) {
                 Box(Modifier.size(ring).scale(if (isCurrent) bob else 1f)) {
                     ProgressRing(
                         fraction = if (island.total == 0) 0f else island.done.toFloat() / island.total,
-                        color = island.color,
+                        color = if (locked) Color(0xFFB8C4CF) else island.color,
                         modifier = Modifier.fillMaxSize()
                     )
                     Box(
-                        Modifier.fillMaxSize().padding(ring * 0.11f).clip(CircleShape).background(island.tint),
+                        Modifier.fillMaxSize().padding(ring * 0.11f).clip(CircleShape).background(if (locked) Color(0xFFE6ECF1) else island.tint),
                         contentAlignment = Alignment.Center
                     ) {
-                        Text(island.glyph, fontSize = (ring.value * 0.32f).sp, fontWeight = FontWeight.ExtraBold, color = HomeInk)
+                        // Locked islands still show their letter, so kids see what is coming
+                        Text(island.glyph, fontSize = (ring.value * 0.32f).sp, fontWeight = FontWeight.ExtraBold, color = if (locked) Color(0xFF4E6276) else HomeInk)
                     }
-                    if (isCurrent) {
+                    if (locked) {
+                        LockBadge(Modifier.align(Alignment.BottomEnd).offset(x = 6.dp, y = 4.dp), size = 28.dp)
+                    } else if (isCurrent) {
                         Text(
                             "Play!",
                             fontSize = 11.sp, fontWeight = FontWeight.ExtraBold, color = Color.White,
@@ -333,8 +364,8 @@ private fun IslandMap(islands: List<Island>, currentIndex: Int, nextGlyph: Strin
                     }
                 }
                 Text(
-                    "${island.name} · ${island.done}/${island.total}",
-                    fontSize = 12.sp, fontWeight = FontWeight.ExtraBold, color = HomeInk, maxLines = 1,
+                    if (locked) island.name else "${island.name} · ${island.done}/${island.total}",
+                    fontSize = 12.sp, fontWeight = FontWeight.ExtraBold, color = if (locked) Color(0xFF5B7189) else HomeInk, maxLines = 1,
                     modifier = Modifier.background(Color.White, RoundedCornerShape(12.dp)).padding(horizontal = 9.dp, vertical = 1.dp)
                 )
             }
@@ -356,8 +387,12 @@ private fun IslandMap(islands: List<Island>, currentIndex: Int, nextGlyph: Strin
         ) {
             Text("Next:", fontSize = 13.sp, fontWeight = FontWeight.ExtraBold, color = Color.White)
             Text(nextGlyph, fontSize = 20.sp, fontWeight = FontWeight.ExtraBold, color = Color.White)
-            Box(Modifier.size(30.dp).background(HomeCoral, CircleShape), contentAlignment = Alignment.Center) {
-                Icon(Icons.Default.PlayArrow, contentDescription = "Start the next letter", tint = Color.White, modifier = Modifier.size(20.dp))
+            if (nextState == Access.State.NeedsPremium) {
+                CrownBadge(size = 30.dp)
+            } else {
+                Box(Modifier.size(30.dp).background(HomeCoral, CircleShape), contentAlignment = Alignment.Center) {
+                    Icon(Icons.Default.PlayArrow, contentDescription = "Start the next letter", tint = Color.White, modifier = Modifier.size(20.dp))
+                }
             }
         }
     }
@@ -397,11 +432,12 @@ private fun ShelfTitle(title: String, onSeeAll: () -> Unit, side: Dp = 16.dp) {
 
 /** A game card: its drawn picture (same art as the Games tab) with the name below, like a video card. */
 @Composable
-private fun HomeGameCard(game: GameInfo, pictureHeight: Dp, modifier: Modifier = Modifier, onClick: () -> Unit) {
+private fun HomeGameCard(game: GameInfo, pictureHeight: Dp, modifier: Modifier = Modifier, state: Access.State = Access.State.Open, onClick: () -> Unit) {
     HomeCard(
         label = game.name,
         pictureHeight = pictureHeight,
         modifier = modifier.testTag("home_game_${game.id}"),
+        state = state,
         onClick = onClick
     ) {
         // The art is drawn for a ~150x112dp box; scale it to whatever size the card has
@@ -428,11 +464,12 @@ private fun HomeGameCard(game: GameInfo, pictureHeight: Dp, modifier: Modifier =
 }
 
 @Composable
-private fun HomeVideoCard(folder: String, photo: DrawableResource, pictureHeight: Dp, modifier: Modifier = Modifier, onClick: () -> Unit) {
+private fun HomeVideoCard(folder: String, photo: DrawableResource, pictureHeight: Dp, modifier: Modifier = Modifier, state: Access.State = Access.State.Open, onClick: () -> Unit) {
     HomeCard(
         label = folder,
         pictureHeight = pictureHeight,
         modifier = modifier.testTag("home_video_$folder"),
+        state = state,
         onClick = onClick
     ) {
         Image(
@@ -452,7 +489,7 @@ private fun HomeVideoCard(folder: String, photo: DrawableResource, pictureHeight
 
 /** Shared card frame for the Home shelves: rounded picture on top, one-line name below. */
 @Composable
-private fun HomeCard(label: String, pictureHeight: Dp, modifier: Modifier, onClick: () -> Unit, picture: @Composable BoxScope.() -> Unit) {
+private fun HomeCard(label: String, pictureHeight: Dp, modifier: Modifier, state: Access.State = Access.State.Open, onClick: () -> Unit, picture: @Composable BoxScope.() -> Unit) {
     Column(
         modifier
             .clip(RoundedCornerShape(16.dp))
@@ -467,9 +504,11 @@ private fun HomeCard(label: String, pictureHeight: Dp, modifier: Modifier, onCli
                 .fillMaxWidth()
                 .height(pictureHeight)
                 .clip(RoundedCornerShape(16.dp))
-                .background(lerpColor(HomeInk, Color.White, 0.8f)),
-            content = picture
-        )
+                .background(lerpColor(HomeInk, Color.White, 0.8f))
+        ) {
+            picture()
+            AccessBadge(state, Modifier.align(Alignment.TopEnd).padding(5.dp), size = 26.dp)
+        }
         Text(
             label,
             fontSize = 12.sp, fontWeight = FontWeight.ExtraBold, color = HomeInk,

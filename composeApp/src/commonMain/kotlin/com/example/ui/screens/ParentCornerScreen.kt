@@ -62,7 +62,7 @@ private fun newSum(): Pair<Int, Int> {
 }
 
 @Composable
-fun ParentGate(onPass: () -> Unit, onCancel: () -> Unit) {
+fun ParentGate(onPass: () -> Unit, onCancel: () -> Unit, purpose: String = "Answer to open the Parent corner") {
     var sum by remember { mutableStateOf(newSum()) }
     var typed by remember { mutableStateOf("") }
     var wrong by remember { mutableStateOf(false) }
@@ -87,7 +87,7 @@ fun ParentGate(onPass: () -> Unit, onCancel: () -> Unit) {
         ) {
             Text("For grown-ups", fontSize = 24.sp, fontWeight = FontWeight.ExtraBold, color = ScrapbookInk)
             Text(
-                if (wrong) "Not quite. Try this one:" else "Answer to open the Parent corner",
+                if (wrong) "Not quite. Try this one:" else purpose,
                 fontSize = 14.sp, fontWeight = FontWeight.Bold,
                 color = if (wrong) Color(0xFFD94848) else ScrapbookInkSoft, textAlign = TextAlign.Center
             )
@@ -152,7 +152,7 @@ fun ParentGate(onPass: () -> Unit, onCancel: () -> Unit) {
 }
 
 @Composable
-private fun BackHeader(title: String, subtitle: String?, onBack: () -> Unit) {
+internal fun BackHeader(title: String, subtitle: String?, onBack: () -> Unit) {
     Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
         Box(
             Modifier.size(44.dp).clip(CircleShape).background(Color.White).clickable { onBack() },
@@ -168,7 +168,7 @@ private fun BackHeader(title: String, subtitle: String?, onBack: () -> Unit) {
 }
 
 @Composable
-private fun WhiteCard(modifier: Modifier = Modifier, content: @Composable ColumnScope.() -> Unit) {
+internal fun WhiteCard(modifier: Modifier = Modifier, content: @Composable ColumnScope.() -> Unit) {
     Column(
         modifier = modifier.fillMaxWidth().background(Color.White, RoundedCornerShape(24.dp)).padding(horizontal = 16.dp, vertical = 14.dp),
         verticalArrangement = Arrangement.spacedBy(10.dp),
@@ -306,6 +306,7 @@ fun ParentCornerScreen(
     onBack: () -> Unit,
     onSignOut: () -> Unit,
     onOpenPlans: () -> Unit = {},
+    onOpenLearningPath: () -> Unit = {},
     authViewModel: AuthViewModel = viewModel { AuthViewModel() }
 ) {
     val context = LocalContext.current
@@ -382,6 +383,30 @@ fun ParentCornerScreen(
             LetterChips(weak, Color(0xFFFFE1E1), Color(0xFF9E2B2B), "No tricky letters yet. Keep playing the games!")
             Text("Strong letters", fontSize = 16.sp, fontWeight = FontWeight.ExtraBold, color = ScrapbookInk)
             LetterChips(strong, Color(0xFFD9F6F2), Color(0xFF0F6B62), "Letters answered right again and again will show here.")
+        }
+
+        // Learning path (how letters, islands and levels open)
+        val pathVersion by com.example.ui.data.Access.version.collectAsState()
+        val everythingOpen = remember(pathVersion) { com.example.ui.data.Access.everythingOpen }
+        val startFrom = remember(pathVersion) { com.example.ui.data.Access.startFrom }
+        Row(
+            Modifier.fillMaxWidth().clip(RoundedCornerShape(22.dp)).background(Color.White).clickable { onOpenLearningPath() }
+                .padding(14.dp).testTag("open_learning_path"),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            Box(Modifier.size(44.dp).background(Color(0xFFE6E4FF), CircleShape), contentAlignment = Alignment.Center) {
+                Text("🗺️", fontSize = 22.sp)
+            }
+            Column(Modifier.weight(1f)) {
+                Text("Learning path", fontSize = 16.sp, fontWeight = FontWeight.ExtraBold, color = ScrapbookInk)
+                Text(
+                    if (everythingOpen) "Everything open"
+                    else "Step by step · from " + listOf("the beginning", "Consonants", "Ka-kaa")[startFrom],
+                    fontSize = 12.sp, fontWeight = FontWeight.Bold, color = ScrapbookInkSoft
+                )
+            }
+            Text("›", fontSize = 26.sp, fontWeight = FontWeight.ExtraBold, color = ScrapbookInk)
         }
 
         // Plan

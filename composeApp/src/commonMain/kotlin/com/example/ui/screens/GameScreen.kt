@@ -103,6 +103,8 @@ fun GameScreen(onBack: () -> Unit, onNavigateToGameFlow: (String, String, Int) -
     val isGuest = com.example.ui.data.UserManager.isGuest(userEmail)
     val guninthakshariUnlocked = prefs.getInt("${userEmail}_${langPrefix}_guninthakshari_unlocked", 0)
     val highestUnlocked = if (com.example.ui.data.FeatureFlags.UNLOCK_ALL) Int.MAX_VALUE else if (isGuest) 0 else if (subscriptionPlan == "Gold") Int.MAX_VALUE else guninthakshariUnlocked
+    val learnVersion by com.example.ui.data.ActivityTracker.version.collectAsState()
+    val sub by com.example.ui.data.SubscriptionManager.state.collectAsState()
 
     Scaffold(
         topBar = {
@@ -139,13 +141,18 @@ fun GameScreen(onBack: () -> Unit, onNavigateToGameFlow: (String, String, Int) -
                 ) {
                     items(LetterData.consonants.size) { index ->
                         val consonant = LetterData.consonants[index]
-                        val isUnlocked = index <= highestUnlocked
-                        ConsonantCard(consonant = consonant, isUnlocked = isUnlocked) {
-                            if (isUnlocked) {
-                                selectedConsonant = consonant
-                                selectedConsonantIndex = index
-                            } else {
-                                Toast.makeText(context, "🔒 Locked: Sign in with Gmail to unlock all consonants!", Toast.LENGTH_SHORT).show()
+                        val state = remember(learnVersion, sub, index) { com.example.ui.data.Access.letter("guninthakshari", index) }
+                        ConsonantCard(consonant = consonant, state = state) {
+                            when (state) {
+                                com.example.ui.data.Access.State.Open -> {
+                                    selectedConsonant = consonant
+                                    selectedConsonantIndex = index
+                                }
+                                com.example.ui.data.Access.State.NeedsPremium -> com.example.ui.data.Access.askGrownUp("${consonant.character} and all the other Ka-kaa letters are in the Gold pack.")
+                                com.example.ui.data.Access.State.NeedsProgress -> {
+                                    val nextChar = LetterData.consonants.getOrNull(com.example.ui.data.Access.nextIndex("guninthakshari"))?.character ?: ""
+                                    com.example.ui.data.Access.showHint("Letters open one by one. Next up is $nextChar!")
+                                }
                             }
                         }
                     }
@@ -160,19 +167,20 @@ fun GameScreen(onBack: () -> Unit, onNavigateToGameFlow: (String, String, Int) -
                 ) {
                     items(signs.size) { signIndex ->
                         val (sign, transliterationSuffix) = signs[signIndex]
-                        val isUnlocked = !isGuest || signIndex == 0
+                        val signState = com.example.ui.data.Access.kaKaaSign(selectedConsonantIndex ?: 0, signIndex)
+                        val isUnlocked = signState == com.example.ui.data.Access.State.Open
                         val combinedChar = selectedConsonant!!.character + sign
                         val combinedTransliteration = selectedConsonant!!.transliteration.replace(Regex("a$"), "") + transliterationSuffix
                         
                         CombinationCard(
                             char = combinedChar,
                             transliteration = combinedTransliteration,
-                            isUnlocked = isUnlocked,
+                            state = signState,
                             onClick = {
                                 if (isUnlocked) {
                                     onNavigateToGameFlow(combinedChar, combinedTransliteration, selectedConsonantIndex ?: 0)
                                 } else {
-                                    Toast.makeText(context, "🔒 Locked: Sign in with Gmail to unlock all Gunintakshari combinations!", Toast.LENGTH_SHORT).show()
+                                    com.example.ui.data.Access.askGrownUp("$combinedChar and all the other Ka-kaa letters are in the Gold pack.")
                                 }
                             }
                         )
@@ -184,11 +192,12 @@ fun GameScreen(onBack: () -> Unit, onNavigateToGameFlow: (String, String, Int) -
 }
 
 @Composable
-fun ConsonantCard(consonant: KannadaLetter, isUnlocked: Boolean = true, onClick: () -> Unit) {
+fun ConsonantCard(consonant: KannadaLetter, state: com.example.ui.data.Access.State = com.example.ui.data.Access.State.Open, onClick: () -> Unit) {
+    val isUnlocked = state == com.example.ui.data.Access.State.Open
     Card(
         modifier = Modifier
             .aspectRatio(1f)
-            .clickable(enabled = isUnlocked, onClick = onClick),
+            .clickable(onClick = onClick),
         colors = CardDefaults.cardColors(containerColor = if (isUnlocked) BentoCard3Bg else Color.LightGray),
         shape = RoundedCornerShape(16.dp),
         elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
@@ -206,7 +215,7 @@ fun ConsonantCard(consonant: KannadaLetter, isUnlocked: Boolean = true, onClick:
                     text = consonant.character,
                     fontSize = 48.sp,
                     fontWeight = FontWeight.Bold,
-                    color = if (isUnlocked) Color.White else Color.Gray
+                    color = if (isUnlocked) Color.White else Color(0xFF4E6276)
                 )
                 Text(
                     text = consonant.transliteration,
@@ -214,20 +223,14 @@ fun ConsonantCard(consonant: KannadaLetter, isUnlocked: Boolean = true, onClick:
                     color = if (isUnlocked) Color.White.copy(alpha = 0.8f) else Color.Gray
                 )
             }
-            if (!isUnlocked) {
-                Icon(
-                    Icons.Default.Lock,
-                    contentDescription = "Locked",
-                    tint = Color.Gray,
-                    modifier = Modifier.align(Alignment.TopEnd).padding(8.dp).size(20.dp)
-                )
-            }
+            AccessBadge(state, Modifier.align(Alignment.TopEnd).padding(6.dp), size = 28.dp)
         }
     }
 }
 
 @Composable
-fun CombinationCard(char: String, transliteration: String, isUnlocked: Boolean = true, onClick: () -> Unit = {}) {
+fun CombinationCard(char: String, transliteration: String, state: com.example.ui.data.Access.State = com.example.ui.data.Access.State.Open, onClick: () -> Unit = {}) {
+    val isUnlocked = state == com.example.ui.data.Access.State.Open
     Card(
         modifier = Modifier
             .aspectRatio(1f)
@@ -249,7 +252,7 @@ fun CombinationCard(char: String, transliteration: String, isUnlocked: Boolean =
                     text = char,
                     fontSize = 48.sp,
                     fontWeight = FontWeight.Bold,
-                    color = if (isUnlocked) BentoCard1Text else Color.Gray
+                    color = if (isUnlocked) BentoCard1Text else Color(0xFF4E6276)
                 )
                 Text(
                     text = transliteration,
@@ -257,14 +260,7 @@ fun CombinationCard(char: String, transliteration: String, isUnlocked: Boolean =
                     color = if (isUnlocked) BentoCard1Text.copy(alpha = 0.7f) else Color.Gray
                 )
             }
-            if (!isUnlocked) {
-                Icon(
-                    Icons.Default.Lock,
-                    contentDescription = "Locked",
-                    tint = Color.Gray,
-                    modifier = Modifier.align(Alignment.TopEnd).padding(8.dp).size(20.dp)
-                )
-            }
+            AccessBadge(state, Modifier.align(Alignment.TopEnd).padding(6.dp), size = 28.dp)
         }
     }
 }

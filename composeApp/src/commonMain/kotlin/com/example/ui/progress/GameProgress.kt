@@ -110,7 +110,7 @@ object GameProgress {
     }
 
     fun isUnlocked(game: GameInfo, level: Int, user: String = currentUser()): Boolean =
-        FeatureFlags.UNLOCK_ALL || level <= 1 || stars(game, level - 1, user) > 0
+        com.example.ui.data.Access.level(game, level) == com.example.ui.data.Access.State.Open
 
     fun starsFor(mistakes: Int): Int = when {
         mistakes <= 0 -> 3

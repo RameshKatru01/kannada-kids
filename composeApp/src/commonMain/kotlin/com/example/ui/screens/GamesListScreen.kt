@@ -131,6 +131,7 @@ private fun GamePolaroid(index: Int, game: GameInfo, version: Int, onClick: () -
                 glyph = game.glyph,
                 ink = game.ink
             )
+            AccessBadge(com.example.ui.data.Access.game(game), Modifier.align(Alignment.TopEnd).padding(6.dp), size = 32.dp)
         },
         caption = {
             Text(

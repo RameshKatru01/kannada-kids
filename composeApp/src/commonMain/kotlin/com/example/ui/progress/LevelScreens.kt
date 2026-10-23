@@ -176,7 +176,8 @@ fun LevelMapScreen(gameId: Int, onPlayLevel: (Int) -> Unit, onBack: () -> Unit) 
                 for (i in 0 until game.levels.coerceAtMost(mapPositions.size)) {
                     val level = i + 1
                     val (x, y) = mapPositions[i]
-                    val unlocked = GameProgress.isUnlocked(game, level)
+                    val access = com.example.ui.data.Access.level(game, level)
+                    val unlocked = access == com.example.ui.data.Access.State.Open
                     Box(
                         modifier = Modifier
                             .offset(x = (x * scale).dp, y = (y * scale).dp)
@@ -185,10 +186,19 @@ fun LevelMapScreen(gameId: Int, onPlayLevel: (Int) -> Unit, onBack: () -> Unit) 
                         LevelBubble(
                             level = level,
                             stars = stars[i],
-                            current = level == next && !(allDone && stars[i] > 0),
+                            current = unlocked && level == next && !(allDone && stars[i] > 0),
                             locked = !unlocked,
+                            crown = access == com.example.ui.data.Access.State.NeedsPremium,
                             game = game,
-                            onClick = { if (unlocked) onPlayLevel(level) }
+                            onClick = {
+                                when (access) {
+                                    com.example.ui.data.Access.State.Open -> onPlayLevel(level)
+                                    com.example.ui.data.Access.State.NeedsPremium ->
+                                        com.example.ui.data.Access.askGrownUp("Level $level and more fun levels are in the Gold pack.")
+                                    com.example.ui.data.Access.State.NeedsProgress ->
+                                        com.example.ui.data.Access.showHint("Get a star on level ${level - 1} first, then level $level opens!")
+                                }
+                            }
                         )
                     }
                 }
@@ -217,7 +227,7 @@ fun LevelMapScreen(gameId: Int, onPlayLevel: (Int) -> Unit, onBack: () -> Unit) 
 }
 
 @Composable
-private fun LevelBubble(level: Int, stars: Int, current: Boolean, locked: Boolean, game: GameInfo, onClick: () -> Unit) {
+private fun LevelBubble(level: Int, stars: Int, current: Boolean, locked: Boolean, crown: Boolean = false, game: GameInfo, onClick: () -> Unit) {
     val pulse = rememberInfiniteTransition(label = "pulse")
     val ring by pulse.animateFloat(
         initialValue = 1f, targetValue = 1.12f,
@@ -261,11 +271,14 @@ private fun LevelBubble(level: Int, stars: Int, current: Boolean, locked: Boolea
                     modifier = Modifier
                         .size(64.dp)
                         .clip(CircleShape)
-                        .background(Color(0xFFD7E3EA))
-                        .border(4.dp, Color.White, CircleShape),
+                        .background(if (crown) Color(0xFFFFF1C4) else Color(0xFFD7E3EA))
+                        .border(4.dp, if (crown) Color(0xFFFFC93C) else Color.White, CircleShape)
+                        .clickable { onClick() }
+                        .testTag("level_bubble_$level"),
                     contentAlignment = Alignment.Center
                 ) {
-                    Icon(Icons.Default.Lock, contentDescription = "Locked", tint = Color(0xFF6A8297))
+                    if (crown) Text("👑", fontSize = 28.sp)
+                    else Icon(Icons.Default.Lock, contentDescription = "Locked", tint = Color(0xFF6A8297))
                 }
                 Text("Level $level", color = Color(0xFF6A8297), fontWeight = FontWeight.Bold, fontSize = 13.sp)
             }

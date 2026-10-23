@@ -12,6 +12,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.zIndex
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.testTag
@@ -128,6 +129,7 @@ private fun VideoFolderPolaroid(index: Int, folder: String, onClick: () -> Unit)
         onClick = onClick,
         modifier = Modifier.testTag("video_folder_$index"),
         picture = {
+            AccessBadge(com.example.ui.data.Access.videoFolder(folder), Modifier.align(Alignment.TopEnd).padding(6.dp).zIndex(1f), size = 32.dp)
             val photo = look.photo
             if (photo != null) {
                 Image(
