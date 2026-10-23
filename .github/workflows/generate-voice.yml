@@ -40,7 +40,7 @@ jobs:
         run: |
           chmod +x ./gradlew
           set -o pipefail
-          ./gradlew :composeApp:testDebugUnitTest --tests "com.example.SpeechCatalogExport" --console=plain --stacktrace 2>&1 | tee voice.log
+          ./gradlew :composeApp:testDebugUnitTest --tests "com.example.SpeechCatalogExport" --rerun --no-build-cache --console=plain --stacktrace 2>&1 | tee voice.log
           wc -l composeApp/build/voice/phrases.tsv
       - name: Make the voice clips
         env:
