@@ -187,7 +187,8 @@ actual fun rememberVideoPlayer(url: String, loop: Boolean, autoPlay: Boolean): V
 @ExportObjCClass
 private class PlayerLayerView(player: AVPlayer) : UIView(frame = CGRectMake(0.0, 0.0, 0.0, 0.0)) {
     val playerLayer: AVPlayerLayer = AVPlayerLayer.playerLayerWithPlayer(player).also {
-        it.videoGravity = AVLayerVideoGravityResizeAspect
+        // Fill the whole area (no black bars); the picture's centred letters and captions stay in view
+        it.videoGravity = AVLayerVideoGravityResizeAspectFill
     }
 
     init {
