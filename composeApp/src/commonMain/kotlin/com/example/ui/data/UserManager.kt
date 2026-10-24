@@ -159,7 +159,8 @@ object UserManager {
         val prefs = getSharedPreferences(PREFS_NAME)
         val jsonStr = prefs.getString(KEY_USERS_JSON, null)
         if (jsonStr.isNullOrBlank()) {
-            val seeded = createDefaultUsers()
+            // No made-up demo users: start with the owner only
+            val seeded = listOf(createPrimaryAdmin())
             saveUsers(prefs, seeded)
             _usersFlow.value = seeded
         } else {

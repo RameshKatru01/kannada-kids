@@ -10,9 +10,12 @@ service cloud.firestore {
     }
 
     // An admin is anyone with a document at admins/{their e-mail, lower case}.
+    // The e-mail must be verified (Google / Apple sign-in), so nobody can claim an admin's
+    // address with an unverified e-mail/password account.
     function isAdmin() {
       return request.auth != null
         && request.auth.token.email != null
+        && request.auth.token.email_verified == true
         && exists(/databases/$(database)/documents/admins/$(myEmail()));
     }
 

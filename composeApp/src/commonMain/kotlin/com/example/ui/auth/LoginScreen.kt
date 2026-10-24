@@ -123,18 +123,6 @@ fun LoginScreen(
 
     val isLoading = authState is AuthState.Loading
     val haptic = LocalHapticFeedback.current
-    var showAdminLogin by remember { mutableStateOf(false) }
-
-    if (showAdminLogin) {
-        AdminLoginDialog(
-            onDismiss = { showAdminLogin = false },
-            onSignIn = { email ->
-                showAdminLogin = false
-                viewModel.signInWithGmailAddress(context, email)
-            }
-        )
-    }
-
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -347,74 +335,6 @@ fun LoginScreen(
  * Hidden admin sign-in, opened by long-pressing the "Letter Pop" title.
  * Only e-mail addresses that are admins in the user directory are accepted.
  */
-@Composable
-private fun AdminLoginDialog(
-    onDismiss: () -> Unit,
-    onSignIn: (String) -> Unit
-) {
-    val context = LocalContext.current
-    var email by remember { mutableStateOf("") }
-    var error by remember { mutableStateOf<String?>(null) }
-
-    LaunchedEffect(Unit) {
-        // Make sure the admin list is loaded before checking.
-        com.example.ui.data.UserManager.init(context)
-    }
-
-    fun submit() {
-        val trimmed = email.trim()
-        val fullEmail = if (trimmed.isNotEmpty() && !trimmed.contains("@")) "$trimmed@gmail.com" else trimmed
-        when {
-            fullEmail.isEmpty() -> error = "Enter the admin e-mail address."
-            !com.example.ui.data.UserManager.isAdmin(fullEmail) -> error = "This is not an admin account."
-            else -> onSignIn(fullEmail)
-        }
-    }
-
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = {
-            Text(text = "Admin sign-in", fontWeight = FontWeight.ExtraBold, color = Ink)
-        },
-        text = {
-            Column {
-                OutlinedTextField(
-                    value = email,
-                    onValueChange = {
-                        email = it
-                        error = null
-                    },
-                    label = { Text("Admin e-mail") },
-                    singleLine = true,
-                    isError = error != null,
-                    keyboardOptions = KeyboardOptions(
-                        keyboardType = KeyboardType.Email,
-                        imeAction = ImeAction.Done
-                    ),
-                    keyboardActions = KeyboardActions(onDone = { submit() }),
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .testTag("admin_email_field")
-                )
-                if (error != null) {
-                    Spacer(modifier = Modifier.height(6.dp))
-                    Text(text = error ?: "", color = Color(0xFFB71C1C), fontSize = 13.sp)
-                }
-            }
-        },
-        confirmButton = {
-            TextButton(onClick = { submit() }) {
-                Text("Sign in", fontWeight = FontWeight.ExtraBold, color = Ink)
-            }
-        },
-        dismissButton = {
-            TextButton(onClick = onDismiss) {
-                Text("Cancel", color = Ink)
-            }
-        },
-        containerColor = Color.White
-    )
-}
 
 @Composable
 private fun LanguageSwitch(

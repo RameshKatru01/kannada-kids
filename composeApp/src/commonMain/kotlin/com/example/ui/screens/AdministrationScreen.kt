@@ -144,9 +144,7 @@ fun AdministrationScreen(
             // Access Restricted Screen for non-admins
             AccessRestrictedView(
                 currentEmail = currentEmail,
-                onSwitchToAdmin = {
-                    authViewModel.signInWithGmailAddress(context, UserManager.PRIMARY_ADMIN_EMAIL)
-                },
+                onSwitchToAdmin = { },
                 modifier = Modifier
                     .fillMaxSize()
                     .padding(paddingValues)
