@@ -8,11 +8,20 @@ import androidx.compose.runtime.State
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.viewinterop.UIKitViewController
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.ui.viewinterop.UIKitInteropProperties
+import androidx.compose.ui.viewinterop.UIKitView
+import kotlinx.cinterop.ExportObjCClass
+import platform.CoreGraphics.CGRectMake
+import platform.QuartzCore.CATransaction
+import platform.UIKit.UIColor
+import platform.UIKit.UIView
 import kotlinx.cinterop.ExperimentalForeignApi
 import kotlinx.coroutines.delay
 import platform.AVFoundation.*
-import platform.AVKit.AVPlayerViewController
 import platform.CoreMedia.CMTimeMake
 import platform.CoreMedia.CMTimeMakeWithSeconds
 import platform.Foundation.NSNotificationCenter
@@ -173,28 +182,60 @@ actual fun rememberVideoPlayer(url: String, loop: Boolean, autoPlay: Boolean): V
     return controller
 }
 
+/** A view whose AVPlayerLayer is re-fitted to the view on every layout pass. */
+@OptIn(ExperimentalForeignApi::class)
+@ExportObjCClass
+private class PlayerLayerView(player: AVPlayer) : UIView(frame = CGRectMake(0.0, 0.0, 0.0, 0.0)) {
+    val playerLayer: AVPlayerLayer = AVPlayerLayer.playerLayerWithPlayer(player).also {
+        it.videoGravity = AVLayerVideoGravityResizeAspect
+    }
+
+    init {
+        backgroundColor = UIColor.blackColor
+        clipsToBounds = true
+        layer.addSublayer(playerLayer)
+    }
+
+    override fun layoutSubviews() {
+        super.layoutSubviews()
+        // Keep the video exactly filling the view, with no implicit animation
+        CATransaction.begin()
+        CATransaction.setDisableActions(true)
+        playerLayer.frame = bounds
+        CATransaction.commit()
+    }
+}
+
+/**
+ * Draws the video with a plain AVPlayerLayer instead of AVPlayerViewController. The view controller
+ * got out of step with the swipe pager and left the picture shifted, with black gaps.
+ * Tapping toggles play/pause when [showNativeControls] is on.
+ */
+@OptIn(ExperimentalForeignApi::class)
 @Composable
 actual fun VideoSurface(
     controller: VideoPlayerController,
     showNativeControls: Boolean,
     modifier: Modifier
 ) {
-    val player = (controller as IosVideoPlayerController).player
-    UIKitViewController(
-        factory = {
-            AVPlayerViewController().apply {
-                this.player = player
-                this.showsPlaybackControls = showNativeControls
-                // Without native controls the Compose overlay on top of the video handles taps.
-                this.view.userInteractionEnabled = showNativeControls
-            }
-        },
-        modifier = modifier,
-        update = { vc ->
-            if (vc.player != player) vc.player = player
-            vc.showsPlaybackControls = showNativeControls
+    val ios = controller as IosVideoPlayerController
+    val tap = if (showNativeControls) {
+        Modifier.clickable(interactionSource = remember { MutableInteractionSource() }, indication = null) {
+            if (ios.playingState.value) ios.pause() else ios.play()
         }
-    )
+    } else Modifier
+    Box(modifier = modifier.then(tap)) {
+        UIKitView(
+            factory = {
+                PlayerLayerView(ios.player)
+            },
+            modifier = Modifier.fillMaxSize(),
+            update = { view ->
+                if (view.playerLayer.player != ios.player) view.playerLayer.player = ios.player
+            },
+            properties = UIKitInteropProperties(isInteractive = false, isNativeAccessibilityEnabled = false)
+        )
+    }
 }
 
 @Composable
