@@ -13,6 +13,7 @@ import coil3.compose.setSingletonImageLoaderFactory
 import coil3.network.ktor3.KtorNetworkFetcherFactory
 import com.example.platform.LocalContext
 import com.example.platform.ToastHost
+import com.example.platform.preloadVideo
 import com.example.ui.data.AudioFeedbackManager
 import com.example.ui.data.ScoreManager
 import com.example.ui.data.ThemeManager
@@ -44,6 +45,15 @@ fun App() {
                 // Where the videos are served from (can be changed without an app update)
                 try {
                     com.example.ui.data.VideoHost.refresh()
+                } catch (e: Exception) {
+                }
+                // Download the opening video of the first Fun Videos folders now, so the first video
+                // a child opens is already on the phone (a few seconds after launch, not at once)
+                try {
+                    kotlinx.coroutines.delay(2000)
+                    listOf("Vowels", "Consonants", "Birds").forEach { section ->
+                        com.example.ui.screens.videoUrlsFor(section).firstOrNull()?.let { preloadVideo(it) }
+                    }
                 } catch (e: Exception) {
                 }
                 try {

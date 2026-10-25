@@ -40,3 +40,9 @@ expect fun VideoSurface(
 /** Hides the system status / navigation bars while in the composition (immersive video). */
 @Composable
 expect fun HideSystemBars()
+
+/**
+ * Starts fetching [url] in the background so it plays at once when it is opened (e.g. the next
+ * videos in a list). Safe to call repeatedly; does nothing where not supported.
+ */
+expect fun preloadVideo(url: String)

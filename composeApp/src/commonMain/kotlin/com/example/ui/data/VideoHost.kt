@@ -10,12 +10,17 @@ import com.example.platform.*
  *   Firebase Storage: https://firebasestorage.googleapis.com/v0/b/<bucket>/o/{object}?alt=media
  *                     ({object} = "videos/<git ref>/<file path>", fully URL-encoded)
  *   Any web host:     https://videos.example.com/   (the "<git ref>/<file path>" is added after it)
- * Empty or missing = keep using GitHub. The last value is remembered for offline starts.
+ * Until the online setting has been read (a fresh install, the first launch) the built-in
+ * [DEFAULT_BASE] (Firebase Storage) is used, so the very first video doesn't come from GitHub.
+ * An empty online value = play from GitHub. The last value is remembered for offline starts.
  * The players fall back to the GitHub link if a moved video fails to load.
  */
 object VideoHost {
     const val GITHUB_PREFIX = "https://raw.githubusercontent.com/RameshKatru01/kannada-app-assets/"
     private const val PREF = "video_base"
+
+    /** Firebase Storage, used until the online setting is known. */
+    const val DEFAULT_BASE = "https://firebasestorage.googleapis.com/v0/b/kannadakids-fd92d.firebasestorage.app/o/{object}?alt=media"
 
     private val prefs get() = getSharedPreferences("AppSettings")
     private var base: String? = null
@@ -23,7 +28,9 @@ object VideoHost {
 
     private fun current(): String? {
         if (!loaded) {
-            base = prefs.getString(PREF, null)?.takeIf { it.isNotBlank() }
+            // Nothing saved yet -> the default; a saved empty value means "use GitHub"
+            val saved = prefs.getString(PREF, null)
+            base = if (saved == null) DEFAULT_BASE else saved.ifBlank { null }
             loaded = true
         }
         return base

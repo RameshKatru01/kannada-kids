@@ -51,23 +51,10 @@ fun VideoPlayerItem(uri: String, isCurrentPage: Boolean) {
     }
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-fun VideoScreen(title: String, onBack: () -> Unit, authViewModel: AuthViewModel = viewModel { AuthViewModel() }) {
-    val context = LocalContext.current
-    val authState by authViewModel.authState.collectAsState()
-    val userEmail = (authState as? AuthState.Authenticated)?.email ?: "guest"
-    val prefs = getSharedPreferences("AppProgress")
-    val currentLanguage by com.example.ui.data.LanguageManager.currentLanguage.collectAsState()
-    val langCode = currentLanguage.code
-    val subscriptionPlan = prefs.getString("${langCode}_subscriptionPlan_$userEmail", "Free") ?: "Free"
-
-    
-
-    
-    val videoUris = remember(title) {
-        // Letter videos with on-screen text: alphabet_with_text/video01-15 = vowels ಅ…ಅಃ, video16-49 = consonants ಕ…ಳ
-        if (title == "Vowels") {
+/** The video links for a Fun Videos section ([title] is the folder name). */
+fun videoUrlsFor(title: String): List<String> {
+    // Letter videos with on-screen text: alphabet_with_text/video01-15 = vowels ಅ…ಅಃ, video16-49 = consonants ಕ…ಳ
+    return if (title == "Vowels") {
             listOf(
                 "https://raw.githubusercontent.com/RameshKatru01/kannada-app-assets/ed79c3d59bc6f89784da6c8531c2462d0c6bbd4e/assets/videos/alphabet_with_text/video01.mp4",
                 "https://raw.githubusercontent.com/RameshKatru01/kannada-app-assets/ed79c3d59bc6f89784da6c8531c2462d0c6bbd4e/assets/videos/alphabet_with_text/video02.mp4",
@@ -340,9 +327,35 @@ fun VideoScreen(title: String, onBack: () -> Unit, authViewModel: AuthViewModel 
                 }
             )
         }
-    }
+    
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun VideoScreen(title: String, onBack: () -> Unit, authViewModel: AuthViewModel = viewModel { AuthViewModel() }) {
+    val context = LocalContext.current
+    val authState by authViewModel.authState.collectAsState()
+    val userEmail = (authState as? AuthState.Authenticated)?.email ?: "guest"
+    val prefs = getSharedPreferences("AppProgress")
+    val currentLanguage by com.example.ui.data.LanguageManager.currentLanguage.collectAsState()
+    val langCode = currentLanguage.code
+    val subscriptionPlan = prefs.getString("${langCode}_subscriptionPlan_$userEmail", "Free") ?: "Free"
+
+    
+
+    
+    val videoUris = remember(title) { videoUrlsFor(title) }
 
     val pagerState = rememberPagerState(pageCount = { videoUris.size })
+
+    // Fetch the next two videos in the background so swiping to them is instant. Started a moment
+    // after the current video begins so it doesn't compete with it for bandwidth.
+    LaunchedEffect(pagerState.currentPage, videoUris) {
+        kotlinx.coroutines.delay(1500)
+        for (next in pagerState.currentPage + 1..pagerState.currentPage + 2) {
+            videoUris.getOrNull(next)?.let { preloadVideo(it) }
+        }
+    }
 
     // Full-screen video: hide the status / navigation bars while this screen is open.
     HideSystemBars()

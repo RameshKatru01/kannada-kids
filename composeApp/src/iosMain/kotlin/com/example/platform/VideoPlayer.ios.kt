@@ -15,10 +15,14 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.ui.viewinterop.UIKitInteropProperties
 import androidx.compose.ui.viewinterop.UIKitView
 import kotlinx.cinterop.ExportObjCClass
+import kotlinx.cinterop.useContents
 import platform.CoreGraphics.CGRectMake
 import platform.QuartzCore.CATransaction
+import platform.UIKit.UIBlurEffect
+import platform.UIKit.UIBlurEffectStyle
 import platform.UIKit.UIColor
 import platform.UIKit.UIView
+import platform.UIKit.UIVisualEffectView
 import kotlinx.cinterop.ExperimentalForeignApi
 import kotlinx.coroutines.delay
 import platform.AVFoundation.*
@@ -32,7 +36,13 @@ import platform.Foundation.create
 import platform.Foundation.writeToFile
 import platform.darwin.NSObjectProtocol
 
-class IosVideoPlayerController(val player: AVPlayer, private val loop: Boolean, private var fallbackUrl: String? = null) : VideoPlayerController {
+class IosVideoPlayerController(
+    val player: AVPlayer,
+    private val loop: Boolean,
+    private var fallbackUrl: String? = null,
+    /** Saved for replays, but only once the stream has started (so the two downloads don't compete). */
+    private var saveWhenReady: String? = null
+) : VideoPlayerController {
     internal val playingState: MutableState<Boolean> = mutableStateOf(false)
     internal val bufferingState: MutableState<Boolean> = mutableStateOf(true)
     private var endObserver: NSObjectProtocol? = null
@@ -68,6 +78,13 @@ class IosVideoPlayerController(val player: AVPlayer, private val loop: Boolean, 
                 attachLoopObserver()
                 if (wantsToPlay) player.play()
             }
+        }
+        val pending = saveWhenReady
+        if (pending != null && player.currentItem?.status == AVPlayerItemStatusReadyToPlay &&
+            player.currentItem?.playbackLikelyToKeepUp == true
+        ) {
+            saveWhenReady = null
+            IosVideoCache.save(pending)
         }
         playingState.value = player.rate > 0f
         val item = player.currentItem
@@ -156,6 +173,12 @@ private object IosVideoCache {
     }
 }
 
+/** Saves the video in the background so it opens instantly later (see [IosVideoCache]). */
+actual fun preloadVideo(url: String) {
+    val playUrl = com.example.ui.data.VideoHost.resolve(url)
+    if (IosVideoCache.cached(playUrl) == null) IosVideoCache.save(playUrl)
+}
+
 @Composable
 actual fun rememberVideoPlayer(url: String, loop: Boolean, autoPlay: Boolean): VideoPlayerController {
     val controller = remember(url) {
@@ -163,9 +186,14 @@ actual fun rememberVideoPlayer(url: String, loop: Boolean, autoPlay: Boolean): V
         val playUrl = com.example.ui.data.VideoHost.resolve(url)
         val local = IosVideoCache.cached(playUrl)
         val nsUrl = local ?: NSURL.URLWithString(playUrl)
-        if (local == null) IosVideoCache.save(playUrl)
         val player = if (nsUrl != null) AVPlayer(AVPlayerItem(nsUrl)) else AVPlayer()
-        IosVideoPlayerController(player, loop, fallbackUrl = url.takeIf { it != playUrl && local == null }).also {
+        // These are short clips: start as soon as there is data instead of waiting to buffer a lot
+        player.automaticallyWaitsToMinimizeStalling = false
+        IosVideoPlayerController(
+            player, loop,
+            fallbackUrl = url.takeIf { it != playUrl && local == null },
+            saveWhenReady = playUrl.takeIf { local == null }
+        ).also {
             it.attachLoopObserver()
             if (autoPlay) it.play()
         }
@@ -182,27 +210,54 @@ actual fun rememberVideoPlayer(url: String, loop: Boolean, autoPlay: Boolean): V
     return controller
 }
 
-/** A view whose AVPlayerLayer is re-fitted to the view on every layout pass. */
+/**
+ * A view whose AVPlayerLayer is re-fitted to the view on every layout pass.
+ *
+ * On phone-shaped screens the video fills the whole area (only a thin edge is cropped). On wider
+ * screens such as an iPad, filling would cut off the letter at the top and the words at the bottom,
+ * so the whole video is shown instead, over a blurred, zoomed copy of itself rather than black bars.
+ */
 @OptIn(ExperimentalForeignApi::class)
 @ExportObjCClass
 private class PlayerLayerView(player: AVPlayer) : UIView(frame = CGRectMake(0.0, 0.0, 0.0, 0.0)) {
     val playerLayer: AVPlayerLayer = AVPlayerLayer.playerLayerWithPlayer(player).also {
-        // Fill the whole area (no black bars); the picture's centred letters and captions stay in view
         it.videoGravity = AVLayerVideoGravityResizeAspectFill
     }
+
+    /** Same player, zoomed to fill, shown blurred behind the video when it does not fill the view. */
+    val backdropLayer: AVPlayerLayer = AVPlayerLayer.playerLayerWithPlayer(player).also {
+        it.videoGravity = AVLayerVideoGravityResizeAspectFill
+    }
+    private val blurView = UIVisualEffectView(effect = UIBlurEffect.effectWithStyle(UIBlurEffectStyle.UIBlurEffectStyleDark))
 
     init {
         backgroundColor = UIColor.blackColor
         clipsToBounds = true
+        layer.addSublayer(backdropLayer)
+        addSubview(blurView)
         layer.addSublayer(playerLayer)
     }
 
     override fun layoutSubviews() {
         super.layoutSubviews()
-        // Keep the video exactly filling the view, with no implicit animation
+        val (w, h) = bounds.useContents { size.width to size.height }
+        // Video shape: from the loaded clip if known, otherwise the 9:16 portrait used by the letter videos
+        val videoAspect = playerLayer.player?.currentItem?.presentationSize
+            ?.useContents { if (width > 0.0 && height > 0.0) width / height else null } ?: (9.0 / 16.0)
+        val viewAspect = if (h > 0.0) w / h else videoAspect
+        // Share of the picture that aspect-fill would cut away
+        val cropped = 1.0 - minOf(viewAspect, videoAspect) / maxOf(viewAspect, videoAspect)
+        val fill = cropped <= 0.2
+
+        // Keep the video exactly fitted to the view, with no implicit animation
         CATransaction.begin()
         CATransaction.setDisableActions(true)
         playerLayer.frame = bounds
+        playerLayer.videoGravity = if (fill) AVLayerVideoGravityResizeAspectFill else AVLayerVideoGravityResizeAspect
+        backdropLayer.frame = bounds
+        backdropLayer.hidden = fill
+        blurView.setFrame(bounds)
+        blurView.hidden = fill
         CATransaction.commit()
     }
 }
@@ -232,7 +287,11 @@ actual fun VideoSurface(
             },
             modifier = Modifier.fillMaxSize(),
             update = { view ->
-                if (view.playerLayer.player != ios.player) view.playerLayer.player = ios.player
+                if (view.playerLayer.player != ios.player) {
+                    view.playerLayer.player = ios.player
+                    view.backdropLayer.player = ios.player
+                    view.setNeedsLayout()
+                }
             },
             properties = UIKitInteropProperties(isInteractive = false, isNativeAccessibilityEnabled = false)
         )

@@ -177,3 +177,7 @@ actual fun HideSystemBars() {
         }
     }
 }
+
+actual fun preloadVideo(url: String) {
+    // Not needed on Android yet (ExoPlayer buffers when a video opens)
+}
