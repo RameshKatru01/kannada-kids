@@ -173,7 +173,7 @@ fun ReferenceScreen(
 
         val hasVideos = tab == RefTab.Vowels || tab == RefTab.Consonants
         Row(
-            modifier = Modifier.padding(horizontal = 18.dp, vertical = 12.dp),
+            modifier = Modifier.fillMaxWidth().padding(start = 18.dp, end = 16.dp, top = 12.dp, bottom = 12.dp),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(8.dp)
         ) {
@@ -182,8 +182,11 @@ fun ReferenceScreen(
             }
             Text(
                 if (hasVideos) "Tap a letter to watch how it is written" else "Tap a letter to hear it",
+                modifier = Modifier.weight(1f),
                 fontSize = 14.sp, fontWeight = FontWeight.Bold, color = ScrapbookInkSoft
             )
+            // This tab's printable worksheets: a small pill in the hint row, so it never takes room from the letters.
+            WorksheetsChip { showWorksheetGate = true }
         }
 
         LazyVerticalGrid(
@@ -232,12 +235,6 @@ fun ReferenceScreen(
                         practised = remember(version, letter.id) { ReferenceProgress.isPractised(letter) },
                         onClick = { onOpenLetter(tabIndex, i) }
                     )
-                }
-            }
-            // Below the letters: this tab's printable worksheets.
-            item(span = { GridItemSpan(maxLineSpan) }, key = "worksheets_${tab.name}") {
-                Box(Modifier.padding(top = 8.dp)) {
-                    WorksheetsBanner(worksheetSection(tab).plural) { showWorksheetGate = true }
                 }
             }
         }
@@ -294,31 +291,21 @@ private fun worksheetSection(tab: RefTab) = when (tab) {
     RefTab.Numbers -> com.example.ui.data.Worksheets.Section.Numbers
 }
 
-/** Top of each tab: opens that tab's printable worksheets (to print, trace and colour). */
+/** Opens this tab's printable worksheets (for grown-ups: print, trace and colour on paper). */
 @Composable
-private fun WorksheetsBanner(what: String, onClick: () -> Unit) {
+private fun WorksheetsChip(onClick: () -> Unit) {
     Row(
         Modifier
-            .fillMaxWidth()
-            .clip(RoundedCornerShape(20.dp))
+            .clip(RoundedCornerShape(16.dp))
             .background(Color.White)
             .clickable { onClick() }
-            .padding(horizontal = 14.dp, vertical = 12.dp)
+            .padding(horizontal = 10.dp, vertical = 6.dp)
             .testTag("open_worksheets"),
         verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(12.dp)
+        horizontalArrangement = Arrangement.spacedBy(4.dp)
     ) {
-        Box(Modifier.size(44.dp).background(Color(0xFFFFE9D6), CircleShape), contentAlignment = Alignment.Center) {
-            Text("🖨️", fontSize = 22.sp)
-        }
-        Column(Modifier.weight(1f)) {
-            Text("Printable worksheets", fontSize = 16.sp, fontWeight = FontWeight.ExtraBold, color = ScrapbookInk)
-            Text(
-                "For grown-ups · print $what to trace and colour on paper",
-                fontSize = 12.sp, fontWeight = FontWeight.Bold, color = ScrapbookInkSoft
-            )
-        }
-        Text("›", fontSize = 26.sp, fontWeight = FontWeight.ExtraBold, color = ScrapbookInk)
+        Text("🖨️", fontSize = 14.sp)
+        Text("Print & trace", fontSize = 13.sp, fontWeight = FontWeight.ExtraBold, color = ScrapbookInk, maxLines = 1)
     }
 }
 
