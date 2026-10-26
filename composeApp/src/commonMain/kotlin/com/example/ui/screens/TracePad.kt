@@ -370,7 +370,7 @@ class LetterMask(val cols: Int, val rows: Int, val on: BooleanArray) {
     val count: Int = on.count { it }
 }
 
-private fun letterMask(
+internal fun letterMask(
     layout: TextLayoutResult,
     topLeft: Offset,
     wPx: Float,

@@ -178,6 +178,15 @@ fun AppNavigation(authViewModel: AuthViewModel = viewModel { AuthViewModel() }) 
                         onOpen = { uid -> navController.navigate("admin_sub/$uid") }
                     )
                 }
+                composable(
+                    "worksheets/{section}",
+                    arguments = listOf(navArgument("section") { type = NavType.StringType })
+                ) { backStackEntry ->
+                    val section = com.example.ui.data.Worksheets.Section.fromRoute(
+                        backStackEntry.arguments?.read { getStringOrNull("section") }
+                    )
+                    WorksheetsScreen(section = section, onBack = { navController.popBackStack() })
+                }
                 composable("learning_path") {
                     LearningPathScreen(onBack = { navController.popBackStack() })
                 }
@@ -188,7 +197,8 @@ fun AppNavigation(authViewModel: AuthViewModel = viewModel { AuthViewModel() }) 
                 composable("reference") {
                     ReferenceScreen(
                         onBack = { navController.popBackStack() },
-                        onOpenLetter = { tab, index -> navController.navigate("reference_letter/$tab/$index") }
+                        onOpenLetter = { tab, index -> navController.navigate("reference_letter/$tab/$index") },
+                        onOpenWorksheets = { section -> navController.navigate("worksheets/${section.route}") }
                     )
                 }
                 composable(

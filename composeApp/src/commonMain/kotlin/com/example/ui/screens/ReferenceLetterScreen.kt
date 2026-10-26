@@ -71,6 +71,10 @@ fun ReferenceLetterScreen(tab: Int, startIndex: Int, onBack: () -> Unit) {
     val word = ReferenceInfo.word(letter)
     val videoUrl = getVideoUrlForLetter(letter).takeIf { refTab == RefTab.Vowels || refTab == RefTab.Consonants }
     var tracing by remember { mutableStateOf(false) }
+    // Print worksheet: grown-up sum first, then a preview with Print.
+    var showPrintGate by remember { mutableStateOf(false) }
+    var showPrintPreview by remember { mutableStateOf(false) }
+    val worksheet = remember(refTab, index) { worksheetFor(refTab, index) }
 
     fun hear() = NativeAudioPlayer.playPhonics(context, letter.character)
     fun hearWord() { word?.let { NativeAudioPlayer.playPhonics(context, it.kannada) } }
@@ -166,6 +170,38 @@ fun ReferenceLetterScreen(tab: Int, startIndex: Int, onBack: () -> Unit) {
                 }
             }
 
+            // Printable worksheet for this letter (Ka-kaa forms share their consonant's family sheets)
+            if (worksheet != null) {
+                val (_, sheet) = worksheet
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clip(RoundedCornerShape(20.dp))
+                        .background(Color.White)
+                        .clickable { showPrintGate = true }
+                        .padding(horizontal = 14.dp, vertical = 12.dp)
+                        .testTag("ref_print_worksheet"),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    Box(Modifier.size(44.dp).background(Color(0xFFFFE9D6), CircleShape), contentAlignment = Alignment.Center) {
+                        Text("🖨️", fontSize = 22.sp)
+                    }
+                    Column(Modifier.weight(1f)) {
+                        Text("Practice on paper", fontSize = 16.sp, fontWeight = FontWeight.ExtraBold, color = ScrapbookInk)
+                        Text(
+                            if (refTab == RefTab.KaKaa) "Want more practice? Preview and print the ${sheet.title} family worksheet (${sheet.pages} pages)."
+                            else "Want more practice? Preview and print the ${sheet.title} worksheet (${sheet.pages} pages).",
+                            fontSize = 12.sp, fontWeight = FontWeight.Bold, color = ScrapbookInkSoft
+                        )
+                    }
+                    if (!com.example.ui.data.Worksheets.isOpen(sheet)) {
+                        AccessBadge(com.example.ui.data.Access.State.NeedsPremium, size = 24.dp)
+                    }
+                    Text("›", fontSize = 26.sp, fontWeight = FontWeight.ExtraBold, color = ScrapbookInk)
+                }
+            }
+
             // Nearby letters
             val from = (index - 2).coerceIn(0, maxOf(0, letters.size - 5))
             val nearby = letters.subList(from, minOf(letters.size, from + 5))
@@ -191,6 +227,20 @@ fun ReferenceLetterScreen(tab: Int, startIndex: Int, onBack: () -> Unit) {
                     }
                 }
             }
+        }
+
+        if (showPrintGate) {
+            ParentGate(
+                purpose = "Answer to print the worksheet",
+                onPass = {
+                    showPrintGate = false
+                    showPrintPreview = true
+                },
+                onCancel = { showPrintGate = false }
+            )
+        }
+        if (showPrintPreview && worksheet != null) {
+            SingleWorksheetPreview(worksheet.first, worksheet.second, onClose = { showPrintPreview = false })
         }
 
         if (tracing) {

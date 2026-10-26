@@ -20,6 +20,8 @@ import kotlinx.coroutines.flow.asStateFlow
  * Premium (Gold) = an active store subscription, free time given in Admin, a Gold plan set by
  * an admin, or being an admin. New users get a 7-day free trial, set up in the stores.
  *
+ * Admins never see either lock: every island, letter, game, level and video is open for them.
+ *
  * Parents can change the order in Parent corner → Learning path.
  */
 object Access {
@@ -31,10 +33,14 @@ object Access {
     private fun prefs() = getSharedPreferences("AppProgress")
     private fun user(): String = prefs().getString("last_active_user", "guest") ?: "guest"
 
+    /** Signed in as an admin (checked against both the saved user and the signed-in account). */
+    fun isAdmin(): Boolean =
+        UserManager.isAdmin(user()) || UserManager.isAdmin(PlatformAuth.currentUser()?.email)
+
     fun isPremium(): Boolean {
         if (SubscriptionManager.state.value.hasPremium) return true
+        if (isAdmin()) return true
         val email = user().trim().lowercase()
-        if (UserManager.isAdmin(email)) return true
         val p = prefs()
         return listOf("kn", "en", "hi").any { (p.getString("${it}_subscriptionPlan_$email", "") ?: "").equals("Gold", true) }
     }
@@ -110,7 +116,7 @@ object Access {
      * progress lock (everything after the 1st letter shows the crown instead).
      */
     fun island(type: String): State =
-        if (!isPremium() || islandReached(type)) State.Open else State.NeedsProgress
+        if (isAdmin() || !isPremium() || islandReached(type)) State.Open else State.NeedsProgress
 
     /** First letter of [type] not learned yet (where "Next" goes). */
     fun nextIndex(type: String): Int {
@@ -127,6 +133,7 @@ object Access {
     }
 
     fun letter(type: String, index: Int): State {
+        if (isAdmin()) return State.Open
         if (!isPremium()) return if (index == 0) State.Open else State.NeedsPremium
         return if (letterReached(type, index)) State.Open else State.NeedsProgress
     }
@@ -151,6 +158,7 @@ object Access {
     }
 
     fun level(game: GameInfo, level: Int): State {
+        if (isAdmin()) return State.Open
         if (level > 1 && levelsNeedStar && !everythingOpen && GameProgress.stars(game, level - 1) == 0) return State.NeedsProgress
         if (isPremium()) return State.Open
         return if (game.id in monster && level == 1) State.Open else State.NeedsPremium
@@ -175,6 +183,16 @@ object Access {
     fun videoFolder(folder: String): State =
         if (isPremium() || folder.trim().lowercase() in freeFolders) State.Open else State.NeedsPremium
 
+    // ---- Printable worksheets ----
+
+    /**
+     * A worksheet file covering the letters at [itemIndexes] of one section. Free: the cover /
+     * starter kit (no letters) and the sheets for the first letter of each section, like the
+     * first letter of each island.
+     */
+    fun worksheet(itemIndexes: List<Int>): State =
+        if (isPremium() || itemIndexes.all { it == 0 }) State.Open else State.NeedsPremium
+
     // ---- Asking for things (shown by AppNavigation) ----
 
     data class Prompt(val title: String, val message: String, val premium: Boolean)
@@ -198,7 +216,7 @@ object Access {
 
     /** An island the child has just opened by learning (shown once). */
     fun newlyOpenedIsland(): String? {
-        if (!isPremium() || everythingOpen) return null
+        if (isAdmin() || !isPremium() || everythingOpen) return null
         return listOf("consonants", "guninthakshari").firstOrNull { type ->
             !skipped(if (type == "consonants") "vowels" else "consonants") &&
                 islandReached(type) && !prefs().getBoolean("${user()}_celebrated_$type", false)

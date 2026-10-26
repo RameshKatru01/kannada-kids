@@ -116,8 +116,15 @@ internal val RefTints = listOf(
 
 /** Reference: the letter chart. Tapping a letter opens its letter page. */
 @Composable
-fun ReferenceScreen(onBack: () -> Unit, onOpenLetter: (tab: Int, index: Int) -> Unit) {
+fun ReferenceScreen(
+    onBack: () -> Unit,
+    onOpenLetter: (tab: Int, index: Int) -> Unit,
+    onOpenWorksheets: (com.example.ui.data.Worksheets.Section) -> Unit = {}
+) {
     var tabIndex by rememberSaveable { mutableIntStateOf(0) }
+    // Printable worksheets are for grown-ups, so they open behind the Parent corner sum.
+    var showWorksheetGate by remember { mutableStateOf(false) }
+    Box(Modifier.fillMaxSize()) {
     val tab = RefTab.entries[tabIndex]
     val version by ReferenceProgress.version.collectAsState()
     val letters = tab.letters()
@@ -227,6 +234,12 @@ fun ReferenceScreen(onBack: () -> Unit, onOpenLetter: (tab: Int, index: Int) -> 
                     )
                 }
             }
+            // Below the letters: this tab's printable worksheets.
+            item(span = { GridItemSpan(maxLineSpan) }, key = "worksheets_${tab.name}") {
+                Box(Modifier.padding(top = 8.dp)) {
+                    WorksheetsBanner(worksheetSection(tab).plural) { showWorksheetGate = true }
+                }
+            }
         }
 
         // Practised so far
@@ -258,6 +271,54 @@ fun ReferenceScreen(onBack: () -> Unit, onOpenLetter: (tab: Int, index: Int) -> 
                 }
             }
         }
+    }
+
+        if (showWorksheetGate) {
+            ParentGate(
+                purpose = "Answer to open the printable worksheets",
+                onPass = {
+                    showWorksheetGate = false
+                    onOpenWorksheets(worksheetSection(tab))
+                },
+                onCancel = { showWorksheetGate = false }
+            )
+        }
+    }
+}
+
+/** The worksheet section for a Letter Box tab. */
+private fun worksheetSection(tab: RefTab) = when (tab) {
+    RefTab.Vowels -> com.example.ui.data.Worksheets.Section.Vowels
+    RefTab.Consonants -> com.example.ui.data.Worksheets.Section.Consonants
+    RefTab.KaKaa -> com.example.ui.data.Worksheets.Section.KaKaa
+    RefTab.Numbers -> com.example.ui.data.Worksheets.Section.Numbers
+}
+
+/** Top of each tab: opens that tab's printable worksheets (to print, trace and colour). */
+@Composable
+private fun WorksheetsBanner(what: String, onClick: () -> Unit) {
+    Row(
+        Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(20.dp))
+            .background(Color.White)
+            .clickable { onClick() }
+            .padding(horizontal = 14.dp, vertical = 12.dp)
+            .testTag("open_worksheets"),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(12.dp)
+    ) {
+        Box(Modifier.size(44.dp).background(Color(0xFFFFE9D6), CircleShape), contentAlignment = Alignment.Center) {
+            Text("🖨️", fontSize = 22.sp)
+        }
+        Column(Modifier.weight(1f)) {
+            Text("Printable worksheets", fontSize = 16.sp, fontWeight = FontWeight.ExtraBold, color = ScrapbookInk)
+            Text(
+                "For grown-ups · print $what to trace and colour on paper",
+                fontSize = 12.sp, fontWeight = FontWeight.Bold, color = ScrapbookInkSoft
+            )
+        }
+        Text("›", fontSize = 26.sp, fontWeight = FontWeight.ExtraBold, color = ScrapbookInk)
     }
 }
 
