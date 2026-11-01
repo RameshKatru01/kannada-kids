@@ -116,6 +116,7 @@ fun AppNavigation(authViewModel: AuthViewModel = viewModel { AuthViewModel() }) 
                         onNavigateToConsonants = { navController.navigate("list/consonants") },
                         onNavigateToGunninthakshari = { navController.navigate("guninthakshari") }, // Kept for map navigation
                         onNavigateToNumbers = { navController.navigate("list/numbers") },
+                    onNavigateToOttakshara = { navController.navigate("ottakshara") },
                         onNavigateToLeaderboard = { navController.navigate("leaderboard") },
                         onNavigateToProfile = { navController.navigate("profile") },
                         onOpenLetter = { type, index -> navController.navigate("letter_flow/$type/$index") },
@@ -186,6 +187,19 @@ fun AppNavigation(authViewModel: AuthViewModel = viewModel { AuthViewModel() }) 
                         backStackEntry.arguments?.read { getStringOrNull("section") }
                     )
                     WorksheetsScreen(section = section, onBack = { navController.popBackStack() })
+                }
+                composable("ottakshara") {
+                    OttaksharaScreen(
+                        onBack = { navController.popBackStack() },
+                        onOpenLesson = { i -> navController.navigate("ottakshara_lesson/$i") }
+                    )
+                }
+                composable(
+                    "ottakshara_lesson/{index}",
+                    arguments = listOf(navArgument("index") { type = NavType.IntType })
+                ) { backStackEntry ->
+                    val index = backStackEntry.arguments?.read { getIntOrNull("index") } ?: 0
+                    OttaksharaLessonScreen(index = index, onBack = { navController.popBackStack() })
                 }
                 composable("learning_path") {
                     LearningPathScreen(onBack = { navController.popBackStack() })

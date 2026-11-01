@@ -56,10 +56,10 @@ object Access {
         get() = prefs().getBoolean("${user()}_path_open", false)
         set(v) { prefs().edit().putBoolean("${user()}_path_open", v).apply(); _version.value += 1 }
 
-    /** 0 = from the beginning, 1 = from Consonants (vowels open), 2 = from Ka-kaa (vowels + consonants open). */
+    /** 0 = from the beginning, 1 = from Consonants, 2 = from Ka-kaa, 3 = from Ottakshara (earlier islands open). */
     var startFrom: Int
         get() = prefs().getInt("${user()}_path_start", 0)
-        set(v) { prefs().edit().putInt("${user()}_path_start", v.coerceIn(0, 2)).apply(); _version.value += 1 }
+        set(v) { prefs().edit().putInt("${user()}_path_start", v.coerceIn(0, 3)).apply(); _version.value += 1 }
 
     /** Game levels need a star on the level before. */
     var levelsNeedStar: Boolean
@@ -68,12 +68,13 @@ object Access {
 
     // ---- Islands and letters ----
 
-    val islandOrder = listOf("vowels", "consonants", "guninthakshari", "numbers")
+    val islandOrder = listOf("vowels", "consonants", "guninthakshari", "numbers", "ottakshara")
 
     fun total(type: String): Int = when (type) {
         "vowels" -> LetterData.vowels.size
         "consonants", "guninthakshari" -> LetterData.consonants.size
         "numbers" -> LetterData.numbers.size
+        "ottakshara" -> com.example.data.OttaksharaData.letters.size
         else -> 0
     }
 
@@ -87,6 +88,7 @@ object Access {
     private fun skipped(type: String): Boolean = when (type) {
         "vowels" -> startFrom >= 1
         "consonants" -> startFrom >= 2
+        "guninthakshari" -> startFrom >= 3
         else -> false
     }
 
@@ -95,6 +97,7 @@ object Access {
         "vowels", "numbers" -> true
         "consonants" -> startFrom >= 1 || allLearned("vowels")
         "guninthakshari" -> startFrom >= 2 || allLearned("consonants")
+        "ottakshara" -> startFrom >= 3 || allLearned("guninthakshari")
         else -> true
     }
 
@@ -107,6 +110,10 @@ object Access {
         "guninthakshari" -> {
             val left = total("consonants") - ActivityTracker.learned("consonants").count { it < total("consonants") }
             "Learn $left more ${if (left == 1) "consonant" else "consonants"} to open Ka-kaa!"
+        }
+        "ottakshara" -> {
+            val left = total("guninthakshari") - ActivityTracker.learned("guninthakshari").count { it < total("guninthakshari") }
+            "Finish $left more Ka-kaa ${if (left == 1) "row" else "rows"} to open Ottakshara!"
         }
         else -> ""
     }
@@ -217,8 +224,9 @@ object Access {
     /** An island the child has just opened by learning (shown once). */
     fun newlyOpenedIsland(): String? {
         if (isAdmin() || !isPremium() || everythingOpen) return null
-        return listOf("consonants", "guninthakshari").firstOrNull { type ->
-            !skipped(if (type == "consonants") "vowels" else "consonants") &&
+        val before = mapOf("consonants" to "vowels", "guninthakshari" to "consonants", "ottakshara" to "guninthakshari")
+        return before.keys.firstOrNull { type ->
+            !skipped(before.getValue(type)) &&
                 islandReached(type) && !prefs().getBoolean("${user()}_celebrated_$type", false)
         }
     }

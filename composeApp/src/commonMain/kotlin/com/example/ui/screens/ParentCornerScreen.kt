@@ -407,7 +407,7 @@ fun ParentCornerScreen(
                 Text("Learning path", fontSize = 16.sp, fontWeight = FontWeight.ExtraBold, color = ScrapbookInk)
                 Text(
                     if (everythingOpen) "Everything open"
-                    else "Step by step · from " + listOf("the beginning", "Consonants", "Ka-kaa")[startFrom],
+                    else "Step by step · from " + listOf("the beginning", "Consonants", "Ka-kaa", "Ottakshara")[startFrom],
                     fontSize = 12.sp, fontWeight = FontWeight.Bold, color = ScrapbookInkSoft
                 )
             }

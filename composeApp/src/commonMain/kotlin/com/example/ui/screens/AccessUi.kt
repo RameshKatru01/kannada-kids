@@ -10,6 +10,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
@@ -183,6 +184,7 @@ fun IslandOpenedCard(type: String, onGo: () -> Unit, onLater: () -> Unit) {
     LaunchedEffect(type) { SoundEffectsHelper.playGameCompletion(context) }
     val (glyph, name, color, tint, line) = when (type) {
         "consonants" -> IslandInfo("ಕ", "Consonants", Color(0xFF6C63FF), Color(0xFFE6E4FF), "You learned all the vowels! Now let's meet ಕ ಖ ಗ and friends.")
+        "ottakshara" -> IslandInfo("ಕ್ಕ", "Ottakshara", Color(0xFF14A098), Color(0xFFD3F4EF), "You finished Ka-kaa! Now let's join two letters: ಕ + ಕ = ಕ್ಕ")
         else -> IslandInfo("ಕಾ", "Ka-kaa", Color(0xFFFF6B6B), Color(0xFFFFE1E1), "You learned all the consonants! Now let's join letters: ಕ ಕಾ ಕಿ ಕೀ…")
     }
     val pulse = rememberInfiniteTransition(label = "island")
@@ -272,8 +274,8 @@ fun LearningPathScreen(onBack: () -> Unit) {
                 "Already knows some letters? Skip ahead. Earlier letters stay open.",
                 fontSize = 13.sp, fontWeight = FontWeight.Bold, color = ScrapbookInkSoft
             )
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                listOf("Beginning", "Consonants", "Ka-kaa").forEachIndexed { i, label ->
+            Row(Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                listOf("Beginning", "Consonants", "Ka-kaa", "Ottakshara").forEachIndexed { i, label ->
                     val on = start == i
                     Text(
                         label,

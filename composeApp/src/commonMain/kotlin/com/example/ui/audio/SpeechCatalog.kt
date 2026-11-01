@@ -30,6 +30,8 @@ object SpeechCatalog {
         fillerSyllables.forEach { out += it }
         // Swara Adventure
         vowelWords.forEach { out += it.word; out += it.vowel }
+        // Ottakshara island: the joined letters, their parts and example words
+        com.example.data.OttaksharaData.letters.forEach { out += it.glyph; out += it.first; out += it.second; out += it.word }
         // Colour names (Paint the Monster, Colour Sort)
         kidColors.forEach { c -> c.names["kn"]?.let { out += it } }
         return out.map { it.trim() }.filter { it.isNotEmpty() }.distinct()

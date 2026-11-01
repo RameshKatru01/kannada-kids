@@ -101,6 +101,7 @@ fun HomeScreen(
     onNavigateToConsonants: () -> Unit,
     onNavigateToGunninthakshari: () -> Unit,
     onNavigateToNumbers: () -> Unit,
+    onNavigateToOttakshara: () -> Unit = {},
     onNavigateToLeaderboard: () -> Unit,
     onNavigateToProfile: () -> Unit = {},
     onOpenLetter: (type: String, index: Int) -> Unit = { _, _ -> },
@@ -122,7 +123,8 @@ fun HomeScreen(
             Island("vowels", "Vowels", "ಅ", Color(0xFF2EC4B6), Color(0xFFD9F6F2), LetterData.vowels.size, ActivityTracker.learned("vowels"), onNavigateToVowels),
             Island("consonants", "Consonants", "ಕ", Color(0xFF6C63FF), Color(0xFFE6E4FF), LetterData.consonants.size, ActivityTracker.learned("consonants"), onNavigateToConsonants),
             Island("guninthakshari", "Ka-kaa", "ಕಾ", HomeCoral, Color(0xFFFFE1E1), LetterData.consonants.size, ActivityTracker.learned("guninthakshari"), onNavigateToGunninthakshari),
-            Island("numbers", "Numbers", "೧", Color(0xFFFF9F1C), Color(0xFFFFE6CC), LetterData.numbers.size, ActivityTracker.learned("numbers"), onNavigateToNumbers)
+            Island("numbers", "Numbers", "೧", Color(0xFFFF9F1C), Color(0xFFFFE6CC), LetterData.numbers.size, ActivityTracker.learned("numbers"), onNavigateToNumbers),
+            Island("ottakshara", "Ottakshara", "ಕ್ಕ", Color(0xFF14A098), Color(0xFFD3F4EF), com.example.data.OttaksharaData.letters.size, ActivityTracker.learned("ottakshara"), onNavigateToOttakshara)
         ).map { it.copy(state = Access.island(it.type)) }
     }
     val streak = remember(version) { ActivityTracker.streakDays() }
@@ -137,13 +139,14 @@ fun HomeScreen(
     val nextGlyph = when (current.type) {
         "vowels" -> LetterData.vowels.getOrNull(nextIdx)?.character
         "consonants", "guninthakshari" -> LetterData.consonants.getOrNull(nextIdx)?.character
+        "ottakshara" -> com.example.data.OttaksharaData.letters.getOrNull(nextIdx)?.glyph
         else -> LetterData.numbers.getOrNull(nextIdx)?.character
     } ?: current.glyph
     val openNext: () -> Unit = {
         com.example.ui.audio.SoundEffectsHelper.playButtonTap()
         when (nextState) {
             // Ka-kaa lessons are picked from their own chart (consonant + vowel sign)
-            Access.State.Open -> if (current.type == "guninthakshari") current.open() else onOpenLetter(current.type, nextIdx)
+            Access.State.Open -> if (current.type == "guninthakshari" || current.type == "ottakshara") current.open() else onOpenLetter(current.type, nextIdx)
             Access.State.NeedsPremium -> Access.askGrownUp("$nextGlyph and all the other letters are in the Gold pack.")
             Access.State.NeedsProgress -> Access.showHint(Access.islandHint(current.type).ifEmpty { "Keep going!" })
         }
@@ -270,7 +273,7 @@ private fun HomePill(onClick: (() -> Unit)? = null, content: @Composable RowScop
 }
 
 /** Where each island sits on the map, as fractions of the map size (centre of the ring). */
-private val islandSpots = listOf(Offset(0.20f, 0.74f), Offset(0.70f, 0.53f), Offset(0.22f, 0.31f), Offset(0.72f, 0.12f))
+private val islandSpots = listOf(Offset(0.20f, 0.80f), Offset(0.70f, 0.64f), Offset(0.24f, 0.45f), Offset(0.74f, 0.28f), Offset(0.36f, 0.11f))
 
 @Composable
 private fun IslandMap(islands: List<Island>, currentIndex: Int, nextGlyph: String, nextState: Access.State, onNext: () -> Unit, modifier: Modifier = Modifier) {
@@ -309,7 +312,7 @@ private fun IslandMap(islands: List<Island>, currentIndex: Int, nextGlyph: Strin
             val isCurrent = i == currentIndex
             val locked = island.state == Access.State.NeedsProgress
             // Rings shrink on short screens so the islands never overlap
-            val bigRing = (h * 0.26f).coerceIn(56.dp, 96.dp)
+            val bigRing = (h * 0.22f).coerceIn(52.dp, 90.dp)
             val ring = if (isCurrent) bigRing else bigRing * 0.8f
             val spot = islandSpots[i]
             val labelWidth = 130.dp
