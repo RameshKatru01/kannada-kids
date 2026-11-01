@@ -41,10 +41,15 @@ def call(url, body=None):
             sys.exit(f"Google TTS error {e.code}: {msg}")
 
 
-def pick_voice(key, wanted):
-    voices = call(f"{API}/voices?languageCode=kn-IN&key={key}").get("voices", [])
+def language_of(text):
+    """kn-IN for Kannada script, hi-IN for Devanagari (Hindi)."""
+    return "hi-IN" if any("\u0900" <= c <= "\u097F" for c in text) else "kn-IN"
+
+
+def pick_voice(key, wanted, lang="kn-IN"):
+    voices = call(f"{API}/voices?languageCode={lang}&key={key}").get("voices", [])
     names = [v["name"] for v in voices]
-    print("Kannada voices available:", ", ".join(sorted(names)) or "none")
+    print(f"{lang} voices available:", ", ".join(sorted(names)) or "none")
     if wanted != "auto":
         if wanted not in names:
             sys.exit(f"Voice {wanted} is not available")
@@ -55,7 +60,7 @@ def pick_voice(key, wanted):
         kind = 0 if "Wavenet" in n else 1 if "Neural2" in n else 2 if "Standard" in n else 3
         return (kind, 0 if g == "FEMALE" else 1, n)
     if not voices:
-        sys.exit("No Kannada (kn-IN) voice found for this key")
+        sys.exit(f"No {lang} voice found for this key")
     return sorted(voices, key=rank)[0]["name"]
 
 
@@ -81,8 +86,10 @@ def main():
                 sys.exit(f"Hash mismatch for {text!r}: app {k}, script {fnv1a64(text)}")
             rows.append((k, text))
     os.makedirs(OUT, exist_ok=True)
-    voice = pick_voice(key, a.voice)
-    print(f"Using voice {voice} at speed {a.rate} for {len(rows)} phrases")
+    langs = sorted({language_of(t) for _, t in rows})
+    voices = {l: pick_voice(key, a.voice if l == "kn-IN" else "auto", l) for l in langs}
+    voice = ", ".join(voices.values())
+    print(f"Using voices {voice} at speed {a.rate} for {len(rows)} phrases")
 
     made = kept = 0
     chars = 0
@@ -93,7 +100,7 @@ def main():
             continue
         res = call(f"{API}/text:synthesize?key={key}", {
             "input": {"text": text},
-            "voice": {"languageCode": "kn-IN", "name": voice},
+            "voice": {"languageCode": language_of(text), "name": voices[language_of(text)]},
             "audioConfig": {"audioEncoding": "MP3", "speakingRate": a.rate, "sampleRateHertz": 24000},
         })
         with open(path, "wb") as out:

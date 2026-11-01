@@ -391,6 +391,26 @@ fun ParentCornerScreen(
             LetterChips(strong, Color(0xFFD9F6F2), Color(0xFF0F6B62), "Letters answered right again and again will show here.")
         }
 
+        // Which language the child is learning (each has its own letters, progress and voice)
+        val learning by com.example.ui.data.LanguageManager.currentLanguage.collectAsState()
+        WhiteCard {
+            Text("Learning language", fontSize = 16.sp, fontWeight = FontWeight.ExtraBold, color = ScrapbookInk)
+            Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                listOf(com.example.ui.data.AppLanguage.KANNADA to "ಕನ್ನಡ Kannada", com.example.ui.data.AppLanguage.HINDI to "हिन्दी Hindi").forEach { (lang, label) ->
+                    val on = learning == lang
+                    Box(
+                        Modifier.weight(1f).height(48.dp).clip(RoundedCornerShape(24.dp))
+                            .background(if (on) ScrapbookInk else Color.White)
+                            .border(2.dp, ScrapbookInk, RoundedCornerShape(24.dp))
+                            .clickable { com.example.ui.data.LanguageManager.setLanguage(context, lang) }
+                            .testTag("language_${lang.code}"),
+                        contentAlignment = Alignment.Center
+                    ) { Text(label, fontSize = 15.sp, fontWeight = FontWeight.ExtraBold, color = if (on) Color.White else ScrapbookInk) }
+                }
+            }
+            Text("Each language keeps its own progress. Gold covers both.", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = ScrapbookInkSoft)
+        }
+
         // Learning path (how letters, islands and levels open)
         val pathVersion by com.example.ui.data.Access.version.collectAsState()
         val everythingOpen = remember(pathVersion) { com.example.ui.data.Access.everythingOpen }
@@ -408,7 +428,7 @@ fun ParentCornerScreen(
                 Text("Learning path", fontSize = 16.sp, fontWeight = FontWeight.ExtraBold, color = ScrapbookInk)
                 Text(
                     if (everythingOpen) "Everything open"
-                    else "Step by step · from " + listOf("the beginning", "Consonants", "Ka-kaa", "Ottakshara")[startFrom],
+                    else "Step by step · from " + listOf("the beginning", "Consonants", com.example.data.Lang.islandName("guninthakshari"), com.example.data.Lang.islandName("ottakshara"))[startFrom],
                     fontSize = 12.sp, fontWeight = FontWeight.Bold, color = ScrapbookInkSoft
                 )
             }

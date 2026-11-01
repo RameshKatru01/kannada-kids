@@ -30,7 +30,7 @@ fun NumbersScreen(onBack: () -> Unit) {
             contentAlignment = Alignment.Center
         ) {
             Text(
-                text = "೧ ೨ ೩",
+                text = com.example.data.Lang.script("೧ ೨ ೩"),
                 fontSize = 48.sp,
                 fontWeight = FontWeight.Bold,
                 color = Color(0xFFFF9800)

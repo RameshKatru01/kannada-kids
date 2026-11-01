@@ -171,7 +171,7 @@ fun ReferenceScreen(
             }
         }
 
-        val hasVideos = tab == RefTab.Vowels || tab == RefTab.Consonants
+        val hasVideos = (tab == RefTab.Vowels || tab == RefTab.Consonants) && !com.example.data.Lang.isHindi
         Row(
             modifier = Modifier.fillMaxWidth().padding(start = 18.dp, end = 16.dp, top = 12.dp, bottom = 12.dp),
             verticalAlignment = Alignment.CenterVertically,
@@ -186,7 +186,7 @@ fun ReferenceScreen(
                 fontSize = 14.sp, fontWeight = FontWeight.Bold, color = ScrapbookInkSoft
             )
             // This tab's printable worksheets: a small pill in the hint row, so it never takes room from the letters.
-            WorksheetsChip { showWorksheetGate = true }
+            if (com.example.data.Lang.hasWorksheets) WorksheetsChip { showWorksheetGate = true }
         }
 
         LazyVerticalGrid(

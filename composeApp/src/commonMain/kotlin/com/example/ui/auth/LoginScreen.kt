@@ -102,7 +102,7 @@ private data class LearningLanguage(val code: String, val label: String, val ava
 
 private val learningLanguages = listOf(
     LearningLanguage("kn", "ಕನ್ನಡ", available = true),
-    LearningLanguage("hi", "हिन्दी", available = false),
+    LearningLanguage("hi", "हिन्दी", available = true),
     LearningLanguage("en", "English", available = false)
 )
 
@@ -184,6 +184,9 @@ fun LoginScreen(
                 onSelect = { language ->
                     if (!language.available) {
                         Toast.makeText(context, "${language.label} is coming soon!", Toast.LENGTH_SHORT).show()
+                    } else {
+                        com.example.ui.data.AppLanguage.entries.firstOrNull { it.code == language.code }
+                            ?.let { com.example.ui.data.LanguageManager.setLanguage(context, it) }
                     }
                 }
             )

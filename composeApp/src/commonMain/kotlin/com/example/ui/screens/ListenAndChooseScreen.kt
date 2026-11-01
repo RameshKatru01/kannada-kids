@@ -43,14 +43,14 @@ import kotlinx.coroutines.launch
 
 private data class ListenLevel(val label: String, val pool: List<String>, val options: Int)
 
-private val listenLevels = listOf(
+private val listenLevels get() = listOf(
     ListenLevel("Short vowels", listOf("ಅ", "ಇ", "ಉ", "ಎ", "ಒ"), 3),
     ListenLevel("All vowels", listOf("ಅ", "ಆ", "ಇ", "ಈ", "ಉ", "ಊ", "ಋ", "ಎ", "ಏ", "ಐ", "ಒ", "ಓ", "ಔ", "ಅಂ", "ಅಃ"), 3),
     ListenLevel("ಕ to ಞ", listOf("ಕ", "ಖ", "ಗ", "ಘ", "ಙ", "ಚ", "ಛ", "ಜ", "ಝ", "ಞ"), 4),
     ListenLevel("ಟ to ಮ", listOf("ಟ", "ಠ", "ಡ", "ಢ", "ಣ", "ತ", "ಥ", "ದ", "ಧ", "ನ", "ಪ", "ಫ", "ಬ", "ಭ", "ಮ"), 4),
     ListenLevel("ಯ to ಳ and numbers", listOf("ಯ", "ರ", "ಲ", "ವ", "ಶ", "ಷ", "ಸ", "ಹ", "ಳ", "೧", "೨", "೩", "೪", "೫", "೬", "೭", "೮", "೯"), 4),
     ListenLevel("Sound-alike letters", listOf("ಕ", "ಖ", "ಗ", "ಘ", "ಟ", "ಠ", "ತ", "ಥ", "ದ", "ಧ", "ಡ", "ಢ", "ಬ", "ಭ", "ಪ", "ಫ", "ಕಾ", "ಕಿ", "ಕೀ", "ಕು", "ಕೂ"), 4)
-)
+).map { it.copy(label = com.example.data.Lang.script(it.label), pool = com.example.data.Lang.letters(it.pool)) }
 
 private const val QUESTIONS = 6
 

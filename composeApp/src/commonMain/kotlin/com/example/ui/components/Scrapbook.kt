@@ -206,7 +206,7 @@ private fun BoxScope.ArtLetter(glyph: String, x: Int, y: Int, size: Int, bg: Col
             .background(bg, CircleShape),
         contentAlignment = Alignment.Center
     ) {
-        Text(glyph, color = ink, fontWeight = FontWeight.ExtraBold, fontSize = 14.sp)
+        Text(com.example.data.Lang.script(glyph), color = ink, fontWeight = FontWeight.ExtraBold, fontSize = 14.sp)
     }
 }
 

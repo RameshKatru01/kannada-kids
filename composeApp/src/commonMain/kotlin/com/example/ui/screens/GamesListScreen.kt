@@ -90,7 +90,7 @@ fun GamesListScreen(
             horizontalArrangement = Arrangement.spacedBy(14.dp),
             verticalArrangement = Arrangement.spacedBy(14.dp)
         ) {
-            itemsIndexed(GameRegistry.games, key = { _, g -> g.id }) { index, game ->
+            itemsIndexed(GameRegistry.games.filter { com.example.data.Lang.hasGame(it.id) }, key = { _, g -> g.id }) { index, game ->
                 GamePolaroid(
                     index = index,
                     game = game,

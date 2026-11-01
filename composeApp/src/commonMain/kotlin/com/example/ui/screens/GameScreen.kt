@@ -49,6 +49,9 @@ val guninthakshariSigns = listOf(
     "\u0C83" to "aha"  // ಅಃ
 )
 
+/** The vowel signs for the Ka-kaa (Kannada) or Barakhadi (Hindi) grid. */
+val kaKaaSigns: List<Pair<String, String>> get() = if (com.example.data.Lang.isHindi) barakhadiSigns else guninthakshariSigns
+
 val barakhadiSigns = listOf(
     "" to "a",         // अ
     "ा" to "aa",      // आ
@@ -72,8 +75,8 @@ fun GameScreen(onBack: () -> Unit, onNavigateToGameFlow: (String, String, Int) -
     var tts by androidx.compose.runtime.remember { androidx.compose.runtime.mutableStateOf<TextToSpeech?>(null) }
     val currentLanguage by LanguageManager.currentLanguage.collectAsState()
     
-    val signs = guninthakshariSigns
-    val titleText = "Guninthakshari"
+    val signs = kaKaaSigns
+    val titleText = if (com.example.data.Lang.isHindi) "Barakhadi" else "Guninthakshari"
     
     androidx.compose.runtime.DisposableEffect(context, currentLanguage) {
         var textToSpeech: TextToSpeech? = null
@@ -148,7 +151,7 @@ fun GameScreen(onBack: () -> Unit, onNavigateToGameFlow: (String, String, Int) -
                                     selectedConsonant = consonant
                                     selectedConsonantIndex = index
                                 }
-                                com.example.ui.data.Access.State.NeedsPremium -> com.example.ui.data.Access.askGrownUp("${consonant.character} and all the other Ka-kaa letters are in the Gold pack.")
+                                com.example.ui.data.Access.State.NeedsPremium -> com.example.ui.data.Access.askGrownUp("${consonant.character} and all the other ${com.example.data.Lang.islandName("guninthakshari")} letters are in the Gold pack.")
                                 com.example.ui.data.Access.State.NeedsProgress -> {
                                     val nextChar = LetterData.consonants.getOrNull(com.example.ui.data.Access.nextIndex("guninthakshari"))?.character ?: ""
                                     com.example.ui.data.Access.showHint("Letters open one by one. Next up is $nextChar!")
@@ -180,7 +183,7 @@ fun GameScreen(onBack: () -> Unit, onNavigateToGameFlow: (String, String, Int) -
                                 if (isUnlocked) {
                                     onNavigateToGameFlow(combinedChar, combinedTransliteration, selectedConsonantIndex ?: 0)
                                 } else {
-                                    com.example.ui.data.Access.askGrownUp("$combinedChar and all the other Ka-kaa letters are in the Gold pack.")
+                                    com.example.ui.data.Access.askGrownUp("$combinedChar and all the other ${com.example.data.Lang.islandName("guninthakshari")} letters are in the Gold pack.")
                                 }
                             }
                         )

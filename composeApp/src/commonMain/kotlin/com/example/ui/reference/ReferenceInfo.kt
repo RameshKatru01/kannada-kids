@@ -13,11 +13,15 @@ data class RefWord(val kannada: String, val english: String, val picture: String
 /** A group of consonants (ವರ್ಗ) as taught in school. */
 data class ConsonantGroup(val kannada: String, val english: String, val letters: List<KannadaLetter>)
 
-enum class RefTab(val kannada: String, val english: String) {
-    Vowels("ಸ್ವರ", "Vowels"),
-    Consonants("ವ್ಯಂಜನ", "Consonants"),
-    KaKaa("ಕಾಗುಣಿತ", "Ka-kaa"),
-    Numbers("ಅಂಕೆ", "Numbers");
+enum class RefTab(private val kn: String, private val hi: String, private val en: String, private val enHi: String = en) {
+    Vowels("ಸ್ವರ", "स्वर", "Vowels"),
+    Consonants("ವ್ಯಂಜನ", "व्यंजन", "Consonants"),
+    KaKaa("ಕಾಗುಣಿತ", "बारहखड़ी", "Ka-kaa", "Barakhadi"),
+    Numbers("ಅಂಕೆ", "अंक", "Numbers");
+
+    /** The tab's name in the script being learned. */
+    val kannada: String get() = if (com.example.data.Lang.isHindi) hi else kn
+    val english: String get() = if (com.example.data.Lang.isHindi) enHi else en
 
     fun letters(): List<KannadaLetter> = when (this) {
         Vowels -> LetterData.vowels
@@ -57,7 +61,20 @@ object ReferenceInfo {
         "ಓ" to "Long “o”, like in “go”",
         "ಔ" to "“au”, like in “cow”",
         "ಅಂ" to "“am”, with a hum at the end",
-        "ಅಃ" to "“aha”, with a soft breath at the end"
+        "ಅಃ" to "“aha”, with a soft breath at the end",
+        "अ" to "Short “a”, like the “u” in “up”",
+        "आ" to "Long “aa”, like in “father”",
+        "इ" to "Short “i”, like in “sit”",
+        "ई" to "Long “ee”, like in “see”",
+        "उ" to "Short “u”, like in “put”",
+        "ऊ" to "Long “oo”, like in “moon”",
+        "ऋ" to "“ri”, a quick r with an i",
+        "ए" to "“e”, like in “they”",
+        "ऐ" to "“ai”, like in “bat”, said long",
+        "ओ" to "“o”, like in “go”",
+        "औ" to "“au”, like in “awe”",
+        "अं" to "“am”, with a hum at the end",
+        "अः" to "“aha”, with a soft breath at the end"
     )
 
     private val words = mapOf(
@@ -112,12 +129,65 @@ object ReferenceInfo {
         "೭" to RefWord("ಏಳು", "seven", "🌈"),
         "೮" to RefWord("ಎಂಟು", "eight", "🐙"),
         "೯" to RefWord("ಒಂಬತ್ತು", "nine", "9️⃣"),
-        "೧೦" to RefWord("ಹತ್ತು", "ten", "🔟")
+        "೧೦" to RefWord("ಹತ್ತು", "ten", "🔟"),
+        // Hindi
+        "अ" to RefWord("अनानास", "pineapple", "🍍"),
+        "आ" to RefWord("आम", "mango", "🥭"),
+        "इ" to RefWord("इंजन", "engine", "🚂"),
+        "ई" to RefWord("ईख", "sugarcane", "🎋"),
+        "उ" to RefWord("उल्लू", "owl", "🦉"),
+        "ऊ" to RefWord("ऊन", "wool", "🧶"),
+        "ऋ" to RefWord("ऋषि", "sage", "🧘"),
+        "ए" to RefWord("एक", "one", "☝️"),
+        "ऐ" to RefWord("ऐनक", "glasses", "👓"),
+        "ओ" to RefWord("ओला", "hailstone", "🌨️"),
+        "औ" to RefWord("औरत", "woman", "👩"),
+        "अं" to RefWord("अंगूर", "grapes", "🍇"),
+        "क" to RefWord("कबूतर", "pigeon", "🕊️"),
+        "ख" to RefWord("खरगोश", "rabbit", "🐇"),
+        "ग" to RefWord("गमला", "flower pot", "🪴"),
+        "घ" to RefWord("घड़ी", "watch", "⌚"),
+        "च" to RefWord("चम्मच", "spoon", "🥄"),
+        "छ" to RefWord("छतरी", "umbrella", "☂️"),
+        "ज" to RefWord("जहाज़", "ship", "🚢"),
+        "झ" to RefWord("झंडा", "flag", "🚩"),
+        "ट" to RefWord("टमाटर", "tomato", "🍅"),
+        "ठ" to RefWord("ठेला", "handcart", "🛒"),
+        "ड" to RefWord("डमरू", "small drum", "🪘"),
+        "ढ" to RefWord("ढोल", "drum", "🥁"),
+        "त" to RefWord("तरबूज़", "watermelon", "🍉"),
+        "थ" to RefWord("थैला", "bag", "👜"),
+        "द" to RefWord("दरवाज़ा", "door", "🚪"),
+        "ध" to RefWord("धनुष", "bow", "🏹"),
+        "न" to RefWord("नल", "tap", "🚰"),
+        "प" to RefWord("पतंग", "kite", "🪁"),
+        "फ" to RefWord("फूल", "flower", "🌸"),
+        "ब" to RefWord("बत्तख", "duck", "🦆"),
+        "भ" to RefWord("भालू", "bear", "🐻"),
+        "म" to RefWord("मछली", "fish", "🐟"),
+        "य" to RefWord("योग", "yoga", "🧘"),
+        "र" to RefWord("रस्सी", "rope", "🪢"),
+        "ल" to RefWord("लालटेन", "lantern", "🏮"),
+        "व" to RefWord("वन", "forest", "🌳"),
+        "श" to RefWord("शेर", "lion", "🦁"),
+        "स" to RefWord("सेब", "apple", "🍎"),
+        "ह" to RefWord("हाथी", "elephant", "🐘"),
+        "त्र" to RefWord("त्रिशूल", "trident", "🔱"),
+        "१" to RefWord("एक", "one", "☝️"),
+        "२" to RefWord("दो", "two", "✌️"),
+        "३" to RefWord("तीन", "three", "🎈🎈🎈"),
+        "४" to RefWord("चार", "four", "🍎🍎🍎🍎"),
+        "५" to RefWord("पाँच", "five", "🖐️"),
+        "६" to RefWord("छह", "six", "⭐⭐⭐⭐⭐⭐"),
+        "७" to RefWord("सात", "seven", "🌈"),
+        "८" to RefWord("आठ", "eight", "🐙"),
+        "९" to RefWord("नौ", "nine", "9️⃣"),
+        "१०" to RefWord("दस", "ten", "🔟")
     )
 
-    private val aspirated = setOf("ಖ", "ಘ", "ಛ", "ಝ", "ಠ", "ಢ", "ಥ", "ಧ", "ಫ", "ಭ")
-    private val curled = setOf("ಟ", "ಠ", "ಡ", "ಢ", "ಣ", "ಷ", "ಳ")
-    private val nasal = setOf("ಙ", "ಞ", "ಣ", "ನ", "ಮ")
+    private val aspirated = setOf("ಖ", "ಘ", "ಛ", "ಝ", "ಠ", "ಢ", "ಥ", "ಧ", "ಫ", "ಭ", "ख", "घ", "छ", "झ", "ठ", "ढ", "थ", "ध", "फ", "भ")
+    private val curled = setOf("ಟ", "ಠ", "ಡ", "ಢ", "ಣ", "ಷ", "ಳ", "ट", "ठ", "ड", "ढ", "ण", "ष")
+    private val nasal = setOf("ಙ", "ಞ", "ಣ", "ನ", "ಮ", "ङ", "ञ", "ण", "न", "म")
 
     fun sound(letter: KannadaLetter): String = sounds[letter.character] ?: letter.transliteration
 
@@ -141,7 +211,7 @@ object ReferenceInfo {
             RefTab.KaKaa -> {
                 val i = LetterData.kaGuninthakshari.indexOfFirst { it.id == letter.id }
                 val vowel = LetterData.vowels.getOrNull(i)?.character
-                if (vowel != null) "ಕ + $vowel = $c" else "Say “${letter.transliteration}”"
+                if (vowel != null) "${LetterData.consonants.first().character} + $vowel = $c" else "Say “${letter.transliteration}”"
             }
             RefTab.Numbers -> "The number ${letter.transliteration}"
         }
@@ -151,6 +221,15 @@ object ReferenceInfo {
     fun consonantGroups(): List<ConsonantGroup> {
         val all = LetterData.consonants
         fun pick(vararg chars: String) = chars.mapNotNull { ch -> all.firstOrNull { it.character == ch } }
+        if (com.example.data.Lang.isHindi) return listOf(
+            ConsonantGroup("क वर्ग", "ka group", pick("क", "ख", "ग", "घ", "ङ")),
+            ConsonantGroup("च वर्ग", "cha group", pick("च", "छ", "ज", "झ", "ञ")),
+            ConsonantGroup("ट वर्ग", "Ta group", pick("ट", "ठ", "ड", "ढ", "ण")),
+            ConsonantGroup("त वर्ग", "ta group", pick("त", "थ", "द", "ध", "न")),
+            ConsonantGroup("प वर्ग", "pa group", pick("प", "फ", "ब", "भ", "म")),
+            ConsonantGroup("अन्य", "other letters", pick("य", "र", "ल", "व", "श", "ष", "स", "ह")),
+            ConsonantGroup("संयुक्त", "joined letters", pick("क्ष", "त्र", "ज्ञ"))
+        ).filter { it.letters.isNotEmpty() }
         return listOf(
             ConsonantGroup("ಕ ವರ್ಗ", "ka group", pick("ಕ", "ಖ", "ಗ", "ಘ", "ಙ")),
             ConsonantGroup("ಚ ವರ್ಗ", "cha group", pick("ಚ", "ಛ", "ಜ", "ಝ", "ಞ")),

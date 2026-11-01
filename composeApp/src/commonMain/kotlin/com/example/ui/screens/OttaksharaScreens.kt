@@ -93,7 +93,7 @@ fun OttaksharaScreen(onBack: () -> Unit, onOpenLesson: (Int) -> Unit) {
             .padding(horizontal = 16.dp, vertical = 10.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
-        OttaHeader("Ottakshara · ಒತ್ತಕ್ಷರ", "${learned.count { it in letters.indices }} of ${letters.size} learned", onBack)
+        OttaHeader("${com.example.data.Lang.islandName("ottakshara")} · ${com.example.data.Lang.islandNative("ottakshara")}", "${learned.count { it in letters.indices }} of ${letters.size} learned", onBack)
 
         // How it works
         Row(
@@ -101,7 +101,7 @@ fun OttaksharaScreen(onBack: () -> Unit, onOpenLesson: (Int) -> Unit) {
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-            Text("ಕ + ಕ = ಕ್ಕ", fontSize = 24.sp, fontWeight = FontWeight.ExtraBold, color = OttaInk)
+            Text(com.example.data.Lang.script("ಕ + ಕ = ಕ್ಕ"), fontSize = 24.sp, fontWeight = FontWeight.ExtraBold, color = OttaInk)
             Text(
                 "The second letter sits small, under the first. Say them together!",
                 fontSize = 12.sp, fontWeight = FontWeight.Bold, color = OttaInkSoft, lineHeight = 15.sp

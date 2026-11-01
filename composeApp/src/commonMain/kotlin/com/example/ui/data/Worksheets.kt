@@ -35,7 +35,8 @@ object Worksheets {
             fun fromRoute(route: String?): Section = entries.firstOrNull { it.route == route } ?: Vowels
 
             /** The section for a letter-flow type ("vowels", "consonants", "guninthakshari", "numbers"). */
-            fun fromLearnedType(type: String): Section? = entries.firstOrNull { it.learnedType == type }
+            fun fromLearnedType(type: String): Section? =
+                if (!com.example.data.Lang.hasWorksheets) null else entries.firstOrNull { it.learnedType == type }
         }
     }
 

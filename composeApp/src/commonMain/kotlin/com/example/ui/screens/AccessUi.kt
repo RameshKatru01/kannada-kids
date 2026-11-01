@@ -183,9 +183,10 @@ fun IslandOpenedCard(type: String, onGo: () -> Unit, onLater: () -> Unit) {
     val context = LocalContext.current
     LaunchedEffect(type) { SoundEffectsHelper.playGameCompletion(context) }
     val (glyph, name, color, tint, line) = when (type) {
-        "consonants" -> IslandInfo("ಕ", "Consonants", Color(0xFF6C63FF), Color(0xFFE6E4FF), "You learned all the vowels! Now let's meet ಕ ಖ ಗ and friends.")
-        "ottakshara" -> IslandInfo("ಕ್ಕ", "Ottakshara", Color(0xFF14A098), Color(0xFFD3F4EF), "You finished Ka-kaa! Now let's join two letters: ಕ + ಕ = ಕ್ಕ")
-        else -> IslandInfo("ಕಾ", "Ka-kaa", Color(0xFFFF6B6B), Color(0xFFFFE1E1), "You learned all the consonants! Now let's join letters: ಕ ಕಾ ಕಿ ಕೀ…")
+        "consonants" -> IslandInfo(com.example.data.Lang.script("ಕ"), "Consonants", Color(0xFF6C63FF), Color(0xFFE6E4FF), com.example.data.Lang.script("You learned all the vowels! Now let's meet ಕ ಖ ಗ and friends."))
+        "ottakshara" -> if (com.example.data.Lang.isHindi) IslandInfo("क्ष", "Sanyuktakshar", Color(0xFF14A098), Color(0xFFD3F4EF), "You finished Barakhadi! Now let's join two letters: क + क = क्क")
+            else IslandInfo("ಕ್ಕ", "Ottakshara", Color(0xFF14A098), Color(0xFFD3F4EF), "You finished Ka-kaa! Now let's join two letters: ಕ + ಕ = ಕ್ಕ")
+        else -> IslandInfo(com.example.data.Lang.script("ಕಾ"), com.example.data.Lang.islandName("guninthakshari"), Color(0xFFFF6B6B), Color(0xFFFFE1E1), com.example.data.Lang.script("You learned all the consonants! Now let's join letters: ಕ ಕಾ ಕಿ ಕೀ…"))
     }
     val pulse = rememberInfiniteTransition(label = "island")
     val grow by pulse.animateFloat(1f, 1.08f, infiniteRepeatable(tween(700), RepeatMode.Reverse), label = "grow")
@@ -275,7 +276,7 @@ fun LearningPathScreen(onBack: () -> Unit) {
                 fontSize = 13.sp, fontWeight = FontWeight.Bold, color = ScrapbookInkSoft
             )
             Row(Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                listOf("Beginning", "Consonants", "Ka-kaa", "Ottakshara").forEachIndexed { i, label ->
+                listOf("Beginning", "Consonants", com.example.data.Lang.islandName("guninthakshari"), com.example.data.Lang.islandName("ottakshara")).forEachIndexed { i, label ->
                     val on = start == i
                     Text(
                         label,

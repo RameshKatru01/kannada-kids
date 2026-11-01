@@ -20,17 +20,60 @@ data class OttaLetter(
 object OttaksharaData {
     data class Group(val name: String, val kannada: String)
 
-    val groups = listOf(
+    private val kannadaGroups = listOf(
         Group("Twin letters", "ಒಂದೇ ಅಕ್ಷರ ಎರಡು ಸಲ"),
         Group("With ರ", "ರ ಒತ್ತು"),
         Group("With ಯ and ವ", "ಯ / ವ ಒತ್ತು"),
         Group("Mixed pairs", "ಬೇರೆ ಬೇರೆ ಅಕ್ಷರ")
     )
+    private val hindiGroups = listOf(
+        Group("Twin letters", "दो एक जैसे अक्षर"),
+        Group("With र", "र वाले अक्षर"),
+        Group("With य and व", "य / व वाले अक्षर"),
+        Group("Mixed pairs", "अलग-अलग अक्षर")
+    )
+    val groups: List<Group> get() = if (Lang.isHindi) hindiGroups else kannadaGroups
 
     private fun o(first: String, second: String, group: Int, word: String, english: String, picture: String) =
-        OttaLetter(first + "್" + second, first, second, group, word, english, picture)
+        OttaLetter(first + (if (first[0] in '\u0900'..'\u097F') "्" else "್") + second, first, second, group, word, english, picture)
 
-    val letters: List<OttaLetter> = listOf(
+    /** The joined letters of the language being learned. */
+    val letters: List<OttaLetter> get() = if (Lang.isHindi) hindiLetters else kannadaLetters
+
+    /** Hindi संयुक्ताक्षर (joined letters). */
+    val hindiLetters: List<OttaLetter> by lazy { listOf(
+        // Twin letters
+        o("क", "क", 0, "मक्का", "corn", "🌽"),
+        o("च", "च", 0, "बच्चा", "child", "🧒"),
+        o("ड", "ड", 0, "हड्डी", "bone", "🦴"),
+        o("त", "त", 0, "कुत्ता", "dog", "🐕"),
+        o("ल", "ल", 0, "बिल्ली", "cat", "🐱"),
+        o("न", "न", 0, "गन्ना", "sugarcane", "🎋"),
+        o("म", "म", 0, "चम्मच", "spoon", "🥄"),
+        o("स", "स", 0, "रस्सी", "rope", "🪢"),
+        o("ब", "ब", 0, "डिब्बा", "box", "📦"),
+        // With र
+        o("प", "र", 1, "प्रणाम", "greeting", "🙏"),
+        o("क", "र", 1, "क्रिकेट", "cricket", "🏏"),
+        o("ग", "र", 1, "ग्रह", "planet", "🪐"),
+        o("त", "र", 1, "त्रिभुज", "triangle", "🔺"),
+        o("द", "र", 1, "चंद्रमा", "moon", "🌙"),
+        o("र", "य", 1, "सूर्य", "sun", "☀️"),
+        // With य and व
+        o("प", "य", 2, "प्यार", "love", "❤️"),
+        o("व", "य", 2, "व्यायाम", "exercise", "🏋️"),
+        o("स", "व", 2, "स्वाद", "taste", "😋"),
+        o("द", "व", 2, "द्वार", "door", "🚪"),
+        // Mixed pairs
+        o("स", "त", 3, "पुस्तक", "book", "📚"),
+        o("क", "ष", 3, "पक्षी", "bird", "🐦"),
+        o("ज", "ञ", 3, "ज्ञान", "knowledge", "💡"),
+        o("स", "क", 3, "स्कूल", "school", "🏫"),
+        o("स", "न", 3, "स्नान", "bath", "🛁"),
+        o("ट", "ठ", 3, "चिट्ठी", "letter", "✉️")
+    ) }
+
+    val kannadaLetters: List<OttaLetter> = listOf(
         // Twin letters
         o("ಕ", "ಕ", 0, "ಬೆಕ್ಕು", "cat", "🐱"),
         o("ಗ", "ಗ", 0, "ಹಗ್ಗ", "rope", "🪢"),

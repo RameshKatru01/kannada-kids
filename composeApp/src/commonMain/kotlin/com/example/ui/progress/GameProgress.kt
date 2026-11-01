@@ -13,12 +13,16 @@ data class GameInfo(
     val id: Int,
     val key: String,
     val name: String,
-    val subtitle: String,
-    val glyph: String,
+    private val subtitleKn: String,
+    private val glyphKn: String,
     val color: Color,
     val ink: Color,
     val levels: Int = 0
 ) {
+    /** Shown in the script being learned (Kannada or Hindi). */
+    val subtitle: String get() = com.example.data.Lang.script(subtitleKn).replace("Guninthakshari", com.example.data.Lang.islandName("guninthakshari"))
+    val glyph: String get() = com.example.data.Lang.script(glyphKn)
+
     val hasLevels: Boolean get() = levels > 0
     val maxStars: Int get() = levels * 3
 }

@@ -7,7 +7,8 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 
 enum class AppLanguage(val code: String, val displayName: String) {
-    KANNADA("kn", "Kannada")
+    KANNADA("kn", "Kannada"),
+    HINDI("hi", "Hindi")
 }
 
 object LanguageManager {

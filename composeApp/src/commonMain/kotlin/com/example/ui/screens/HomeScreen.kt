@@ -121,11 +121,11 @@ fun HomeScreen(
     val premium = remember(sub, pathVersion) { Access.isPremium() }
     val islands = remember(version, currentLanguage, pathVersion, sub) {
         listOf(
-            Island("vowels", "Vowels", "ಅ", Color(0xFF2EC4B6), Color(0xFFD9F6F2), LetterData.vowels.size, ActivityTracker.learned("vowels"), onNavigateToVowels),
-            Island("consonants", "Consonants", "ಕ", Color(0xFF6C63FF), Color(0xFFE6E4FF), LetterData.consonants.size, ActivityTracker.learned("consonants"), onNavigateToConsonants),
-            Island("guninthakshari", "Ka-kaa", "ಕಾ", HomeCoral, Color(0xFFFFE1E1), LetterData.consonants.size, ActivityTracker.learned("guninthakshari"), onNavigateToGunninthakshari),
-            Island("numbers", "Numbers", "೧", Color(0xFFFF9F1C), Color(0xFFFFE6CC), LetterData.numbers.size, ActivityTracker.learned("numbers"), onNavigateToNumbers),
-            Island("ottakshara", "Ottakshara", "ಕ್ಕ", Color(0xFF14A098), Color(0xFFD3F4EF), com.example.data.OttaksharaData.letters.size, ActivityTracker.learned("ottakshara"), onNavigateToOttakshara)
+            Island("vowels", com.example.data.Lang.islandName("vowels"), com.example.data.Lang.script("ಅ"), Color(0xFF2EC4B6), Color(0xFFD9F6F2), LetterData.vowels.size, ActivityTracker.learned("vowels"), onNavigateToVowels),
+            Island("consonants", com.example.data.Lang.islandName("consonants"), com.example.data.Lang.script("ಕ"), Color(0xFF6C63FF), Color(0xFFE6E4FF), LetterData.consonants.size, ActivityTracker.learned("consonants"), onNavigateToConsonants),
+            Island("guninthakshari", com.example.data.Lang.islandName("guninthakshari"), com.example.data.Lang.script("ಕಾ"), HomeCoral, Color(0xFFFFE1E1), LetterData.consonants.size, ActivityTracker.learned("guninthakshari"), onNavigateToGunninthakshari),
+            Island("numbers", com.example.data.Lang.islandName("numbers"), com.example.data.Lang.script("೧"), Color(0xFFFF9F1C), Color(0xFFFFE6CC), LetterData.numbers.size, ActivityTracker.learned("numbers"), onNavigateToNumbers),
+            Island("ottakshara", com.example.data.Lang.islandName("ottakshara"), if (com.example.data.Lang.isHindi) "क्ष" else "ಕ್ಕ", Color(0xFF14A098), Color(0xFFD3F4EF), com.example.data.OttaksharaData.letters.size, ActivityTracker.learned("ottakshara"), onNavigateToOttakshara)
         ).map { it.copy(state = Access.island(it.type)) }
     }
     val streak = remember(version) { ActivityTracker.streakDays() }
@@ -197,11 +197,14 @@ fun HomeScreen(
                     HomeGameCard(game, pictureHeight, Modifier.width(cardWidth), remember(sub) { Access.game(game) }) { onOpenGame(game) }
                 }
             }
+            // Fun Videos are in Kannada; Hindi videos come later
+            if (!com.example.data.Lang.isHindi) {
             ShelfTitle("Fun Videos", onSeeAll = onSeeAllVideos, side = side)
             Row(Modifier.fillMaxWidth().padding(horizontal = side), horizontalArrangement = Arrangement.spacedBy(gap)) {
                 homeVideos.take(perRow).forEach { (folder, photo) ->
                     HomeVideoCard(folder, photo, pictureHeight, Modifier.width(cardWidth), remember(sub) { Access.videoFolder(folder) }) { onOpenVideos(folder) }
                 }
+            }
             }
         }
         if (celebrate != null) {
@@ -239,10 +242,10 @@ private fun HomeTopBar(coins: Int, streak: Int, onProfile: () -> Unit, onPoints:
                 .testTag("home_profile"),
             contentAlignment = Alignment.Center
         ) {
-            Text("ಅ", fontSize = 22.sp, fontWeight = FontWeight.ExtraBold, color = HomeInk)
+            Text(com.example.data.Lang.script("ಅ"), fontSize = 22.sp, fontWeight = FontWeight.ExtraBold, color = HomeInk)
         }
         Column(Modifier.weight(1f)) {
-            Text("ನಮಸ್ಕಾರ! Hello,", fontSize = 13.sp, fontWeight = FontWeight.Bold, color = HomeInkSoft, maxLines = 1)
+            Text("${com.example.data.Lang.hello} Hello,", fontSize = 13.sp, fontWeight = FontWeight.Bold, color = HomeInkSoft, maxLines = 1)
             Text("Little learner", fontSize = 21.sp, fontWeight = FontWeight.ExtraBold, color = HomeInk, maxLines = 1, overflow = TextOverflow.Ellipsis)
         }
         HomePill(onClick = onPoints) {

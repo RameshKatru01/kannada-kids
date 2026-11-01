@@ -342,7 +342,8 @@ fun AppNavigation(authViewModel: AuthViewModel = viewModel { AuthViewModel() }) 
                             composable("fun_videos") {
                     VideoFoldersScreen(
                         title = "Fun Videos",
-                        folders = listOf("Vowels", "Consonants", "Birds", "Animals", "Colours", "Fruits", "Vegetables", "Body Parts", "Family", "Numbers", "Letter Quiz", "Picture Quiz", "Number Quiz", "How Many?", "Class Room", "Play Time"),
+                        folders = if (com.example.data.Lang.isHindi) emptyList() // Hindi videos come later
+                            else listOf("Vowels", "Consonants", "Birds", "Animals", "Colours", "Fruits", "Vegetables", "Body Parts", "Family", "Numbers", "Letter Quiz", "Picture Quiz", "Number Quiz", "How Many?", "Class Room", "Play Time"),
                         onFolderClick = openVideoFolder,
                         onBack = { navController.popBackStack() }
                     )

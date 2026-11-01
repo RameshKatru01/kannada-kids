@@ -47,7 +47,7 @@ fun LetterListScreen(
     authViewModel: AuthViewModel = viewModel { AuthViewModel() }
 ) {
     val letters = when (type) { "vowels" -> LetterData.vowels; "consonants" -> LetterData.consonants; "numbers" -> LetterData.numbers; else -> emptyList() }
-    val title = when (type) { "vowels" -> "Vowels · ಸ್ವರಗಳು"; "consonants" -> "Consonants · ವ್ಯಂಜನಗಳು"; "numbers" -> "Numbers · ಅಂಕೆಗಳು"; else -> "" }
+    val title = if (type in setOf("vowels", "consonants", "numbers")) "${com.example.data.Lang.islandName(type)} · ${com.example.data.Lang.islandNative(type)}" else ""
     val accent = when (type) { "vowels" -> Color(0xFF2EC4B6); "consonants" -> Color(0xFF6C63FF); else -> Color(0xFFFF9F1C) }
     val tint = when (type) { "vowels" -> Color(0xFFD9F6F2); "consonants" -> Color(0xFFE6E4FF); else -> Color(0xFFFFE6CC) }
     val ink = Color(0xFF0B3B66)

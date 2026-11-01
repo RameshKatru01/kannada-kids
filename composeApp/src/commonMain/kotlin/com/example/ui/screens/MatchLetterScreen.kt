@@ -46,11 +46,11 @@ import kotlinx.coroutines.launch
 
 private data class MatchLevel(val label: String, val pairs: Int, val pool: () -> List<KannadaLetter>)
 
-private val matchLevels = listOf(
+private val matchLevels get() = listOf(
     MatchLevel("Vowels · 3 pairs", 3) { LetterData.vowels },
     MatchLevel("Vowels · 4 pairs", 4) { LetterData.vowels },
-    MatchLevel("ಕ to ನ · 4 pairs", 4) { LetterData.consonants.take(20) },
-    MatchLevel("ಪ to ಹ · 4 pairs", 4) { LetterData.consonants.drop(20) },
+    MatchLevel(com.example.data.Lang.script("ಕ to ನ · 4 pairs"), 4) { LetterData.consonants.take(20) },
+    MatchLevel(com.example.data.Lang.script("ಪ to ಹ · 4 pairs"), 4) { LetterData.consonants.drop(20) },
     MatchLevel("Mixed · 5 pairs", 5) { LetterData.vowels + LetterData.consonants },
     MatchLevel("Mixed · 6 pairs", 6) { LetterData.vowels + LetterData.consonants }
 )

@@ -71,7 +71,7 @@ object ActivityTracker {
     /** Remember that lesson [index] of [type] (vowels / consonants / guninthakshari / numbers) was finished. */
     fun markLearned(type: String, index: Int) {
         val u = user()
-        val key = "${u}_learned_$type"
+        val key = "${u}_learned_${com.example.data.Lang.keyPrefix}$type"
         val known = prefs().getStringSet(key, emptySet()) ?: emptySet()
         if (index.toString() in known) return
         prefs().edit().putStringSet(key, known + index.toString()).apply()
@@ -80,7 +80,7 @@ object ActivityTracker {
 
     /** Lesson indexes of [type] that have been finished. */
     fun learned(type: String): Set<Int> =
-        (prefs().getStringSet("${user()}_learned_$type", emptySet()) ?: emptySet())
+        (prefs().getStringSet("${user()}_learned_${com.example.data.Lang.keyPrefix}$type", emptySet()) ?: emptySet())
             .mapNotNull { it.toIntOrNull() }.toSet()
 
     // ---- Answers ----

@@ -58,8 +58,8 @@ object Access {
 
     /** 0 = from the beginning, 1 = from Consonants, 2 = from Ka-kaa, 3 = from Ottakshara (earlier islands open). */
     var startFrom: Int
-        get() = prefs().getInt("${user()}_path_start", 0)
-        set(v) { prefs().edit().putInt("${user()}_path_start", v.coerceIn(0, 3)).apply(); _version.value += 1 }
+        get() = prefs().getInt("${user()}_${com.example.data.Lang.keyPrefix}path_start", 0)
+        set(v) { prefs().edit().putInt("${user()}_${com.example.data.Lang.keyPrefix}path_start", v.coerceIn(0, 3)).apply(); _version.value += 1 }
 
     /** Game levels need a star on the level before. */
     var levelsNeedStar: Boolean
@@ -109,11 +109,11 @@ object Access {
         }
         "guninthakshari" -> {
             val left = total("consonants") - ActivityTracker.learned("consonants").count { it < total("consonants") }
-            "Learn $left more ${if (left == 1) "consonant" else "consonants"} to open Ka-kaa!"
+            "Learn $left more ${if (left == 1) "consonant" else "consonants"} to open ${com.example.data.Lang.islandName("guninthakshari")}!"
         }
         "ottakshara" -> {
             val left = total("guninthakshari") - ActivityTracker.learned("guninthakshari").count { it < total("guninthakshari") }
-            "Finish $left more Ka-kaa ${if (left == 1) "row" else "rows"} to open Ottakshara!"
+            "Finish $left more ${com.example.data.Lang.islandName("guninthakshari")} ${if (left == 1) "row" else "rows"} to open ${com.example.data.Lang.islandName("ottakshara")}!"
         }
         else -> ""
     }
@@ -227,12 +227,12 @@ object Access {
         val before = mapOf("consonants" to "vowels", "guninthakshari" to "consonants", "ottakshara" to "guninthakshari")
         return before.keys.firstOrNull { type ->
             !skipped(before.getValue(type)) &&
-                islandReached(type) && !prefs().getBoolean("${user()}_celebrated_$type", false)
+                islandReached(type) && !prefs().getBoolean("${user()}_celebrated_${com.example.data.Lang.keyPrefix}$type", false)
         }
     }
 
     fun markCelebrated(type: String) {
-        prefs().edit().putBoolean("${user()}_celebrated_$type", true).apply()
+        prefs().edit().putBoolean("${user()}_celebrated_${com.example.data.Lang.keyPrefix}$type", true).apply()
         _version.value += 1
     }
 }

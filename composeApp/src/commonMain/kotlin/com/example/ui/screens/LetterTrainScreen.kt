@@ -70,13 +70,13 @@ import kotlin.math.sin
 
 private data class TrainLevel(val modeKey: String, val label: String, val missing: Int, val distractor: Boolean)
 
-private val trainLevels = listOf(
+private val trainLevels get() = listOf(
     TrainLevel("vowels", "Vowels", 2, false),
     TrainLevel("vowels", "Vowels", 3, true),
     TrainLevel("consonants", "Consonants", 2, false),
     TrainLevel("consonants", "Consonants", 3, true),
     TrainLevel("numbers", "Numbers", 3, true),
-    TrainLevel("guninthakshari", "ಕ ಕಾ ಕಿ", 3, true)
+    TrainLevel("guninthakshari", com.example.data.Lang.script("ಕ ಕಾ ಕಿ"), 3, true)
 )
 
 private val CarriageColors = listOf(

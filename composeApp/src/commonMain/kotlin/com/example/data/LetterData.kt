@@ -134,10 +134,95 @@ object LetterData {
         KannadaLetter(215, "ಕಃ", "kaha", false)
     )
 
-    fun getVowels(langCode: String): List<KannadaLetter> = kannadaVowels
-    fun getConsonants(langCode: String): List<KannadaLetter> = kannadaConsonants
-    fun getNumbers(langCode: String): List<KannadaLetter> = kannadaNumbers
-    fun getKaGuninthakshari(langCode: String): List<KannadaLetter> = kannadaKaGuninthakshari
+    // ---- Hindi (Devanagari) ----
+    val hindiVowels = listOf(
+        KannadaLetter(301, "अ", "a", true),
+        KannadaLetter(302, "आ", "aa", true),
+        KannadaLetter(303, "इ", "i", true),
+        KannadaLetter(304, "ई", "ee", true),
+        KannadaLetter(305, "उ", "u", true),
+        KannadaLetter(306, "ऊ", "oo", true),
+        KannadaLetter(307, "ऋ", "ri", true),
+        KannadaLetter(308, "ए", "e", true),
+        KannadaLetter(309, "ऐ", "ai", true),
+        KannadaLetter(310, "ओ", "o", true),
+        KannadaLetter(311, "औ", "au", true),
+        KannadaLetter(312, "अं", "am", true),
+        KannadaLetter(313, "अः", "aha", true)
+    )
+
+    val hindiConsonants = listOf(
+        KannadaLetter(321, "क", "ka", false),
+        KannadaLetter(322, "ख", "kha", false),
+        KannadaLetter(323, "ग", "ga", false),
+        KannadaLetter(324, "घ", "gha", false),
+        KannadaLetter(325, "ङ", "nga", false),
+        KannadaLetter(326, "च", "cha", false),
+        KannadaLetter(327, "छ", "chha", false),
+        KannadaLetter(328, "ज", "ja", false),
+        KannadaLetter(329, "झ", "jha", false),
+        KannadaLetter(330, "ञ", "nya", false),
+        KannadaLetter(331, "ट", "Ta", false),
+        KannadaLetter(332, "ठ", "Tha", false),
+        KannadaLetter(333, "ड", "Da", false),
+        KannadaLetter(334, "ढ", "Dha", false),
+        KannadaLetter(335, "ण", "Na", false),
+        KannadaLetter(336, "त", "ta", false),
+        KannadaLetter(337, "थ", "tha", false),
+        KannadaLetter(338, "द", "da", false),
+        KannadaLetter(339, "ध", "dha", false),
+        KannadaLetter(340, "न", "na", false),
+        KannadaLetter(341, "प", "pa", false),
+        KannadaLetter(342, "फ", "pha", false),
+        KannadaLetter(343, "ब", "ba", false),
+        KannadaLetter(344, "भ", "bha", false),
+        KannadaLetter(345, "म", "ma", false),
+        KannadaLetter(346, "य", "ya", false),
+        KannadaLetter(347, "र", "ra", false),
+        KannadaLetter(348, "ल", "la", false),
+        KannadaLetter(349, "व", "va", false),
+        KannadaLetter(350, "श", "sha", false),
+        KannadaLetter(351, "ष", "Sha", false),
+        KannadaLetter(352, "स", "sa", false),
+        KannadaLetter(353, "ह", "ha", false),
+        KannadaLetter(354, "क्ष", "ksha", false),
+        KannadaLetter(355, "त्र", "tra", false),
+        KannadaLetter(356, "ज्ञ", "gya", false)
+    )
+
+    val hindiNumbers = listOf(
+        KannadaLetter(401, "१", "1", false),
+        KannadaLetter(402, "२", "2", false),
+        KannadaLetter(403, "३", "3", false),
+        KannadaLetter(404, "४", "4", false),
+        KannadaLetter(405, "५", "5", false),
+        KannadaLetter(406, "६", "6", false),
+        KannadaLetter(407, "७", "7", false),
+        KannadaLetter(408, "८", "8", false),
+        KannadaLetter(409, "९", "9", false),
+        KannadaLetter(410, "१०", "10", false)
+    )
+
+    val hindiKaBarakhadi = listOf(
+        KannadaLetter(421, "क", "ka", false),
+        KannadaLetter(422, "का", "kaa", false),
+        KannadaLetter(423, "कि", "ki", false),
+        KannadaLetter(424, "की", "kee", false),
+        KannadaLetter(425, "कु", "ku", false),
+        KannadaLetter(426, "कू", "koo", false),
+        KannadaLetter(427, "कृ", "kri", false),
+        KannadaLetter(428, "के", "ke", false),
+        KannadaLetter(429, "कै", "kai", false),
+        KannadaLetter(430, "को", "ko", false),
+        KannadaLetter(431, "कौ", "kau", false),
+        KannadaLetter(432, "कं", "kam", false),
+        KannadaLetter(433, "कः", "kaha", false)
+    )
+
+    fun getVowels(langCode: String): List<KannadaLetter> = if (langCode == "hi") hindiVowels else kannadaVowels
+    fun getConsonants(langCode: String): List<KannadaLetter> = if (langCode == "hi") hindiConsonants else kannadaConsonants
+    fun getNumbers(langCode: String): List<KannadaLetter> = if (langCode == "hi") hindiNumbers else kannadaNumbers
+    fun getKaGuninthakshari(langCode: String): List<KannadaLetter> = if (langCode == "hi") hindiKaBarakhadi else kannadaKaGuninthakshari
 
     val vowels get() = getVowels(LanguageManager.currentLanguage.value.code)
     val consonants get() = getConsonants(LanguageManager.currentLanguage.value.code)

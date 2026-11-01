@@ -112,6 +112,14 @@ fun VideoFoldersScreen(
             .readableWidth(1000.dp)
     ) {
         ScrapbookHeader(title = title, onBack = onBack)
+        if (folders.isEmpty()) {
+            Text(
+                "Hindi videos are coming soon! Switch to Kannada in Parent corner to watch the Kannada videos.",
+                modifier = Modifier.padding(24.dp),
+                fontSize = 16.sp, fontWeight = FontWeight.Bold, color = ScrapbookInk
+            )
+            return@Column
+        }
         LazyVerticalGrid(
             columns = GridCells.Adaptive(minSize = 160.dp),
             modifier = Modifier.fillMaxSize(),

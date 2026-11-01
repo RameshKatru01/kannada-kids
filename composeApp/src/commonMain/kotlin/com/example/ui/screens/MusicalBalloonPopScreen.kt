@@ -77,15 +77,15 @@ private val balloonPalette = listOf(
     Color(0xFFFF9F1C), Color(0xFFE84393), Color(0xFF4DA8FF), Color(0xFF59C173)
 )
 
-private val popStages = listOf(
+private val popStages get() = listOf(
     listOf("ಅ", "ಆ", "ಇ", "ಈ", "ಉ"),
     listOf("ಅ", "ಆ", "ಇ", "ಈ", "ಉ", "ಊ", "ಎ", "ಏ", "ಐ", "ಒ", "ಓ", "ಔ"),
     listOf("ಕ", "ಖ", "ಗ", "ಘ", "ಚ", "ಛ", "ಜ", "ಝ", "ಅ", "ಆ", "ಇ", "ಈ"),
     listOf("ಟ", "ಠ", "ಡ", "ಢ", "ತ", "ಥ", "ದ", "ಧ", "ನ", "ಕ", "ಗ", "ಜ"),
     listOf("ಪ", "ಫ", "ಬ", "ಭ", "ಮ", "ಯ", "ರ", "ಲ", "ವ", "ಶ", "ಷ", "ಸ", "ಹ", "ಳ"),
     listOf("ಕ", "ಕಾ", "ಕಿ", "ಕೀ", "ಕು", "ಕೂ", "ಕೆ", "ಕೇ", "ಕೊ", "ಕೋ", "೧", "೨", "೩", "೪", "೫", "೬", "೭", "೮", "೯")
-)
-private val popStageNames = listOf("Warm up", "All vowels", "First consonants", "ಟ to ನ", "ಪ to ಳ", "Ka-kaa & numbers")
+).map { com.example.data.Lang.letters(it) }
+private val popStageNames get() = listOf("Warm up", "All vowels", "First consonants", com.example.data.Lang.script("ಟ to ನ"), com.example.data.Lang.script("ಪ to ಳ").replace("to ल", "to ह"), "${com.example.data.Lang.islandName("guninthakshari")} & numbers")
 private const val POP_STAGE_SECONDS = 30f
 private const val POP_MAX_LIVES = 5
 

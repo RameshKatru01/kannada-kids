@@ -72,10 +72,10 @@ object SpeechBank {
     }
 
     private fun speakWithDevice(context: Context, text: String) {
-        val tts = fallback ?: TextToSpeech(context) { }.also {
-            it.language = Locale.Builder().setLanguage("kn").setRegion("IN").build()
-            fallback = it
-        }
+        val tts = fallback ?: TextToSpeech(context) { }.also { fallback = it }
+        // Hindi (Devanagari) text gets the Hindi device voice, everything else Kannada
+        val lang = if (text.any { it in '\u0900'..'\u097F' }) "hi" else "kn"
+        tts.language = Locale.Builder().setLanguage(lang).setRegion("IN").build()
         tts.speak(text, TextToSpeech.QUEUE_FLUSH, null, null)
     }
 }

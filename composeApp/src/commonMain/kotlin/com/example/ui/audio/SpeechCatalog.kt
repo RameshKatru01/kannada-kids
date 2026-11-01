@@ -31,9 +31,16 @@ object SpeechCatalog {
         // Swara Adventure
         vowelWords.forEach { out += it.word; out += it.vowel }
         // Ottakshara island: the joined letters, their parts and example words
-        com.example.data.OttaksharaData.letters.forEach { out += it.glyph; out += it.first; out += it.second; out += it.word }
+        (com.example.data.OttaksharaData.kannadaLetters + com.example.data.OttaksharaData.hindiLetters)
+            .forEach { out += it.glyph; out += it.first; out += it.second; out += it.word }
         // Colour names (Paint the Monster, Colour Sort)
-        kidColors.forEach { c -> c.names["kn"]?.let { out += it } }
+        kidColors.forEach { c -> c.names["kn"]?.let { out += it }; c.names["hi"]?.let { out += it } }
+        // Hindi letters, numbers and Barakhadi (every consonant with every vowel sign)
+        LetterData.hindiVowels.forEach { out += it.character }
+        LetterData.hindiConsonants.forEach { out += it.character }
+        LetterData.hindiNumbers.forEach { out += it.character }
+        LetterData.hindiKaBarakhadi.forEach { out += it.character }
+        LetterData.hindiConsonants.forEach { c -> com.example.ui.screens.barakhadiSigns.forEach { (sign, _) -> out += c.character + sign } }
         // Theme videos (Fruits, Vegetables, Body Parts, Family)
         com.example.data.ThemeWords.phrases().forEach { out += it }
         return out.map { it.trim() }.filter { it.isNotEmpty() }.distinct()

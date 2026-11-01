@@ -62,19 +62,19 @@ private data class DashItem(
 )
 
 /** Letters by stage: starts small, adds groups as the child goes further. */
-private val dashStages = listOf(
+private val dashStages get() = listOf(
     listOf("ಅ", "ಆ", "ಇ", "ಈ", "ಉ"),
     listOf("ಅ", "ಆ", "ಇ", "ಈ", "ಉ", "ಊ", "ಎ", "ಏ", "ಐ", "ಒ", "ಓ", "ಔ"),
     listOf("ಕ", "ಖ", "ಗ", "ಘ", "ಚ", "ಛ", "ಜ", "ಝ", "ಅ", "ಆ", "ಇ", "ಈ"),
     listOf("ಕ", "ಖ", "ಗ", "ಘ", "ಚ", "ಛ", "ಜ", "ಝ", "ಟ", "ಠ", "ಡ", "ಢ", "ತ", "ಥ", "ದ", "ಧ", "ನ"),
     listOf("ಪ", "ಫ", "ಬ", "ಭ", "ಮ", "ಯ", "ರ", "ಲ", "ವ", "ಶ", "ಷ", "ಸ", "ಹ", "ಳ", "ಕ", "ಗ", "ತ", "ದ"),
     listOf("ಕ", "ಕಾ", "ಕಿ", "ಕೀ", "ಕು", "ಕೂ", "ಕೆ", "ಕೇ", "ಕೊ", "ಕೋ", "೧", "೨", "೩", "೪", "೫", "೬", "೭", "೮", "೯")
-)
+).map { com.example.data.Lang.letters(it) }
 
 private const val STAGE_SECONDS = 30f
 private const val RUNNER_Y = 0.82f
 private const val MAX_LIVES = 5
-private val stageNames = listOf("Warm up", "All vowels", "First consonants", "More consonants", "ಪ to ಳ", "Ka-kaa & numbers")
+private val stageNames get() = listOf("Warm up", "All vowels", "First consonants", "More consonants", com.example.data.Lang.script("ಪ to ಳ").replace("to ल", "to ह"), "${com.example.data.Lang.islandName("guninthakshari")} & numbers")
 
 @Composable
 fun LetterDashScreen(onBack: () -> Unit) {

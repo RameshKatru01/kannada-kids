@@ -161,9 +161,9 @@ fun LetterRunnerScreen(onBack: () -> Unit, authViewModel: AuthViewModel = viewMo
             listOf("ಕ", "ಖ", "ಗ", "ಘ", "ಙ", "ಚ", "ಛ", "ಜ", "ಝ", "ಞ", "ಟ", "ಠ", "ಡ", "ಢ", "ಣ", "ತ", "ಥ", "ದ", "ಧ", "ನ", "ಪ", "ಫ", "ಬ", "ಭ", "ಮ", "ಯ", "ರ", "ಲ", "ವ", "ಶ", "ಷ", "ಸ", "ಹ", "ಳ"), // Consonants
             listOf("ಕ", "ಕಾ", "ಕಿ", "ಕೀ", "ಕು", "ಕೂ", "ಕೃ", "ಕೆ", "ಕೇ", "ಕೈ", "ಕೊ", "ಕೋ", "ಕೌ", "ಕಂ", "ಕಃ"), // Guninthakshari
             listOf("೧", "೨", "೩", "೪", "೫", "೬", "೭", "೮", "೯", "೧೦") // Numbers
-        )
+        ).map { com.example.data.Lang.letters(it) }
     }
-    val levelNames = listOf("Vowels", "Consonants", "Ka-kaa", "Numbers")
+    val levelNames = listOf("Vowels", "Consonants", com.example.data.Lang.islandName("guninthakshari"), "Numbers")
 
     var levelIndex by remember { mutableIntStateOf(0) }
     val sequence = runnerLevels[levelIndex]
