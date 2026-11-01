@@ -21,6 +21,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.scale
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
@@ -58,8 +59,11 @@ import kotlin.math.roundToInt
  * Letter tracing used at the start of every letter lesson.
  *
  *  - The letter fills the whole tracing area (as big as fits).
- *  - Each time the child lifts their finger, the drawing is checked against the letter: enough of
- *    the letter must be covered and most of the ink must be on the letter.
+ *  - The grey letter fills with colour where the child's finger goes, and a bar shows how much is
+ *    done, so they can see what is left.
+ *  - The trace is judged only after the child pauses (about 1.5 s with the finger up): about 85%
+ *    of the letter coloured and most of the ink on the letter. Not there yet = a gentle nudge
+ *    ("Colour the grey bits too!"); lots of ink off the letter = "Oops, stay on the letter".
  *  - 5 stars across the top show how many good traces are done; "Trace ಅ 5 times" and
  *    "2 more to go!" say it in words, a pointing hand shows where to start, and the letter is
  *    spoken after each good trace.
@@ -70,6 +74,7 @@ private val PadInkSoft = Color(0xFF3A5F82)
 private val PadPaper = Color(0xFFFFFBF0)
 private val PadGuide = Color(0xFFD6CCB4)
 private val PadStroke = Color(0xFF6C63FF)
+private val PadFill = Color(0xFFFF9F1C)
 private val PadGood = Color(0xFF2EC4B6)
 private val PadOops = Color(0xFFFF6B6B)
 private val PadStar = Color(0xFFFFB300)
@@ -94,6 +99,8 @@ fun TraceExercise(
     var feedback by remember(letter.character) { mutableStateOf(TraceFeedback.None) }
     var checkJob by remember { mutableStateOf<kotlinx.coroutines.Job?>(null) }
     var checker by remember { mutableStateOf<((List<List<Offset>>) -> TraceScore)?>(null) }
+    var progress by remember(letter.character) { mutableFloatStateOf(0f) }
+    var nudge by remember(letter.character) { mutableStateOf<String?>(null) }
 
     LaunchedEffect(letter.character) {
         delay(400)
@@ -110,6 +117,7 @@ fun TraceExercise(
             onSpeakText(letter.character)
             delay(650)
             strokes = emptyList()
+            progress = 0f
             feedback = TraceFeedback.None
             if (done >= REQUIRED_TRACES) {
                 delay(300)
@@ -124,23 +132,26 @@ fun TraceExercise(
         scope.launch {
             delay(1300)
             strokes = emptyList()
+            progress = 0f
             feedback = TraceFeedback.None
         }
     }
 
-    // Called when the finger lifts: pass straight away if it's good; otherwise give the child a
-    // moment to add more strokes (many letters need 2–3), then say "try again".
+    // Called when the finger lifts. Nothing is judged mid-letter: only after the child pauses.
     fun onStrokeFinished() {
         checkJob?.cancel()
         if (feedback != TraceFeedback.None) return
-        val score = checker?.invoke(strokes) ?: return
-        if (score.passed) {
-            success()
-        } else {
-            checkJob = scope.launch {
-                delay(2200)
-                val again = checker?.invoke(strokes) ?: return@launch
-                if (again.passed) success() else if (again.inked) tryAgain()
+        checker?.invoke(strokes)?.let { progress = it.coverage }
+        checkJob = scope.launch {
+            delay(1500)
+            val score = checker?.invoke(strokes) ?: return@launch
+            progress = score.coverage
+            when {
+                score.passed -> { nudge = null; success() }
+                !score.inked -> Unit
+                score.accuracy < OK_ACCURACY -> { nudge = null; tryAgain() }
+                score.coverage >= 0.65f -> nudge = "Almost! Colour the last grey bits"
+                else -> nudge = "Colour all of the grey letter"
             }
         }
     }
@@ -161,8 +172,9 @@ fun TraceExercise(
                     when {
                         feedback == TraceFeedback.Good && left == 0 -> "All $REQUIRED_TRACES done! 🎉"
                         feedback == TraceFeedback.Good -> "Great! $left more to go"
-                        feedback == TraceFeedback.TryAgain -> "Oops! Follow the grey letter"
-                        done == 0 -> "Use your finger to colour the grey letter"
+                        feedback == TraceFeedback.TryAgain -> "Oops! Stay on the grey letter"
+                        nudge != null -> nudge!!
+                        done == 0 -> "Use your finger to colour the whole grey letter"
                         else -> "$left more to go!"
                     },
                     fontSize = 15.sp, fontWeight = FontWeight.Bold,
@@ -177,6 +189,8 @@ fun TraceExercise(
         Spacer(Modifier.height(6.dp))
         TraceStars(done = done, celebrate = feedback == TraceFeedback.Good)
         Spacer(Modifier.height(8.dp))
+        FillBar(progress = progress, good = feedback == TraceFeedback.Good)
+        Spacer(Modifier.height(8.dp))
 
         TracePad(
             letter = letter.character,
@@ -185,14 +199,18 @@ fun TraceExercise(
             showHint = done == 0 && strokes.isEmpty(),
             onStrokesChange = {
                 checkJob?.cancel()
+                nudge = null
                 strokes = it
             },
+            onLive = { live -> checker?.invoke(live)?.let { progress = it.coverage } },
             onStrokeFinished = { onStrokeFinished() },
             onChecker = { checker = it },
             onSpeak = { onSpeakText(letter.character) },
             onClear = {
                 checkJob?.cancel()
                 strokes = emptyList()
+                progress = 0f
+                nudge = null
                 feedback = TraceFeedback.None
             },
             modifier = Modifier.fillMaxWidth().weight(1f)
@@ -228,10 +246,36 @@ private fun TraceStars(done: Int, celebrate: Boolean) {
     }
 }
 
+/** How much of the letter must be coloured, and how much of the ink must be on the letter. */
+private const val GOAL_COVERAGE = 0.85f
+private const val OK_ACCURACY = 0.6f
+
+/** "How much is coloured" bar; the flag marks the goal. */
+@Composable
+private fun FillBar(progress: Float, good: Boolean) {
+    val shown by animateFloatAsState((progress / GOAL_COVERAGE).coerceIn(0f, 1f), tween(250), label = "fill")
+    Row(
+        Modifier.fillMaxWidth().padding(horizontal = 6.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(8.dp)
+    ) {
+        Text("🖍️", fontSize = 18.sp)
+        Box(
+            Modifier.weight(1f).height(14.dp).clip(RoundedCornerShape(7.dp)).background(Color(0xFFE6ECF1))
+        ) {
+            Box(
+                Modifier.fillMaxHeight().fillMaxWidth(shown).clip(RoundedCornerShape(7.dp))
+                    .background(if (good || shown >= 1f) PadGood else PadFill)
+            )
+        }
+        Text(if (shown >= 1f) "⭐" else "🏁", fontSize = 18.sp)
+    }
+}
+
 /** How well a drawing matches the letter. */
 data class TraceScore(val coverage: Float, val accuracy: Float, val inked: Boolean) {
-    /** Kind thresholds for small fingers: half the letter covered and most ink on the letter. */
-    val passed: Boolean get() = inked && coverage >= 0.5f && accuracy >= 0.7f
+    /** Most of the letter coloured, and most of the ink on the letter. */
+    val passed: Boolean get() = inked && coverage >= GOAL_COVERAGE && accuracy >= OK_ACCURACY
 }
 
 @Composable
@@ -242,6 +286,7 @@ private fun TracePad(
     showHint: Boolean,
     onStrokesChange: (List<List<Offset>>) -> Unit,
     onStrokeFinished: () -> Unit,
+    onLive: (List<List<Offset>>) -> Unit = {},
     onChecker: ((List<List<Offset>>) -> TraceScore) -> Unit,
     onSpeak: () -> Unit,
     onClear: () -> Unit,
@@ -280,6 +325,8 @@ private fun TracePad(
 
         // The checker compares strokes against a small mask of the letter
         val brushPx = with(density) { 22.dp.toPx() }
+        // Width of the colour that fills the letter (matches how far the check "reaches")
+        val fillPx = with(density) { 32.dp.toPx() }
         LaunchedEffect(layout, wPx, hPx) {
             val cellPx = with(density) { 4.dp.toPx() }
             val mask = letterMask(layout, topLeft, wPx, hPx, cellPx, density, direction)
@@ -299,6 +346,8 @@ private fun TracePad(
                         onDrag = { change, _ ->
                             change.consume()
                             current = current + change.position
+                            // Update the "how much is coloured" bar every few points
+                            if (current.size % 6 == 0) onLive(latestStrokes + listOf(current))
                         },
                         onDragEnd = {
                             if (current.isNotEmpty()) onStrokesChange(latestStrokes + listOf(current))
@@ -311,22 +360,23 @@ private fun TracePad(
         ) {
             // Guide letter
             drawText(layout, color = PadGuide, topLeft = topLeft)
-            val ink = when (feedback) {
-                TraceFeedback.Good -> PadGood
-                TraceFeedback.TryAgain -> PadOops
-                TraceFeedback.None -> PadStroke
-            }
-            (strokes + listOf(current)).forEach { stroke ->
-                if (stroke.size > 1) {
-                    val path = Path().apply {
-                        moveTo(stroke.first().x, stroke.first().y)
-                        for (i in 1 until stroke.size) lineTo(stroke[i].x, stroke[i].y)
-                    }
-                    drawPath(path, ink, style = Stroke(width = brushPx, cap = StrokeCap.Round, join = StrokeJoin.Round))
-                } else if (stroke.size == 1) {
-                    drawCircle(ink, radius = brushPx / 2, center = stroke.first())
-                }
-            }
+            // The finger's line, faint (shows where it went off the letter)
+            val line = if (feedback == TraceFeedback.TryAgain) PadOops else PadStroke.copy(alpha = 0.35f)
+            (strokes + listOf(current)).forEach { stroke -> drawStroke(stroke, line, brushPx * 0.45f) }
+        }
+        // The letter filling with colour: wide strokes, kept only inside the letter's shape
+        val fill = when (feedback) {
+            TraceFeedback.Good -> PadGood
+            TraceFeedback.TryAgain -> PadOops
+            TraceFeedback.None -> PadFill
+        }
+        Canvas(
+            Modifier
+                .fillMaxSize()
+                .graphicsLayer { compositingStrategy = androidx.compose.ui.graphics.CompositingStrategy.Offscreen }
+        ) {
+            (strokes + listOf(current)).forEach { stroke -> drawStroke(stroke, fill, fillPx) }
+            drawText(layout, color = Color.Black, topLeft = topLeft, blendMode = androidx.compose.ui.graphics.BlendMode.DstIn)
         }
 
         // Pointing hand that slides across the letter until the child starts
@@ -345,6 +395,18 @@ private fun TracePad(
                 Icon(Icons.Default.Refresh, contentDescription = "Start again", tint = PadInk)
             }
         }
+    }
+}
+
+private fun androidx.compose.ui.graphics.drawscope.DrawScope.drawStroke(stroke: List<Offset>, color: Color, width: Float) {
+    if (stroke.size > 1) {
+        val path = Path().apply {
+            moveTo(stroke.first().x, stroke.first().y)
+            for (i in 1 until stroke.size) lineTo(stroke[i].x, stroke[i].y)
+        }
+        drawPath(path, color, style = Stroke(width = width, cap = StrokeCap.Round, join = StrokeJoin.Round))
+    } else if (stroke.size == 1) {
+        drawCircle(color, radius = width / 2, center = stroke.first())
     }
 }
 
