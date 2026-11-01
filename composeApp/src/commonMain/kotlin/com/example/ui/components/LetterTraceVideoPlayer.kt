@@ -44,9 +44,11 @@ fun LetterTraceVideoPlayer(
     var showControlsOverlay by remember { mutableStateOf(false) }
     var isBuffering by remember { mutableStateOf(true) }
 
-    val videoPlayer = rememberVideoPlayer(url = videoUrl, loop = true, autoPlay = true)
+    // Plays once; when it ends it stops on the last frame until the child taps "Play again"
+    val videoPlayer = rememberVideoPlayer(url = videoUrl, loop = false, autoPlay = true)
     val playerIsPlaying by videoPlayer.isPlaying
     val playerIsBuffering by videoPlayer.isBuffering
+    val ended by videoPlayer.isEnded
 
     LaunchedEffect(playerIsPlaying, playerIsBuffering) {
         // Ignore the "not playing yet" state while the stream is still buffering at start-up.
@@ -168,8 +170,27 @@ fun LetterTraceVideoPlayer(
                     )
                 }
 
+                // Finished: one big "Play again" button
+                if (ended && !isPlaying) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        modifier = Modifier
+                            .align(Alignment.Center)
+                            .clip(RoundedCornerShape(28.dp))
+                            .background(Color(0xFFFF5722))
+                            .clickable {
+                                videoPlayer.play()
+                                isPlaying = true
+                                showControlsOverlay = false
+                            }
+                            .padding(horizontal = 18.dp, vertical = 10.dp)
+                    ) {
+                        Icon(Icons.Default.Refresh, contentDescription = null, tint = Color.White, modifier = Modifier.size(24.dp))
+                        Text("Play again", color = Color.White, fontWeight = FontWeight.ExtraBold, fontSize = 16.sp)
+                    }
+                } else if (showControlsOverlay || !isPlaying) {
                 // Controls overlay
-                if (showControlsOverlay || !isPlaying) {
                     Row(
                         horizontalArrangement = Arrangement.spacedBy(16.dp),
                         verticalAlignment = Alignment.CenterVertically,

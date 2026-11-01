@@ -45,6 +45,8 @@ class IosVideoPlayerController(
 ) : VideoPlayerController {
     internal val playingState: MutableState<Boolean> = mutableStateOf(false)
     internal val bufferingState: MutableState<Boolean> = mutableStateOf(true)
+    internal val endedState: MutableState<Boolean> = mutableStateOf(false)
+    override val isEnded: State<Boolean> get() = endedState
     private var endObserver: NSObjectProtocol? = null
 
     override val isPlaying: State<Boolean> get() = playingState
@@ -61,6 +63,10 @@ class IosVideoPlayerController(
                 player.seekToTime(CMTimeMake(value = 0, timescale = 1))
                 player.play()
                 if (speed != 1f) player.rate = speed
+            } else {
+                wantsToPlay = false
+                endedState.value = true
+                refreshState()
             }
         }
     }
@@ -94,6 +100,10 @@ class IosVideoPlayerController(
     internal var wantsToPlay = false
 
     override fun play() {
+        if (endedState.value) {
+            player.seekToTime(CMTimeMake(value = 0, timescale = 1))
+            endedState.value = false
+        }
         wantsToPlay = true
         player.play()
         if (speed != 1f) player.rate = speed

@@ -52,11 +52,17 @@ internal object VideoCache {
 class AndroidVideoPlayerController(val player: ExoPlayer) : VideoPlayerController {
     internal val playingState: MutableState<Boolean> = mutableStateOf(false)
     internal val bufferingState: MutableState<Boolean> = mutableStateOf(true)
+    internal val endedState: MutableState<Boolean> = mutableStateOf(false)
 
     override val isPlaying: State<Boolean> get() = playingState
     override val isBuffering: State<Boolean> get() = bufferingState
+    override val isEnded: State<Boolean> get() = endedState
 
-    override fun play() = player.play()
+    override fun play() {
+        if (player.playbackState == Player.STATE_ENDED) player.seekTo(0)
+        endedState.value = false
+        player.play()
+    }
     override fun pause() = player.pause()
     override fun seekTo(positionMs: Long) = player.seekTo(positionMs)
     override fun setVolume(volume: Float) { player.volume = volume }
@@ -99,6 +105,7 @@ actual fun rememberVideoPlayer(url: String, loop: Boolean, autoPlay: Boolean): V
 
             override fun onPlaybackStateChanged(playbackState: Int) {
                 c.bufferingState.value = playbackState == Player.STATE_BUFFERING
+                c.endedState.value = playbackState == Player.STATE_ENDED
             }
 
             override fun onPlayerError(error: PlaybackException) {

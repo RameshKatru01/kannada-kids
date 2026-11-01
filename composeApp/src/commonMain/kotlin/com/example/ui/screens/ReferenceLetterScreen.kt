@@ -294,7 +294,8 @@ private fun BigButton(label: String, icon: ImageVector, bg: Color, fg: Color, mo
 
 @Composable
 private fun WritingVideoCard(url: String, letter: KannadaLetter) {
-    val player = rememberVideoPlayer(url = url, loop = true, autoPlay = true)
+    // Plays once; tap (or the play button) to watch it again
+    val player = rememberVideoPlayer(url = url, loop = false, autoPlay = true)
     val playing by player.isPlaying
     val buffering by player.isBuffering
     var slow by remember { mutableStateOf(true) }

@@ -10,6 +10,9 @@ import androidx.compose.ui.Modifier
 interface VideoPlayerController {
     val isPlaying: State<Boolean>
     val isBuffering: State<Boolean>
+    /** True when a video that doesn't loop has played to the end (play() then starts it again). */
+    val isEnded: State<Boolean> get() = neverEnded
+    /** Plays; a video that has ended starts again from the beginning. */
     fun play()
     fun pause()
     fun seekTo(positionMs: Long)
@@ -18,6 +21,8 @@ interface VideoPlayerController {
     fun setSpeed(speed: Float) {}
     fun release()
 }
+
+private val neverEnded: State<Boolean> = androidx.compose.runtime.mutableStateOf(false)
 
 /**
  * Creates and remembers a player for [url]. The player is released automatically when it leaves
