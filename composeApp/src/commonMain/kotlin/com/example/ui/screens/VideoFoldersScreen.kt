@@ -22,6 +22,10 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.resources.Res
 import com.example.resources.thumb_animals
+import com.example.resources.thumb_fruits
+import com.example.resources.thumb_vegetables
+import com.example.resources.thumb_body_parts
+import com.example.resources.thumb_family
 import com.example.resources.thumb_birds
 import com.example.resources.thumb_classroom
 import com.example.resources.thumb_colours
@@ -67,6 +71,10 @@ private fun folderLook(name: String): FolderLook = when (name.lowercase()) {
     "animals" -> FolderLook("ಪ್ರಾಣಿಗಳು", "ಸಿಂ", Coral, ScrapbookInk, Res.drawable.thumb_animals)
     "colours", "colors" -> FolderLook("ಬಣ್ಣಗಳು", "ಬ", Berry, Color.White, Res.drawable.thumb_colours)
     "numbers" -> FolderLook("ಅಂಕೆಗಳು", "೩", Sun, ScrapbookInk, Res.drawable.thumb_numbers)
+    "fruits" -> FolderLook("ಹಣ್ಣುಗಳು", "ಹ", Tangerine, ScrapbookInk, Res.drawable.thumb_fruits)
+    "vegetables" -> FolderLook("ತರಕಾರಿಗಳು", "ತ", Leaf, ScrapbookInk, Res.drawable.thumb_vegetables)
+    "body parts" -> FolderLook("ದೇಹದ ಭಾಗಗಳು", "ಕೈ", Sky, ScrapbookInk, Res.drawable.thumb_body_parts)
+    "family" -> FolderLook("ನನ್ನ ಕುಟುಂಬ", "ಅ", Violet, Color.White, Res.drawable.thumb_family)
     "letter quiz" -> FolderLook("ಅಕ್ಷರ ರಸಪ್ರಶ್ನೆ", "?", Sun, ScrapbookInk, Res.drawable.thumb_letter_quiz)
     "picture quiz" -> FolderLook("ಚಿತ್ರ ರಸಪ್ರಶ್ನೆ", "?", Tangerine, ScrapbookInk, Res.drawable.thumb_picture_quiz)
     "number quiz" -> FolderLook("ಸಂಖ್ಯೆ ರಸಪ್ರಶ್ನೆ", "?", Teal, ScrapbookInk, Res.drawable.thumb_number_quiz)

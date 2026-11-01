@@ -342,7 +342,7 @@ fun AppNavigation(authViewModel: AuthViewModel = viewModel { AuthViewModel() }) 
                             composable("fun_videos") {
                     VideoFoldersScreen(
                         title = "Fun Videos",
-                        folders = listOf("Vowels", "Consonants", "Birds", "Animals", "Colours", "Numbers", "Letter Quiz", "Picture Quiz", "Number Quiz", "How Many?", "Class Room", "Play Time", "Getting ready to school", "shopping mall", "Hospital", "Vacation"),
+                        folders = listOf("Vowels", "Consonants", "Birds", "Animals", "Colours", "Fruits", "Vegetables", "Body Parts", "Family", "Numbers", "Letter Quiz", "Picture Quiz", "Number Quiz", "How Many?", "Class Room", "Play Time", "Getting ready to school", "shopping mall", "Hospital", "Vacation"),
                         onFolderClick = openVideoFolder,
                         onBack = { navController.popBackStack() }
                     )

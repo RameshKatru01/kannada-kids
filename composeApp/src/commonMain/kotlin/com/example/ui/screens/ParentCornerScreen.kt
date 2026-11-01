@@ -326,6 +326,7 @@ fun ParentCornerScreen(
     val weak = remember(version) { ActivityTracker.needsPractice() }
     val strong = remember(version) { ActivityTracker.strongLetters() }
 
+    var showCredits by remember { mutableStateOf(false) }
     var confirmSignOut by remember { mutableStateOf(false) }
     var confirmDelete by remember { mutableStateOf(false) }
     var deleting by remember { mutableStateOf(false) }
@@ -464,7 +465,31 @@ fun ParentCornerScreen(
                 fontSize = 14.sp, fontWeight = FontWeight.ExtraBold, color = Color(0xFFD94848)
             )
         }
+        Text(
+            "Credits",
+            modifier = Modifier
+                .align(Alignment.CenterHorizontally)
+                .clip(RoundedCornerShape(12.dp))
+                .clickable { showCredits = true }
+                .padding(horizontal = 16.dp, vertical = 6.dp),
+            fontSize = 13.sp, fontWeight = FontWeight.Bold, color = ScrapbookInkSoft
+        )
         Spacer(Modifier.height(8.dp))
+    }
+
+    if (showCredits) {
+        AlertDialog(
+            onDismissRequest = { showCredits = false },
+            title = { Text("Credits", fontWeight = FontWeight.Bold) },
+            text = {
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Text("Pictures in the Fruits, Vegetables, Body Parts and Family videos: Noto Emoji by Google, licensed under the Apache License 2.0.")
+                    Text("Kannada lettering in those videos: Baloo Tamma 2 by Ek Type, licensed under the SIL Open Font License 1.1.")
+                    Text("Kannada voice: Google Cloud Text-to-Speech.")
+                }
+            },
+            confirmButton = { TextButton(onClick = { showCredits = false }) { Text("OK") } }
+        )
     }
 
     if (confirmDelete) {
