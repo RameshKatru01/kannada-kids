@@ -69,7 +69,7 @@ fun WorksheetsScreen(section: Worksheets.Section = Worksheets.Section.Vowels, on
         selected = if (sheet.id in selected) selected - sheet.id else selected + sheet.id
     }
 
-    fun failed() = Toast.makeText(context, "Could not open the worksheets. Please try again.", Toast.LENGTH_SHORT).show()
+    fun failed() = Toast.makeText(context, "Could not download the worksheets. Check the internet and try again.", Toast.LENGTH_SHORT).show()
 
     fun print() {
         if (busy || chosen.isEmpty()) return

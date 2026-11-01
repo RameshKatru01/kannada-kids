@@ -2,14 +2,18 @@ package com.example.ui.data
 
 import com.example.data.LetterData
 import com.example.platform.*
-import com.example.resources.Res
+import io.ktor.client.request.get
+import io.ktor.client.statement.readRawBytes
+import io.ktor.http.isSuccess
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
 /**
- * The printable worksheets that ship with the app (composeResources/files/worksheets), for
- * vowels, consonants, Ka-kaa and numbers. The PDFs are made by tools/worksheets/VowelPack.swift;
- * keep the file names in step. Parents select any mix of sheets and they print together.
+ * The printable worksheets for vowels, consonants, Ka-kaa and numbers. The PDFs are made by
+ * tools/worksheets/VowelPack.swift into tools/worksheets/pdf (keep the file names in step), uploaded
+ * to Firebase Storage (worksheets/<file>) by the "Upload videos & worksheets" GitHub action, and
+ * downloaded by the app the first time a parent previews or prints them, then kept on the phone.
+ * Parents select any mix of sheets and they print together.
  */
 object Worksheets {
 
@@ -149,9 +153,56 @@ object Worksheets {
      * only their first page, as a taste. Returns null when a file could not be opened.
      */
     suspend fun loadPreview(sheets: List<Sheet>): List<PreviewPdf>? = try {
-        sheets.map { s -> PreviewPdf(Res.readBytes("files/worksheets/${s.file}"), if (isOpen(s)) Int.MAX_VALUE else 1) }
+        val bytes = download(sheets) ?: return null
+        sheets.map { s -> PreviewPdf(bytes.getValue(s.file), if (isOpen(s)) Int.MAX_VALUE else 1) }
     } catch (e: Exception) {
         null
+    }
+
+    // ---- Downloading (Firebase Storage, kept on the phone) ----
+
+    private const val DEFAULT_BASE =
+        "https://firebasestorage.googleapis.com/v0/b/kannadakids-fd92d.firebasestorage.app/o/{object}?alt=media"
+    private val http by lazy { createHttpClient() }
+
+    private fun url(file: String): String {
+        val base = getSharedPreferences("AppSettings").getString("files_base", null)?.takeIf { it.isNotBlank() } ?: DEFAULT_BASE
+        val obj = "worksheets/$file"
+        return if ("{object}" in base) base.replace("{object}", encodeAll(obj)) else base.trimEnd('/') + "/" + obj
+    }
+
+    private fun encodeAll(s: String): String = buildString {
+        for (b in s.encodeToByteArray()) {
+            val u = b.toInt() and 0xFF
+            val ch = u.toChar()
+            if (u < 128 && (ch.isLetterOrDigit() || ch == '-' || ch == '_' || ch == '.' || ch == '~')) append(ch)
+            else append('%').append(u.toString(16).uppercase().padStart(2, '0'))
+        }
+    }
+
+    /** True when every sheet is already on the phone (no internet needed). */
+    fun downloaded(sheets: List<Sheet>): Boolean = sheets.all { FileCache.read("ws_${it.file}") != null }
+
+    /**
+     * The PDF bytes of [sheets] by file name: from the phone when already downloaded, otherwise from
+     * Firebase Storage (then kept). Null when one could not be downloaded (e.g. no internet).
+     */
+    suspend fun download(sheets: List<Sheet>): Map<String, ByteArray>? = withContext(Dispatchers.Default) {
+        val out = HashMap<String, ByteArray>()
+        for (s in sheets.distinctBy { it.file }) {
+            val cached = FileCache.read("ws_${s.file}")
+            if (cached != null) { out[s.file] = cached; continue }
+            val bytes = try {
+                val response = http.get(url(s.file))
+                if (!response.status.isSuccess()) null else response.readRawBytes()
+            } catch (e: Exception) {
+                null
+            }
+            if (bytes == null || bytes.size < 100) return@withContext null
+            FileCache.write("ws_${s.file}", bytes)
+            out[s.file] = bytes
+        }
+        out
     }
 
     // ---- Printing ----
@@ -169,11 +220,8 @@ object Worksheets {
     suspend fun print(context: Context, sheets: List<Sheet>, label: String = "Kannada worksheets"): Boolean {
         val chosen = sheets.filter { isOpen(it) }
         if (chosen.isEmpty()) return true
-        val files = try {
-            chosen.map { PdfFile(it.file, Res.readBytes("files/worksheets/${it.file}")) }
-        } catch (e: Exception) {
-            return false
-        }
+        val bytes = download(chosen) ?: return false
+        val files = chosen.map { PdfFile(it.file, bytes.getValue(it.file)) }
         val name = if (chosen.size == 1) chosen.first().file else "kannada-worksheets-${chosen.size}-sets.pdf"
         val title = "$label: " + chosen.joinToString(", ") { it.title }
         withContext(Dispatchers.Main) { printPdfs(context, files, name, title) }

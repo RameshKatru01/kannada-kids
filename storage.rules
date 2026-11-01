@@ -10,6 +10,11 @@ service firebase.storage {
       allow read: if true;
       allow write: if false;
     }
+    // Printable worksheets (PDFs). The app decides which ones a family can print.
+    match /worksheets/{allPaths=**} {
+      allow read: if true;
+      allow write: if false;
+    }
     match /{allPaths=**} {
       allow read, write: if false;
     }

@@ -2,7 +2,8 @@
 // Ka-kaa (ಕಾಗುಣಿತ) and numbers.
 //
 // Run from this folder:   swift VowelPack.swift [output folder]
-// With no folder, the files go straight into the app (composeResources/files/worksheets), where
+// With no folder, the files go into tools/worksheets/pdf; the "Upload videos & worksheets" GitHub
+// action copies them to Firebase Storage, where
 // Letter Box → Vowels → Printable worksheets offers them for printing.
 //
 // Output:  starter-kit.pdf                    cover, parent guide and certificate (3 pages)
@@ -1220,7 +1221,7 @@ let args = CommandLine.arguments.dropFirst()
 let wantFull = args.contains("--full")
 let wantPairs = args.contains("--pairs")
 let folderArg = args.first { !$0.hasPrefix("--") }
-let outDir = URL(fileURLWithPath: folderArg ?? "../../composeApp/src/commonMain/composeResources/files/worksheets",
+let outDir = URL(fileURLWithPath: folderArg ?? "pdf",
                  isDirectory: true)
 try? FileManager.default.createDirectory(at: outDir, withIntermediateDirectories: true)
 

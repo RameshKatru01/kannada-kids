@@ -39,6 +39,8 @@ object VideoHost {
     /** Reads the online setting (call at app start). */
     suspend fun refresh() {
         val doc = CloudStore.getPublic("config/app") ?: return
+        // Optional: where downloadable files (worksheets) live, same {object} style
+        (doc["filesBase"] as? String)?.let { prefs.edit().putString("files_base", it.trim()).apply() }
         val value = (doc["videoBase"] as? String)?.trim().orEmpty()
         prefs.edit().putString(PREF, value).apply()
         base = value.ifBlank { null }

@@ -1,4 +1,4 @@
-name: Upload videos
+name: Upload videos & worksheets
 
 # Run by hand (Actions > Upload videos > Run workflow). Copies every video the app uses from the
 # GitHub assets repo to Firebase Storage and (optionally) switches the app to play from there.
@@ -43,6 +43,13 @@ jobs:
             new=$((new+1))
           done < videos.tsv
           echo "Uploaded $new videos, $kept were already there ($(wc -l < videos.tsv) in total)"
+      - name: Copy the worksheets (PDFs)
+        shell: bash
+        run: |
+          set -eo pipefail
+          gcloud storage cp tools/worksheets/pdf/*.pdf "gs://${{ inputs.bucket }}/worksheets/" \
+            --content-type=application/pdf --cache-control="public, max-age=86400" --quiet
+          echo "Worksheets in Firebase: $(ls tools/worksheets/pdf | wc -l)"
       - name: Switch the app to Firebase
         if: ${{ inputs.switch }}
         shell: bash
