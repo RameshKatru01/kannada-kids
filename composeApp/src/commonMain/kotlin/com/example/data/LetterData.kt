@@ -13,6 +13,33 @@ data class KannadaLetter(
 )
 
 object LetterData {
+    /** Writing videos for the ಕ row of Ka-kaa, in the order of the signs (ಕ, ಕಾ, ಕಿ … ಕಂ, ಕಃ). */
+    val kaKaaVideos = listOf(
+        "https://raw.githubusercontent.com/RameshKatru01/kannada-app-assets/9a491bfd28587398eb059999115e9a2761541e45/assets/videos/kakaa_tracing/kakaa_tracing_01.mp4",
+        "https://raw.githubusercontent.com/RameshKatru01/kannada-app-assets/9a491bfd28587398eb059999115e9a2761541e45/assets/videos/kakaa_tracing/kakaa_tracing_02.mp4",
+        "https://raw.githubusercontent.com/RameshKatru01/kannada-app-assets/9a491bfd28587398eb059999115e9a2761541e45/assets/videos/kakaa_tracing/kakaa_tracing_03.mp4",
+        "https://raw.githubusercontent.com/RameshKatru01/kannada-app-assets/9a491bfd28587398eb059999115e9a2761541e45/assets/videos/kakaa_tracing/kakaa_tracing_04.mp4",
+        "https://raw.githubusercontent.com/RameshKatru01/kannada-app-assets/9a491bfd28587398eb059999115e9a2761541e45/assets/videos/kakaa_tracing/kakaa_tracing_05.mp4",
+        "https://raw.githubusercontent.com/RameshKatru01/kannada-app-assets/9a491bfd28587398eb059999115e9a2761541e45/assets/videos/kakaa_tracing/kakaa_tracing_06.mp4",
+        "https://raw.githubusercontent.com/RameshKatru01/kannada-app-assets/9a491bfd28587398eb059999115e9a2761541e45/assets/videos/kakaa_tracing/kakaa_tracing_07.mp4",
+        "https://raw.githubusercontent.com/RameshKatru01/kannada-app-assets/9a491bfd28587398eb059999115e9a2761541e45/assets/videos/kakaa_tracing/kakaa_tracing_08.mp4",
+        "https://raw.githubusercontent.com/RameshKatru01/kannada-app-assets/9a491bfd28587398eb059999115e9a2761541e45/assets/videos/kakaa_tracing/kakaa_tracing_09.mp4",
+        "https://raw.githubusercontent.com/RameshKatru01/kannada-app-assets/9a491bfd28587398eb059999115e9a2761541e45/assets/videos/kakaa_tracing/kakaa_tracing_10.mp4",
+        "https://raw.githubusercontent.com/RameshKatru01/kannada-app-assets/9a491bfd28587398eb059999115e9a2761541e45/assets/videos/kakaa_tracing/kakaa_tracing_11.mp4",
+        "https://raw.githubusercontent.com/RameshKatru01/kannada-app-assets/9a491bfd28587398eb059999115e9a2761541e45/assets/videos/kakaa_tracing/kakaa_tracing_12.mp4",
+        "https://raw.githubusercontent.com/RameshKatru01/kannada-app-assets/9a491bfd28587398eb059999115e9a2761541e45/assets/videos/kakaa_tracing/kakaa_tracing_13.mp4",
+        "https://raw.githubusercontent.com/RameshKatru01/kannada-app-assets/9a491bfd28587398eb059999115e9a2761541e45/assets/videos/kakaa_tracing/kakaa_tracing_14.mp4",
+        "https://raw.githubusercontent.com/RameshKatru01/kannada-app-assets/9a491bfd28587398eb059999115e9a2761541e45/assets/videos/kakaa_tracing/kakaa_tracing_15.mp4",
+    )
+
+    /** Writing video for Ka-kaa letter [char] of consonant [consonantIndex], if there is one. */
+    fun kaKaaVideo(consonantIndex: Int, char: String): String? {
+        if (consonantIndex != 0) return null
+        val base = consonants.getOrNull(0)?.character ?: return null
+        val signs = listOf("", "\u0CBE", "\u0CBF", "\u0CC0", "\u0CC1", "\u0CC2", "\u0CC3", "\u0CC6", "\u0CC7", "\u0CC8", "\u0CCA", "\u0CCB", "\u0CCC", "\u0C82", "\u0C83")
+        val i = signs.indexOfFirst { base + it == char }
+        return kaKaaVideos.getOrNull(i)
+    }
     private const val ASSETS_BASE = "https://raw.githubusercontent.com/RameshKatru01/kannada-app-assets/main"
 
     val kannadaVowels = listOf(

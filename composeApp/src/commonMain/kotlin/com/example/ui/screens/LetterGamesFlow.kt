@@ -45,7 +45,8 @@ fun LetterGameFlowScreen(
     }
     
     val letter = if (type == "guninthakshari") {
-        KannadaLetter(id = char.hashCode(), character = char, transliteration = translit, isVowel = false)
+        KannadaLetter(id = char.hashCode(), character = char, transliteration = translit, isVowel = false,
+            videoUrl = com.example.data.LetterData.kaKaaVideo(index, char))
     } else {
         items.getOrNull(index) ?: return
     }
