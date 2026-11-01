@@ -34,6 +34,8 @@ object SpeechCatalog {
         com.example.data.OttaksharaData.letters.forEach { out += it.glyph; out += it.first; out += it.second; out += it.word }
         // Colour names (Paint the Monster, Colour Sort)
         kidColors.forEach { c -> c.names["kn"]?.let { out += it } }
+        // Theme videos (Fruits, Vegetables, Body Parts, Family)
+        com.example.data.ThemeWords.phrases().forEach { out += it }
         return out.map { it.trim() }.filter { it.isNotEmpty() }.distinct()
     }
 }
