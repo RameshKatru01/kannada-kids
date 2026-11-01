@@ -371,13 +371,8 @@ fun videoUrlsFor(title: String): List<String> {
                 "https://raw.githubusercontent.com/RameshKatru01/kannada-app-assets/4b45114996510ce37844caae00109c86706b72a2/COLOR_Yellow_blob_transforms_into_sun_20261017005956.mp4"
             )
         } else {
-            listOf(
-                if (title.contains("Fun")) {
-                    "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ElephantsDream.mp4"
-                } else {
-                    "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerJoyrides.mp4"
-                }
-            )
+            // No videos for this folder yet (the screen says so instead of playing a stand-in clip)
+            emptyList()
         }
     
 }
