@@ -38,6 +38,7 @@ import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.PathEffect
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.graphics.drawscope.rotate
 import androidx.compose.ui.layout.ContentScale
 import com.example.ui.components.GameArt
 import androidx.compose.ui.graphics.graphicsLayer
@@ -272,56 +273,83 @@ private fun HomePill(onClick: (() -> Unit)? = null, content: @Composable RowScop
     )
 }
 
-/** Where each island sits on the map, as fractions of the map size (centre of the ring). */
-private val islandSpots = listOf(Offset(0.20f, 0.80f), Offset(0.70f, 0.64f), Offset(0.24f, 0.45f), Offset(0.74f, 0.28f), Offset(0.36f, 0.11f))
+/** Where each planet sits in space, as fractions of the box (centre of the planet). */
+private val islandSpots = listOf(Offset(0.20f, 0.80f), Offset(0.76f, 0.71f), Offset(0.40f, 0.48f), Offset(0.81f, 0.36f), Offset(0.51f, 0.14f))
 
+private val SpaceTop = Color(0xFF3B3F8F)
+private val SpaceDeep = Color(0xFF141A3A)
+private val LockedPlanet = Color(0xFF3D4A66)
+private val Glow = Color(0xFFFFC93C)
+
+/** Fixed "random" star positions (fractions of the box) so the sky doesn't jump around. */
+private val spaceStars: List<Triple<Float, Float, Float>> = (0 until 60).map { i ->
+    Triple(((i * 73) % 354) / 354f, ((i * 41) % 340) / 340f, 1f + (i % 3) * 0.6f)
+}
+
+/**
+ * Space trip: each learning section is a planet, joined by a dotted flight path. Finished planets
+ * get a gold star, the current one glows ("Land!") with a rocket flying to it, locked ones are dark
+ * with a padlock. A "Next" button sits in the corner.
+ */
 @Composable
 private fun IslandMap(islands: List<Island>, currentIndex: Int, nextGlyph: String, nextState: Access.State, onNext: () -> Unit, modifier: Modifier = Modifier) {
-    val pulse = rememberInfiniteTransition(label = "island")
-    val bob by pulse.animateFloat(1f, 1.07f, infiniteRepeatable(tween(900, easing = FastOutSlowInEasing), RepeatMode.Reverse), label = "bob")
-    val dash by pulse.animateFloat(0f, 40f, infiniteRepeatable(tween(1600, easing = LinearEasing)), label = "dash")
+    val anim = rememberInfiniteTransition(label = "space")
+    val glow by anim.animateFloat(0.25f, 0.6f, infiniteRepeatable(tween(1100, easing = FastOutSlowInEasing), RepeatMode.Reverse), label = "glow")
+    val bob by anim.animateFloat(-4f, 4f, infiniteRepeatable(tween(1300, easing = FastOutSlowInEasing), RepeatMode.Reverse), label = "bob")
+    val dash by anim.animateFloat(0f, 40f, infiniteRepeatable(tween(2000, easing = LinearEasing)), label = "dash")
+    val twinkle by anim.animateFloat(0.3f, 1f, infiniteRepeatable(tween(1700), RepeatMode.Reverse), label = "twinkle")
 
-    BoxWithConstraints(modifier.clip(RoundedCornerShape(28.dp)).background(MapWater)) {
+    BoxWithConstraints(
+        modifier
+            .clip(RoundedCornerShape(28.dp))
+            .background(SpaceDeep)
+    ) {
         val w = maxWidth
         val h = maxHeight
-        // Scenery and the dotted road between the islands
+        val base = (minOf(w, h) * 0.10f).coerceIn(24.dp, 44.dp)   // planet radius
+
+        // Sky, stars and the flight path
         Canvas(Modifier.fillMaxSize()) {
-            drawOval(MapHill, Offset(-size.width * 0.2f, size.height * 0.9f), Size(size.width * 0.8f, size.height * 0.28f))
-            drawOval(MapHill, Offset(size.width * 0.5f, size.height * 0.93f), Size(size.width * 0.7f, size.height * 0.25f))
-            drawCircle(Color(0xFFFFE27A), radius = 20.dp.toPx(), center = Offset(size.width * 0.42f, size.height * 0.1f))
+            drawRect(
+                androidx.compose.ui.graphics.Brush.radialGradient(
+                    listOf(SpaceTop, SpaceDeep),
+                    center = Offset(size.width * 0.8f, size.height * 0.1f),
+                    radius = size.width * 1.1f
+                )
+            )
+            spaceStars.forEachIndexed { i, (fx, fy, r) ->
+                val a = if (i % 4 == 0) twinkle else 0.55f + (i % 3) * 0.15f
+                drawCircle(Color.White.copy(alpha = a.coerceIn(0f, 1f)), radius = r * density, center = Offset(fx * size.width, fy * size.height))
+            }
             val pts = islandSpots.map { Offset(it.x * size.width, it.y * size.height) }
-            val road = Path().apply {
+            val path = Path().apply {
                 moveTo(pts[0].x, pts[0].y)
                 for (i in 1 until pts.size) {
-                    val a = pts[i - 1]
-                    val b = pts[i]
-                    val midY = (a.y + b.y) / 2
-                    cubicTo(a.x, midY, b.x, midY, b.x, b.y)
+                    val p0 = pts[i - 1]
+                    val p1 = pts[i]
+                    val midY = (p0.y + p1.y) / 2
+                    cubicTo(p0.x, midY, p1.x, midY, p1.x, p1.y)
                 }
             }
             drawPath(
-                road, Color.White,
-                style = Stroke(
-                    width = 10.dp.toPx(), cap = StrokeCap.Round,
-                    pathEffect = PathEffect.dashPathEffect(floatArrayOf(2f, 20.dp.toPx()), phase = -dash)
-                )
+                path, Color.White.copy(alpha = 0.45f),
+                style = Stroke(width = 3.dp.toPx(), cap = StrokeCap.Round,
+                    pathEffect = PathEffect.dashPathEffect(floatArrayOf(4.dp.toPx(), 10.dp.toPx()), phase = -dash))
             )
         }
 
         islands.forEachIndexed { i, island ->
             val isCurrent = i == currentIndex
             val locked = island.state == Access.State.NeedsProgress
-            // Rings shrink on short screens so the islands never overlap
-            val bigRing = (h * 0.22f).coerceIn(52.dp, 90.dp)
-            val ring = if (isCurrent) bigRing else bigRing * 0.8f
+            val r = if (isCurrent) base * 1.3f else base
             val spot = islandSpots[i]
-            val labelWidth = 130.dp
+            val boxW = 140.dp
             Column(
                 horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.spacedBy(3.dp),
+                verticalArrangement = Arrangement.spacedBy(4.dp),
                 modifier = Modifier
-                    .width(labelWidth)
-                    .offset(x = w * spot.x - labelWidth / 2, y = h * spot.y - ring / 2)
+                    .width(boxW)
+                    .offset(x = w * spot.x - boxW / 2, y = h * spot.y - r)
                     .clip(RoundedCornerShape(20.dp))
                     .clickable {
                         com.example.ui.audio.SoundEffectsHelper.playButtonTap()
@@ -329,67 +357,91 @@ private fun IslandMap(islands: List<Island>, currentIndex: Int, nextGlyph: Strin
                     }
                     .testTag("home_island_${island.type}")
             ) {
-                Box(Modifier.size(ring).scale(if (isCurrent) bob else 1f)) {
-                    ProgressRing(
-                        fraction = if (island.total == 0) 0f else island.done.toFloat() / island.total,
-                        color = if (locked) Color(0xFFB8C4CF) else island.color,
-                        modifier = Modifier.fillMaxSize()
-                    )
-                    Box(
-                        Modifier.fillMaxSize().padding(ring * 0.11f).clip(CircleShape).background(if (locked) Color(0xFFE6ECF1) else island.tint),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        // Locked islands still show their letter, so kids see what is coming
-                        Text(island.glyph, fontSize = (ring.value * 0.32f).sp, fontWeight = FontWeight.ExtraBold, color = if (locked) Color(0xFF4E6276) else HomeInk)
+                Box(Modifier.size(r * 2), contentAlignment = Alignment.Center) {
+                    val color = if (locked) LockedPlanet else island.color
+                    val fraction = if (island.total == 0) 0f else island.done.toFloat() / island.total
+                    Canvas(Modifier.fillMaxSize()) {
+                        val rad = size.minDimension / 2
+                        // Glow around the current planet
+                        if (isCurrent) drawCircle(Glow.copy(alpha = glow), radius = rad * 1.25f)
+                        // Saturn-style ring on the 2nd planet
+                        if (i == 1 && !locked) {
+                            rotate(-14f) {
+                                drawOval(Glow, topLeft = Offset(-rad * 0.35f, rad * 0.82f), size = Size(rad * 2.7f, rad * 0.36f), style = Stroke(2.5f.dp.toPx()))
+                            }
+                        }
+                        drawCircle(color, radius = rad)
+                        // Shine
+                        drawCircle(
+                            androidx.compose.ui.graphics.Brush.radialGradient(
+                                listOf(Color.White.copy(alpha = 0.35f), Color.Transparent),
+                                center = Offset(rad * 0.7f, rad * 0.6f), radius = rad
+                            ),
+                            radius = rad
+                        )
+                        // Progress around the planet
+                        if (!locked && fraction > 0f) {
+                            val sw = 3.dp.toPx()
+                            drawArc(
+                                Color.White.copy(alpha = 0.9f), startAngle = -90f, sweepAngle = 360f * fraction.coerceIn(0f, 1f),
+                                useCenter = false, topLeft = Offset(sw, sw), size = Size(size.width - 2 * sw, size.height - 2 * sw),
+                                style = Stroke(width = sw, cap = StrokeCap.Round)
+                            )
+                        }
                     }
-                    if (locked) {
-                        LockBadge(Modifier.align(Alignment.BottomEnd).offset(x = 6.dp, y = 4.dp), size = 28.dp)
-                    } else if (isCurrent) {
-                        Text(
-                            "Play!",
+                    Text(island.glyph, fontSize = (r.value * 0.72f).sp, fontWeight = FontWeight.ExtraBold, color = Color.White)
+                    when {
+                        locked -> LockBadge(Modifier.align(Alignment.TopEnd).offset(x = 4.dp, y = (-4).dp), size = 24.dp)
+                        isCurrent -> Text(
+                            "Land!",
                             fontSize = 11.sp, fontWeight = FontWeight.ExtraBold, color = Color.White,
                             modifier = Modifier
                                 .align(Alignment.TopEnd)
-                                .offset(x = 8.dp, y = (-4).dp)
+                                .offset(x = 12.dp, y = (-6).dp)
                                 .background(HomeCoral, RoundedCornerShape(10.dp))
                                 .padding(horizontal = 8.dp, vertical = 1.dp)
                         )
-                    } else if (island.finished) {
-                        Text(
-                            "✓",
-                            fontSize = 13.sp, fontWeight = FontWeight.ExtraBold, color = Color.White,
-                            modifier = Modifier
-                                .align(Alignment.TopEnd)
-                                .size(24.dp)
-                                .background(island.color, CircleShape)
-                                .wrapContentSize(Alignment.Center)
+                        island.finished -> com.example.ui.progress.StarIcon(
+                            24.dp, Color(0xFFFFC93C),
+                            Modifier.align(Alignment.TopEnd).offset(x = 4.dp, y = (-4).dp)
                         )
                     }
                 }
                 Text(
                     if (locked) island.name else "${island.name} · ${island.done}/${island.total}",
-                    fontSize = 12.sp, fontWeight = FontWeight.ExtraBold, color = if (locked) Color(0xFF5B7189) else HomeInk, maxLines = 1,
-                    modifier = Modifier.background(Color.White, RoundedCornerShape(12.dp)).padding(horizontal = 9.dp, vertical = 1.dp)
+                    fontSize = 11.sp, fontWeight = FontWeight.ExtraBold, color = Color.White, maxLines = 1,
+                    modifier = Modifier.background(Color.White.copy(alpha = 0.16f), RoundedCornerShape(10.dp)).padding(horizontal = 8.dp, vertical = 1.dp)
                 )
             }
+        }
+
+        // Rocket flying towards the current planet
+        islandSpots.getOrNull(currentIndex)?.let { spot ->
+            Text(
+                "🚀",
+                fontSize = 30.sp,
+                modifier = Modifier
+                    .offset(x = w * spot.x + base * 1.3f + 4.dp, y = h * spot.y - base * 0.4f + bob.dp)
+                    .graphicsLayer { rotationZ = -35f }
+            )
         }
 
         // "Next letter" button
         Row(
             Modifier
-                .align(Alignment.BottomEnd)
+                .align(Alignment.TopStart)
                 .padding(10.dp)
                 .shadow(4.dp, RoundedCornerShape(22.dp))
                 .clip(RoundedCornerShape(22.dp))
-                .background(HomeInk)
+                .background(Color.White.copy(alpha = 0.95f))
                 .clickable { onNext() }
                 .padding(start = 12.dp, end = 5.dp, top = 5.dp, bottom = 5.dp)
                 .testTag("home_next_letter"),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(8.dp)
         ) {
-            Text("Next:", fontSize = 13.sp, fontWeight = FontWeight.ExtraBold, color = Color.White)
-            Text(nextGlyph, fontSize = 20.sp, fontWeight = FontWeight.ExtraBold, color = Color.White)
+            Text("Next:", fontSize = 13.sp, fontWeight = FontWeight.ExtraBold, color = HomeInk)
+            Text(nextGlyph, fontSize = 20.sp, fontWeight = FontWeight.ExtraBold, color = HomeInk)
             if (nextState == Access.State.NeedsPremium) {
                 CrownBadge(size = 30.dp)
             } else {
