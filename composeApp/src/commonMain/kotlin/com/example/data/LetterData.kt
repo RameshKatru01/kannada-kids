@@ -75,16 +75,17 @@ object LetterData {
         KannadaLetter(49, "ಳ", "la", false, "$ASSETS_BASE/Vowel_lha.mp4")
     )
 
+    // Numbers 1-9 have a "how to write it" video (shown above the tracing in the number lessons)
     val kannadaNumbers = listOf(
-        KannadaLetter(101, "೧", "1", false),
-        KannadaLetter(102, "೨", "2", false),
-        KannadaLetter(103, "೩", "3", false),
-        KannadaLetter(104, "೪", "4", false),
-        KannadaLetter(105, "೫", "5", false),
-        KannadaLetter(106, "೬", "6", false),
-        KannadaLetter(107, "೭", "7", false),
-        KannadaLetter(108, "೮", "8", false),
-        KannadaLetter(109, "೯", "9", false),
+        KannadaLetter(101, "೧", "1", false, "https://raw.githubusercontent.com/RameshKatru01/kannada-app-assets/69b6505a61237971e641f0938a7f9228ae2c51d2/assets/videos/number_tracing/number_tracing_01.mp4"),
+        KannadaLetter(102, "೨", "2", false, "https://raw.githubusercontent.com/RameshKatru01/kannada-app-assets/69b6505a61237971e641f0938a7f9228ae2c51d2/assets/videos/number_tracing/number_tracing_02.mp4"),
+        KannadaLetter(103, "೩", "3", false, "https://raw.githubusercontent.com/RameshKatru01/kannada-app-assets/69b6505a61237971e641f0938a7f9228ae2c51d2/assets/videos/number_tracing/number_tracing_03.mp4"),
+        KannadaLetter(104, "೪", "4", false, "https://raw.githubusercontent.com/RameshKatru01/kannada-app-assets/69b6505a61237971e641f0938a7f9228ae2c51d2/assets/videos/number_tracing/number_tracing_04.mp4"),
+        KannadaLetter(105, "೫", "5", false, "https://raw.githubusercontent.com/RameshKatru01/kannada-app-assets/69b6505a61237971e641f0938a7f9228ae2c51d2/assets/videos/number_tracing/number_tracing_05.mp4"),
+        KannadaLetter(106, "೬", "6", false, "https://raw.githubusercontent.com/RameshKatru01/kannada-app-assets/69b6505a61237971e641f0938a7f9228ae2c51d2/assets/videos/number_tracing/number_tracing_06.mp4"),
+        KannadaLetter(107, "೭", "7", false, "https://raw.githubusercontent.com/RameshKatru01/kannada-app-assets/69b6505a61237971e641f0938a7f9228ae2c51d2/assets/videos/number_tracing/number_tracing_07.mp4"),
+        KannadaLetter(108, "೮", "8", false, "https://raw.githubusercontent.com/RameshKatru01/kannada-app-assets/69b6505a61237971e641f0938a7f9228ae2c51d2/assets/videos/number_tracing/number_tracing_08.mp4"),
+        KannadaLetter(109, "೯", "9", false, "https://raw.githubusercontent.com/RameshKatru01/kannada-app-assets/69b6505a61237971e641f0938a7f9228ae2c51d2/assets/videos/number_tracing/number_tracing_09.mp4"),
         KannadaLetter(110, "೧೦", "10", false)
     )
     
