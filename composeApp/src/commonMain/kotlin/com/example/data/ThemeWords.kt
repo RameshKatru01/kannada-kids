@@ -75,9 +75,30 @@ object ThemeWords {
 
     val all = listOf(fruits, vegetables, bodyParts, family)
 
+    // ---- Hindi ----
+    const val SAY_IT_HI = "अब तुम बोलो!"
+    const val WELL_DONE_HI = "शाबाश!"
+
+    val hindiFruits = WordTheme("Fruits", "फल", listOf(
+        ThemeWord("सेब", "Apple", "🍎", "यह सेब है"),
+        ThemeWord("केला", "Banana", "🍌", "यह केला है"),
+        ThemeWord("आम", "Mango", "🥭", "यह आम है"),
+        ThemeWord("अंगूर", "Grapes", "🍇", "ये अंगूर हैं"),
+        ThemeWord("संतरा", "Orange", "🍊", "यह संतरा है"),
+        ThemeWord("तरबूज़", "Watermelon", "🍉", "यह तरबूज़ है"),
+        ThemeWord("अनानास", "Pineapple", "🍍", "यह अनानास है"),
+        ThemeWord("नींबू", "Lemon", "🍋", "यह नींबू है"),
+        ThemeWord("नारियल", "Coconut", "🥥", "यह नारियल है"),
+        ThemeWord("स्ट्रॉबेरी", "Strawberry", "🍓", "यह स्ट्रॉबेरी है"),
+    ))
+
+    val allHindi = listOf(hindiFruits)
+
     /** Everything the videos say, for the voice clips. */
     fun phrases(): List<String> = buildList {
         add(SAY_IT); add(WELL_DONE)
         all.forEach { t -> add(t.kannada); t.words.forEach { add(it.kannada); add(it.sentence) } }
+        add(SAY_IT_HI); add(WELL_DONE_HI)
+        allHindi.forEach { t -> add(t.kannada); t.words.forEach { add(it.kannada); add(it.sentence) } }
     }
 }
