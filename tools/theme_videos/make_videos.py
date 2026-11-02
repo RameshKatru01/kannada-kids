@@ -110,6 +110,32 @@ def music(dur, seed):
     return out
 
 
+def soothing(dur, seed=0):
+    """Soft, calm original music: a warm pad (C - Am - F - G) with a slow music-box arpeggio."""
+    n = int(dur * SR) + SR
+    out = np.zeros(n)
+    t_all = np.arange(n) / SR
+    chords = [[261.6, 329.6, 392.0], [220.0, 261.6, 329.6], [174.6, 220.0, 261.6], [196.0, 246.9, 293.7]]
+    chord_len = 2.4
+    start = (seed % 4)
+    for k in range(int(dur / chord_len) + 2):
+        notes = chords[(start + k) % 4]
+        s0 = int(k * chord_len * SR); L = int((chord_len + 1.2) * SR)
+        if s0 >= n: break
+        tt = np.arange(L) / SR
+        env = np.minimum(1, tt / 0.6) * np.clip((chord_len + 1.2 - tt) / 1.2, 0, 1)
+        pad = sum(np.sin(2 * np.pi * f / 2 * tt) + 0.5 * np.sin(2 * np.pi * f * 1.003 * tt) for f in notes)
+        seg = 0.035 * env * pad
+        e = min(n, s0 + L); out[s0:e] += seg[:e - s0]
+        # music box: chord tones up an octave, one every 0.6 s
+        for j, f in enumerate([notes[0] * 2, notes[1] * 2, notes[2] * 2, notes[1] * 2]):
+            b0 = s0 + int(j * 0.6 * SR); bl = int(1.6 * SR); bt = np.arange(bl) / SR
+            bell = (np.sin(2 * np.pi * f * bt) + 0.25 * np.sin(4 * np.pi * f * bt)) * np.exp(-3.2 * bt) * np.minimum(1, bt * 300)
+            e = min(n, b0 + bl)
+            if b0 < n: out[b0:e] += 0.045 * bell[:e - b0]
+    return out * np.minimum(1, t_all / 0.8)
+
+
 def build_audio(path, timeline, dur, seed):
     mix = np.zeros(int((dur + 1) * SR))
     voice = np.zeros_like(mix)

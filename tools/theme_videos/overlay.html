@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html><head><meta charset="utf-8">
+<style>
+  html, body { margin: 0; width: 720px; height: 1280px; overflow: hidden; background: transparent; }
+  body { font-family: "Baloo Tamma 2", "Baloo 2", sans-serif; position: relative; }
+  #chip { position: absolute; left: 28px; top: 40px; padding: 8px 26px 2px; border-radius: 40px; background: rgba(255,255,255,.92);
+          font-weight: 800; font-size: 48px; color: var(--ink); box-shadow: 0 6px 0 rgba(0,0,0,.12); white-space: nowrap; }
+  #chip small { font-size: 30px; font-weight: 700; opacity: .7; margin-left: 10px; }
+  #card { position: absolute; left: 40px; right: 40px; top: 990px; height: 250px; border-radius: 44px;
+          background: rgba(255,255,255,.94); box-shadow: 0 10px 0 rgba(0,0,0,.14); text-align: center; transform-origin: 50% 100%; }
+  #kn { font-weight: 800; color: var(--ink); white-space: nowrap; display: inline-block; line-height: 1.35; margin-top: 6px; }
+  #en { font-weight: 700; font-size: 44px; color: var(--ink2); margin-top: -6px; }
+  #sentence { position: absolute; left: 50%; top: 860px; transform: translateX(-50%); background: var(--accent); color: #fff;
+              border-radius: 50px; padding: 6px 40px 10px; font-size: 50px; line-height: 1.45; font-weight: 800; white-space: nowrap;
+              box-shadow: 0 8px 0 rgba(0,0,0,.15); }
+  #say { position: absolute; left: 0; right: 0; top: 800px; text-align: center; }
+  #saybox { display: inline-flex; align-items: center; gap: 14px; background: var(--accent); color: #fff; border-radius: 50px;
+            padding: 10px 34px 2px 16px; font-size: 54px; font-weight: 800; box-shadow: 0 8px 0 rgba(0,0,0,.15); }
+  #saybox img { width: 76px; height: 76px; margin-bottom: 8px; }
+  #dots { position: absolute; left: 0; right: 0; top: 930px; display: flex; gap: 18px; justify-content: center; }
+  #dots i { width: 22px; height: 22px; border-radius: 50%; background: rgba(255,255,255,.8); border: 4px solid var(--accent); }
+  #bravo { position: absolute; left: 360px; top: 560px; transform: translate(-50%,-50%); text-align: center; }
+  #bravo b { display: inline-block; font-size: 150px; font-weight: 800; color: #fff; -webkit-text-stroke: 12px var(--accent);
+             paint-order: stroke fill; text-shadow: 0 12px 0 rgba(0,0,0,.18); white-space: nowrap; }
+  #stars img { position: absolute; width: 90px; height: 90px; }
+  #ring { position: absolute; border-radius: 50%; border: 10px solid var(--accent); }
+</style></head>
+<body>
+<div id="chip"></div>
+<div id="sentence"></div>
+<div id="say"><div id="saybox"><img src="pics/emoji_u1f3a4.png"><span id="saytext"></span></div></div>
+<div id="card"><div id="kn"></div><div id="en"></div></div>
+<div id="dots"><i></i><i></i><i></i></div>
+<div id="bravo"><b id="bravotext"></b></div>
+<div id="stars"></div>
+<script>
+const $ = id => document.getElementById(id);
+const clamp = (x, a = 0, b = 1) => Math.max(a, Math.min(b, x));
+const easeOut = t => 1 - Math.pow(1 - t, 3);
+const pop = t => t <= 0 ? 0 : t >= 1 ? 1 : 1 - Math.exp(-6 * t) * Math.cos(10 * t);
+let S, T;
+function mulberry(a) { return () => { a |= 0; a = a + 0x6D2B79F5 | 0; let t = Math.imul(a ^ a >>> 15, 1 | a);
+  t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; }; }
+
+function setup(spec) {
+  S = spec; T = spec.times;
+  const th = spec.theme;
+  for (const [k, v] of Object.entries({ink: th.ink, ink2: th.ink2, accent: th.accent})) document.body.style.setProperty('--' + k, v);
+  if (spec.hindi) document.body.style.fontFamily = '"Baloo 2", sans-serif';
+  $('chip').innerHTML = `${th.native}<small>${th.en}</small>`;
+  $('kn').textContent = spec.word; $('en').textContent = spec.en;
+  $('sentence').textContent = spec.sentence;
+  $('saytext').textContent = spec.sayIt;
+  $('bravotext').textContent = spec.bravo;
+  let fs = 130; $('kn').style.fontSize = fs + 'px';
+  while ($('kn').getBoundingClientRect().width > 600 && fs > 40) { fs -= 4; $('kn').style.fontSize = fs + 'px'; }
+  const rnd = mulberry(spec.seed);
+  window.stars = [];
+  for (let i = 0; i < 14; i++) {
+    const im = document.createElement('img');
+    im.src = 'pics/' + (i % 3 == 0 ? 'emoji_u2728.png' : i % 3 == 1 ? 'emoji_u2b50.png' : 'emoji_u1f31f.png');
+    $('stars').appendChild(im);
+    stars.push({ im, a: i / 14 * 6.28 + rnd() * .3, r: 200 + rnd() * 120, s: .6 + rnd() * .6, spin: (rnd() - .5) * 400 });
+  }
+}
+
+function render(t) {
+  $('chip').style.transform = `translateY(${(1 - easeOut(clamp(t / 0.6))) * -140}px)`;
+  // word card
+  const w = pop(clamp((t - T.word1) / 0.7));
+  let glow = 0; const u2 = (t - T.word2) / 0.6; if (u2 > 0 && u2 < 1) glow = Math.sin(u2 * Math.PI);
+  const out = clamp((t - T.bravo) * 4);
+  $('card').style.transform = `scale(${w * (1 + glow * 0.08)}) translateY(${out * 320}px)`;
+  $('card').style.opacity = w > 0 ? 1 : 0;
+  $('kn').style.color = glow > 0 ? S.theme.accent : '';
+  $('en').style.opacity = clamp((t - T.word1 - 0.4) * 3);
+  // sentence pill
+  const s = pop(clamp((t - T.sentence) / 0.6)), sOut = clamp((t - T.say + 0.2) * 4);
+  $('sentence').style.transform = `translateX(-50%) scale(${s * (1 - sOut)})`;
+  // "say it"
+  const y = pop(clamp((t - T.say) / 0.6)) * (1 - clamp((t - T.word2 - 0.2) * 4));
+  $('say').style.transform = `scale(${y})`;
+  [...$('dots').children].forEach((d, i) => {
+    d.style.background = t > T.pause + i * (T.pauseLen / 3) ? S.theme.accent : 'rgba(255,255,255,.8)';
+  });
+  $('dots').style.opacity = (t > T.say && t < T.word2 + 0.3) ? 1 : 0;
+  // ring around the card during the pause
+  const r = $('ring');
+  if (t > T.pause && t < T.word2) {
+    const ph = (t - T.pause) % 1, R = 300 + ph * 160;
+    r.style.display = 'block'; r.style.width = r.style.height = R + 'px';
+    r.style.left = (360 - R / 2) + 'px'; r.style.top = (1110 - R / 2) + 'px'; r.style.opacity = 0.6 * (1 - ph);
+  } else r.style.display = 'none';
+  // bravo
+  const b = pop(clamp((t - T.bravo) / 0.7));
+  $('bravo').style.transform = `translate(-50%,-50%) scale(${b}) rotate(${Math.sin(t * 6) * 3 * b}deg)`;
+  $('bravo').style.opacity = b > 0 ? 1 : 0;
+  stars.forEach(st => {
+    const k = clamp((t - T.bravo) / 1.2), e = easeOut(k);
+    st.im.style.display = k > 0 ? 'block' : 'none';
+    const x = 360 + Math.cos(st.a) * st.r * e - 45, yy = 560 + Math.sin(st.a) * st.r * e - 45 + k * k * 60;
+    st.im.style.transform = `translate(${x}px, ${yy}px) scale(${st.s * (k < .1 ? k * 10 : 1)}) rotate(${st.spin * k}deg)`;
+    st.im.style.opacity = 1 - clamp((t - T.bravo - 1.4) * 2);
+  });
+}
+</script>
+<div id="ring" style="display:none"></div>
+</body></html>
