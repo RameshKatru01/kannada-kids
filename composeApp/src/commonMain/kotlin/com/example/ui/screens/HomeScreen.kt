@@ -51,6 +51,7 @@ import androidx.compose.ui.unit.sp
 import com.example.data.LetterData
 import com.example.resources.Res
 import com.example.resources.thumb_animals
+import com.example.resources.thumb_fruits
 import com.example.resources.thumb_birds
 import com.example.resources.thumb_colours
 import com.example.resources.thumb_consonants
@@ -198,10 +199,12 @@ fun HomeScreen(
                 }
             }
             // Fun Videos are in Kannada; Hindi videos come later
-            if (!com.example.data.Lang.isHindi) {
+            // Hindi has its own (shorter) list of videos
+            val shelf = if (com.example.data.Lang.isHindi) homeVideos.filter { it.first in hindiVideoFolders } else homeVideos
+            if (shelf.isNotEmpty()) {
             ShelfTitle("Fun Videos", onSeeAll = onSeeAllVideos, side = side)
             Row(Modifier.fillMaxWidth().padding(horizontal = side), horizontalArrangement = Arrangement.spacedBy(gap)) {
-                homeVideos.take(perRow).forEach { (folder, photo) ->
+                shelf.take(perRow).forEach { (folder, photo) ->
                     HomeVideoCard(folder, photo, pictureHeight, Modifier.width(cardWidth), remember(sub) { Access.videoFolder(folder) }) { onOpenVideos(folder) }
                 }
             }
@@ -221,6 +224,7 @@ fun HomeScreen(
 }
 
 private val homeVideos: List<Pair<String, DrawableResource>> = listOf(
+    "Fruits" to Res.drawable.thumb_fruits,
     "Vowels" to Res.drawable.thumb_vowels,
     "Consonants" to Res.drawable.thumb_consonants,
     "Animals" to Res.drawable.thumb_animals,

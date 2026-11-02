@@ -51,6 +51,9 @@ fun VideoPlayerItem(uri: String, isCurrentPage: Boolean) {
     }
 }
 
+/** Fun Videos folders that have Hindi videos (the rest are Kannada only). */
+val hindiVideoFolders: List<String> = listOf("Fruits")
+
 /** The video links for a Fun Videos section ([title] is the folder name). */
 fun videoUrlsFor(title: String): List<String> {
     // Letter videos with on-screen text: alphabet_with_text/video01-15 = vowels ಅ…ಅಃ, video16-49 = consonants ಕ…ಳ
@@ -306,17 +309,29 @@ fun videoUrlsFor(title: String): List<String> {
                 "https://raw.githubusercontent.com/RameshKatru01/kannada-app-assets/76eac0906e8eb2ee571914fd7f9ebac1e2dcbecf/BIRDAnimated_pigeon_pecking_breadcrumbs_20261017004248.mp4"
             )
         } else if (title == "Fruits") {
-            listOf(
-                "https://raw.githubusercontent.com/RameshKatru01/kannada-app-assets/9bb58166ebfdeed205319cc42b9d1c6099dc686f/assets/videos/themes/fruits/fruits_01.mp4",
-                "https://raw.githubusercontent.com/RameshKatru01/kannada-app-assets/9bb58166ebfdeed205319cc42b9d1c6099dc686f/assets/videos/themes/fruits/fruits_02.mp4",
-                "https://raw.githubusercontent.com/RameshKatru01/kannada-app-assets/9bb58166ebfdeed205319cc42b9d1c6099dc686f/assets/videos/themes/fruits/fruits_03.mp4",
-                "https://raw.githubusercontent.com/RameshKatru01/kannada-app-assets/9bb58166ebfdeed205319cc42b9d1c6099dc686f/assets/videos/themes/fruits/fruits_04.mp4",
-                "https://raw.githubusercontent.com/RameshKatru01/kannada-app-assets/9bb58166ebfdeed205319cc42b9d1c6099dc686f/assets/videos/themes/fruits/fruits_05.mp4",
-                "https://raw.githubusercontent.com/RameshKatru01/kannada-app-assets/9bb58166ebfdeed205319cc42b9d1c6099dc686f/assets/videos/themes/fruits/fruits_06.mp4",
-                "https://raw.githubusercontent.com/RameshKatru01/kannada-app-assets/9bb58166ebfdeed205319cc42b9d1c6099dc686f/assets/videos/themes/fruits/fruits_07.mp4",
-                "https://raw.githubusercontent.com/RameshKatru01/kannada-app-assets/9bb58166ebfdeed205319cc42b9d1c6099dc686f/assets/videos/themes/fruits/fruits_08.mp4",
-                "https://raw.githubusercontent.com/RameshKatru01/kannada-app-assets/9bb58166ebfdeed205319cc42b9d1c6099dc686f/assets/videos/themes/fruits/fruits_09.mp4",
-                "https://raw.githubusercontent.com/RameshKatru01/kannada-app-assets/9bb58166ebfdeed205319cc42b9d1c6099dc686f/assets/videos/themes/fruits/fruits_10.mp4"
+            // AI (Google Flow) clips with the word and voice added, 9:16 for phones
+            if (com.example.data.Lang.isHindi) listOf(
+                "https://raw.githubusercontent.com/RameshKatru01/kannada-app-assets/f41b7218273a35b50d8be301f7047e3fa7e60134/assets/videos/fruits_ai/hi/fruits_hi_01.mp4",
+                "https://raw.githubusercontent.com/RameshKatru01/kannada-app-assets/f41b7218273a35b50d8be301f7047e3fa7e60134/assets/videos/fruits_ai/hi/fruits_hi_02.mp4",
+                "https://raw.githubusercontent.com/RameshKatru01/kannada-app-assets/f41b7218273a35b50d8be301f7047e3fa7e60134/assets/videos/fruits_ai/hi/fruits_hi_03.mp4",
+                "https://raw.githubusercontent.com/RameshKatru01/kannada-app-assets/f41b7218273a35b50d8be301f7047e3fa7e60134/assets/videos/fruits_ai/hi/fruits_hi_04.mp4",
+                "https://raw.githubusercontent.com/RameshKatru01/kannada-app-assets/f41b7218273a35b50d8be301f7047e3fa7e60134/assets/videos/fruits_ai/hi/fruits_hi_05.mp4",
+                "https://raw.githubusercontent.com/RameshKatru01/kannada-app-assets/f41b7218273a35b50d8be301f7047e3fa7e60134/assets/videos/fruits_ai/hi/fruits_hi_06.mp4",
+                "https://raw.githubusercontent.com/RameshKatru01/kannada-app-assets/f41b7218273a35b50d8be301f7047e3fa7e60134/assets/videos/fruits_ai/hi/fruits_hi_07.mp4",
+                "https://raw.githubusercontent.com/RameshKatru01/kannada-app-assets/f41b7218273a35b50d8be301f7047e3fa7e60134/assets/videos/fruits_ai/hi/fruits_hi_08.mp4",
+                "https://raw.githubusercontent.com/RameshKatru01/kannada-app-assets/f41b7218273a35b50d8be301f7047e3fa7e60134/assets/videos/fruits_ai/hi/fruits_hi_09.mp4",
+                "https://raw.githubusercontent.com/RameshKatru01/kannada-app-assets/f41b7218273a35b50d8be301f7047e3fa7e60134/assets/videos/fruits_ai/hi/fruits_hi_10.mp4"
+            ) else listOf(
+                "https://raw.githubusercontent.com/RameshKatru01/kannada-app-assets/f41b7218273a35b50d8be301f7047e3fa7e60134/assets/videos/fruits_ai/kn/fruits_kn_01.mp4",
+                "https://raw.githubusercontent.com/RameshKatru01/kannada-app-assets/f41b7218273a35b50d8be301f7047e3fa7e60134/assets/videos/fruits_ai/kn/fruits_kn_02.mp4",
+                "https://raw.githubusercontent.com/RameshKatru01/kannada-app-assets/f41b7218273a35b50d8be301f7047e3fa7e60134/assets/videos/fruits_ai/kn/fruits_kn_03.mp4",
+                "https://raw.githubusercontent.com/RameshKatru01/kannada-app-assets/f41b7218273a35b50d8be301f7047e3fa7e60134/assets/videos/fruits_ai/kn/fruits_kn_04.mp4",
+                "https://raw.githubusercontent.com/RameshKatru01/kannada-app-assets/f41b7218273a35b50d8be301f7047e3fa7e60134/assets/videos/fruits_ai/kn/fruits_kn_05.mp4",
+                "https://raw.githubusercontent.com/RameshKatru01/kannada-app-assets/f41b7218273a35b50d8be301f7047e3fa7e60134/assets/videos/fruits_ai/kn/fruits_kn_06.mp4",
+                "https://raw.githubusercontent.com/RameshKatru01/kannada-app-assets/f41b7218273a35b50d8be301f7047e3fa7e60134/assets/videos/fruits_ai/kn/fruits_kn_07.mp4",
+                "https://raw.githubusercontent.com/RameshKatru01/kannada-app-assets/f41b7218273a35b50d8be301f7047e3fa7e60134/assets/videos/fruits_ai/kn/fruits_kn_08.mp4",
+                "https://raw.githubusercontent.com/RameshKatru01/kannada-app-assets/f41b7218273a35b50d8be301f7047e3fa7e60134/assets/videos/fruits_ai/kn/fruits_kn_09.mp4",
+                "https://raw.githubusercontent.com/RameshKatru01/kannada-app-assets/f41b7218273a35b50d8be301f7047e3fa7e60134/assets/videos/fruits_ai/kn/fruits_kn_10.mp4"
             )
         } else if (title == "Vegetables") {
             listOf(

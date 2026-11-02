@@ -71,7 +71,7 @@ private fun folderLook(name: String): FolderLook = when (name.lowercase()) {
     "animals" -> FolderLook("ಪ್ರಾಣಿಗಳು", "ಸಿಂ", Coral, ScrapbookInk, Res.drawable.thumb_animals)
     "colours", "colors" -> FolderLook("ಬಣ್ಣಗಳು", "ಬ", Berry, Color.White, Res.drawable.thumb_colours)
     "numbers" -> FolderLook("ಅಂಕೆಗಳು", "೩", Sun, ScrapbookInk, Res.drawable.thumb_numbers)
-    "fruits" -> FolderLook("ಹಣ್ಣುಗಳು", "ಹ", Tangerine, ScrapbookInk, Res.drawable.thumb_fruits)
+    "fruits" -> FolderLook(if (com.example.data.Lang.isHindi) "फल" else "ಹಣ್ಣುಗಳು", if (com.example.data.Lang.isHindi) "फ" else "ಹ", Tangerine, ScrapbookInk, Res.drawable.thumb_fruits)
     "vegetables" -> FolderLook("ತರಕಾರಿಗಳು", "ತ", Leaf, ScrapbookInk, Res.drawable.thumb_vegetables)
     "body parts" -> FolderLook("ದೇಹದ ಭಾಗಗಳು", "ಕೈ", Sky, ScrapbookInk, Res.drawable.thumb_body_parts)
     "family" -> FolderLook("ನನ್ನ ಕುಟುಂಬ", "ಅ", Violet, Color.White, Res.drawable.thumb_family)
