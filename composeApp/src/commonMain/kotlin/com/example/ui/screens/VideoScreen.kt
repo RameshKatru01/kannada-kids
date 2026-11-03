@@ -60,18 +60,18 @@ fun videoUrlsFor(title: String): List<String> {
     return if (title == "Vowels") {
             // Hindi: स्वर videos (अ अनार … अं अंगूर)
             if (com.example.data.Lang.isHindi) listOf(
-                "https://raw.githubusercontent.com/RameshKatru01/kannada-app-assets/17e05a004c689f8fe3aca0b3f28cc44f7d3474e9/assets/videos/vowels_hi/vowel_hi_01.mp4",
-                "https://raw.githubusercontent.com/RameshKatru01/kannada-app-assets/17e05a004c689f8fe3aca0b3f28cc44f7d3474e9/assets/videos/vowels_hi/vowel_hi_02.mp4",
-                "https://raw.githubusercontent.com/RameshKatru01/kannada-app-assets/17e05a004c689f8fe3aca0b3f28cc44f7d3474e9/assets/videos/vowels_hi/vowel_hi_03.mp4",
-                "https://raw.githubusercontent.com/RameshKatru01/kannada-app-assets/17e05a004c689f8fe3aca0b3f28cc44f7d3474e9/assets/videos/vowels_hi/vowel_hi_04.mp4",
-                "https://raw.githubusercontent.com/RameshKatru01/kannada-app-assets/17e05a004c689f8fe3aca0b3f28cc44f7d3474e9/assets/videos/vowels_hi/vowel_hi_05.mp4",
-                "https://raw.githubusercontent.com/RameshKatru01/kannada-app-assets/17e05a004c689f8fe3aca0b3f28cc44f7d3474e9/assets/videos/vowels_hi/vowel_hi_06.mp4",
-                "https://raw.githubusercontent.com/RameshKatru01/kannada-app-assets/17e05a004c689f8fe3aca0b3f28cc44f7d3474e9/assets/videos/vowels_hi/vowel_hi_07.mp4",
-                "https://raw.githubusercontent.com/RameshKatru01/kannada-app-assets/17e05a004c689f8fe3aca0b3f28cc44f7d3474e9/assets/videos/vowels_hi/vowel_hi_08.mp4",
-                "https://raw.githubusercontent.com/RameshKatru01/kannada-app-assets/17e05a004c689f8fe3aca0b3f28cc44f7d3474e9/assets/videos/vowels_hi/vowel_hi_09.mp4",
-                "https://raw.githubusercontent.com/RameshKatru01/kannada-app-assets/17e05a004c689f8fe3aca0b3f28cc44f7d3474e9/assets/videos/vowels_hi/vowel_hi_10.mp4",
-                "https://raw.githubusercontent.com/RameshKatru01/kannada-app-assets/17e05a004c689f8fe3aca0b3f28cc44f7d3474e9/assets/videos/vowels_hi/vowel_hi_11.mp4",
-                "https://raw.githubusercontent.com/RameshKatru01/kannada-app-assets/17e05a004c689f8fe3aca0b3f28cc44f7d3474e9/assets/videos/vowels_hi/vowel_hi_12.mp4"
+                "https://raw.githubusercontent.com/RameshKatru01/kannada-app-assets/6a32628106372d68457a906a264eb2bf43a0cfd8/assets/videos/vowels_hi/vowel_hi_01.mp4",
+                "https://raw.githubusercontent.com/RameshKatru01/kannada-app-assets/6a32628106372d68457a906a264eb2bf43a0cfd8/assets/videos/vowels_hi/vowel_hi_02.mp4",
+                "https://raw.githubusercontent.com/RameshKatru01/kannada-app-assets/6a32628106372d68457a906a264eb2bf43a0cfd8/assets/videos/vowels_hi/vowel_hi_03.mp4",
+                "https://raw.githubusercontent.com/RameshKatru01/kannada-app-assets/6a32628106372d68457a906a264eb2bf43a0cfd8/assets/videos/vowels_hi/vowel_hi_04.mp4",
+                "https://raw.githubusercontent.com/RameshKatru01/kannada-app-assets/6a32628106372d68457a906a264eb2bf43a0cfd8/assets/videos/vowels_hi/vowel_hi_05.mp4",
+                "https://raw.githubusercontent.com/RameshKatru01/kannada-app-assets/6a32628106372d68457a906a264eb2bf43a0cfd8/assets/videos/vowels_hi/vowel_hi_06.mp4",
+                "https://raw.githubusercontent.com/RameshKatru01/kannada-app-assets/6a32628106372d68457a906a264eb2bf43a0cfd8/assets/videos/vowels_hi/vowel_hi_07.mp4",
+                "https://raw.githubusercontent.com/RameshKatru01/kannada-app-assets/6a32628106372d68457a906a264eb2bf43a0cfd8/assets/videos/vowels_hi/vowel_hi_08.mp4",
+                "https://raw.githubusercontent.com/RameshKatru01/kannada-app-assets/6a32628106372d68457a906a264eb2bf43a0cfd8/assets/videos/vowels_hi/vowel_hi_09.mp4",
+                "https://raw.githubusercontent.com/RameshKatru01/kannada-app-assets/6a32628106372d68457a906a264eb2bf43a0cfd8/assets/videos/vowels_hi/vowel_hi_10.mp4",
+                "https://raw.githubusercontent.com/RameshKatru01/kannada-app-assets/6a32628106372d68457a906a264eb2bf43a0cfd8/assets/videos/vowels_hi/vowel_hi_11.mp4",
+                "https://raw.githubusercontent.com/RameshKatru01/kannada-app-assets/6a32628106372d68457a906a264eb2bf43a0cfd8/assets/videos/vowels_hi/vowel_hi_12.mp4"
             ) else listOf(
                 "https://raw.githubusercontent.com/RameshKatru01/kannada-app-assets/ed79c3d59bc6f89784da6c8531c2462d0c6bbd4e/assets/videos/alphabet_with_text/video01.mp4",
                 "https://raw.githubusercontent.com/RameshKatru01/kannada-app-assets/ed79c3d59bc6f89784da6c8531c2462d0c6bbd4e/assets/videos/alphabet_with_text/video02.mp4",
