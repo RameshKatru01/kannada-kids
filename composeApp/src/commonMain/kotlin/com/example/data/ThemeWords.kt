@@ -92,7 +92,20 @@ object ThemeWords {
         ThemeWord("स्ट्रॉबेरी", "Strawberry", "🍓", "यह स्ट्रॉबेरी है"),
     ))
 
-    val allHindi = listOf(hindiFruits)
+    val hindiBirds = WordTheme("Birds", "पक्षी", listOf(
+        ThemeWord("कबूतर", "Pigeon", "🕊️", "यह कबूतर है"),
+        ThemeWord("चील", "Eagle", "🦅", "यह चील है"),
+        ThemeWord("उल्लू", "Owl", "🦉", "यह उल्लू है"),
+        ThemeWord("हंस", "Swan", "🦢", "यह हंस है"),
+        ThemeWord("बगुला", "Crane", "🪶", "यह बगुला है"),
+        ThemeWord("तोता", "Parrot", "🦜", "यह तोता है"),
+        ThemeWord("मुर्गी", "Hen", "🐔", "यह मुर्गी है"),
+        ThemeWord("मोर", "Peacock", "🦚", "यह मोर है"),
+        ThemeWord("गौरैया", "Sparrow", "🐦", "यह गौरैया है"),
+        ThemeWord("कौआ", "Crow", "🐦‍⬛", "यह कौआ है"),
+    ))
+
+    val allHindi = listOf(hindiFruits, hindiBirds)
 
     /** Everything the videos say, for the voice clips. */
     fun phrases(): List<String> = buildList {
