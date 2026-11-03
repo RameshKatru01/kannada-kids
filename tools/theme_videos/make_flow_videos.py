@@ -99,9 +99,10 @@ def build_audio(path, clip, tl, dur, amb_level=0.1):
         (voice if kind == "voice" else mix)[s:e] += a[:e - s]
     amb = np.zeros(n + SR); a = clip_audio(clip, dur); amb[:len(a)] = a
     env = np.convolve(np.abs(voice), np.ones(4410) / 4410, mode="same")
-    duck = 1 - 0.7 * np.clip(env * 25, 0, 1)
+    duck = 1 - 0.5 * np.clip(env * 25, 0, 1)
     fade = np.clip((dur - np.arange(len(mix)) / SR) / 0.8, 0, 1)
-    m = flow_music(clip, dur)[:len(mix)]
+    # Only the clip's own (original Flow) sound under the voice: no added music
+    m = np.zeros(len(mix))
     total = (mix + voice + amb * amb_level * duck + m * (1 - 0.55 * np.clip(env * 25, 0, 1))) * fade
     total = total * (0.9 / max(1e-6, np.max(np.abs(total))))
     with wave.open(path, "wb") as w:
@@ -147,8 +148,8 @@ def main():
                                     os.path.join(a.out, f"{name}_{t:.1f}.png")], check=True)
                 continue
             wav = os.path.join(a.out, name + ".wav")
-            # Birds: the clip's own sound is left out (it may say the Kannada word)
-            build_audio(wav, src, tl, T["end"], 0.0 if SET["cover"] else 0.1)
+            # Background: only the clip's original sound (no added music)
+            build_audio(wav, src, tl, T["end"], 1.0)
             tmp = os.path.join(a.out, name + ".part.mp4")
             dur = T["end"]
             ff = subprocess.Popen([
