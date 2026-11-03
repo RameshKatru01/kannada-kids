@@ -136,6 +136,64 @@ def soothing(dur, seed=0):
     return out * np.minimum(1, t_all / 0.8)
 
 
+def _ks(freq, dur, bright=0.5, seed=0):
+    """Plucked string (Karplus-Strong), ukulele-like."""
+    n = int(dur * SR); p = max(2, int(SR / freq))
+    rng = np.random.default_rng(seed)
+    buf = rng.uniform(-1, 1, p)
+    out = np.empty(n)
+    for i in range(n):
+        out[i] = buf[i % p]
+        buf[i % p] = 0.5 * (buf[i % p] + buf[(i + 1) % p]) * (0.994 + 0.004 * bright)
+    return out * np.minimum(1, np.arange(n) / 40)
+
+
+def _bell(freq, dur):
+    t = np.arange(int(dur * SR)) / SR
+    return (np.sin(2 * np.pi * freq * t) + 0.35 * np.sin(2 * np.pi * freq * 2.76 * t) * np.exp(-6 * t)) * np.exp(-3.5 * t) * np.minimum(1, t * 400)
+
+
+def cheerful(dur, seed=0):
+    """A bright, bouncy original kids' tune: ukulele strums, boom-chick bass, glockenspiel melody, light claps."""
+    bpm = 116; beat = 60 / bpm
+    n = int(dur * SR) + SR
+    out = np.zeros(n)
+    def add(sig, t, vol):
+        s0 = int(t * SR)
+        if s0 >= n: return
+        e = min(n, s0 + len(sig)); out[s0:e] += vol * sig[:e - s0]
+    C, G, Am, F = [261.6, 329.6, 392.0], [196.0, 246.9, 293.7], [220.0, 261.6, 329.6], [174.6, 220.0, 261.6]
+    prog = [C, G, Am, F]
+    roots = [130.8, 98.0, 110.0, 87.3]
+    # melody (scale degrees as Hz), two bars repeated: a little "sing-along" hook
+    hook = [659.3, 784.0, 880.0, 784.0, 659.3, 587.3, 523.3, None, 587.3, 659.3, 784.0, 659.3, 587.3, 523.3, 587.3, None]
+    rng = np.random.default_rng(seed)
+    nbeats = int(dur / beat) + 2
+    for b in range(nbeats):
+        t = b * beat
+        ch = (b // 4) % 4
+        # boom-chick bass
+        f = roots[ch] if b % 2 == 0 else roots[ch] * 1.5
+        add(_ks(f, 0.45, 0.2, b), t, 0.22)
+        # ukulele strum on the off-beat (down-up)
+        for k, note in enumerate(prog[ch]):
+            add(_ks(note * 2, 0.35, 0.8, b * 7 + k), t + beat / 2 + k * 0.012, 0.07)
+        # claps on 2 and 4
+        if b % 2 == 1:
+            nz = rng.uniform(-1, 1, int(0.08 * SR)) * np.exp(-np.arange(int(0.08 * SR)) / (0.012 * SR))
+            add(nz, t, 0.06)
+        # shaker on every eighth
+        for h in (0, 0.5):
+            sh = rng.uniform(-1, 1, int(0.04 * SR)) * np.exp(-np.arange(int(0.04 * SR)) / (0.006 * SR))
+            add(np.diff(sh, prepend=0), t + h * beat, 0.03)
+    # glockenspiel melody in eighth notes, starting after the first bar
+    for i in range(int(dur / (beat / 2)) + 1):
+        note = hook[i % len(hook)]
+        if note is not None and i >= 4:
+            add(_bell(note, 0.6), i * beat / 2, 0.09)
+    return out * np.minimum(1, np.arange(n) / SR / 0.3)
+
+
 def build_audio(path, timeline, dur, seed):
     mix = np.zeros(int((dur + 1) * SR))
     voice = np.zeros_like(mix)

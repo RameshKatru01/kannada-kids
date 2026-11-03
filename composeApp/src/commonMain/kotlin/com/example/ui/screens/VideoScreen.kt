@@ -52,7 +52,7 @@ fun VideoPlayerItem(uri: String, isCurrentPage: Boolean) {
 }
 
 /** Fun Videos folders that have Hindi videos (the rest are Kannada only). */
-val hindiVideoFolders: List<String> = listOf("Fruits")
+val hindiVideoFolders: List<String> = listOf("Fruits", "Birds")
 
 /** The video links for a Fun Videos section ([title] is the folder name). */
 fun videoUrlsFor(title: String): List<String> {
@@ -296,7 +296,19 @@ fun videoUrlsFor(title: String): List<String> {
                 "https://raw.githubusercontent.com/RameshKatru01/kannada-app-assets/8a19baa98cadfe0f650e61b4d22eaf72f408f201/ANIMAL_Spotted_cow_eating_green_grass_20261017002137.mp4"
             )
         } else if (title == "Birds") {
-            listOf(
+            // Hindi: the same bird clips with the Hindi word and voice
+            if (com.example.data.Lang.isHindi) listOf(
+                "https://raw.githubusercontent.com/RameshKatru01/kannada-app-assets/03bcf6c5408c9761e80c8a52a94dfc40a3632655/assets/videos/birds_ai/hi/birds_hi_01.mp4",
+                "https://raw.githubusercontent.com/RameshKatru01/kannada-app-assets/03bcf6c5408c9761e80c8a52a94dfc40a3632655/assets/videos/birds_ai/hi/birds_hi_02.mp4",
+                "https://raw.githubusercontent.com/RameshKatru01/kannada-app-assets/03bcf6c5408c9761e80c8a52a94dfc40a3632655/assets/videos/birds_ai/hi/birds_hi_03.mp4",
+                "https://raw.githubusercontent.com/RameshKatru01/kannada-app-assets/03bcf6c5408c9761e80c8a52a94dfc40a3632655/assets/videos/birds_ai/hi/birds_hi_04.mp4",
+                "https://raw.githubusercontent.com/RameshKatru01/kannada-app-assets/03bcf6c5408c9761e80c8a52a94dfc40a3632655/assets/videos/birds_ai/hi/birds_hi_05.mp4",
+                "https://raw.githubusercontent.com/RameshKatru01/kannada-app-assets/03bcf6c5408c9761e80c8a52a94dfc40a3632655/assets/videos/birds_ai/hi/birds_hi_06.mp4",
+                "https://raw.githubusercontent.com/RameshKatru01/kannada-app-assets/03bcf6c5408c9761e80c8a52a94dfc40a3632655/assets/videos/birds_ai/hi/birds_hi_07.mp4",
+                "https://raw.githubusercontent.com/RameshKatru01/kannada-app-assets/03bcf6c5408c9761e80c8a52a94dfc40a3632655/assets/videos/birds_ai/hi/birds_hi_08.mp4",
+                "https://raw.githubusercontent.com/RameshKatru01/kannada-app-assets/03bcf6c5408c9761e80c8a52a94dfc40a3632655/assets/videos/birds_ai/hi/birds_hi_09.mp4",
+                "https://raw.githubusercontent.com/RameshKatru01/kannada-app-assets/03bcf6c5408c9761e80c8a52a94dfc40a3632655/assets/videos/birds_ai/hi/birds_hi_10.mp4"
+            ) else listOf(
                 "https://raw.githubusercontent.com/RameshKatru01/kannada-app-assets/76eac0906e8eb2ee571914fd7f9ebac1e2dcbecf/BIRD_cBaby_eagle_leaping_on_cliff_20261017004242.mp4",
                 "https://raw.githubusercontent.com/RameshKatru01/kannada-app-assets/76eac0906e8eb2ee571914fd7f9ebac1e2dcbecf/BIRD_cBaby_owl_waving_on_branch_20261017004259.mp4",
                 "https://raw.githubusercontent.com/RameshKatru01/kannada-app-assets/76eac0906e8eb2ee571914fd7f9ebac1e2dcbecf/BIRD_cBaby_swan_gliding_on_lake_20261017004303.mp4",

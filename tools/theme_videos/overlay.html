@@ -47,6 +47,8 @@ function setup(spec) {
   const th = spec.theme;
   for (const [k, v] of Object.entries({ink: th.ink, ink2: th.ink2, accent: th.accent})) document.body.style.setProperty('--' + k, v);
   if (spec.hindi) document.body.style.fontFamily = '"Baloo 2", sans-serif';
+  if (spec.cover) { $('card').style.top = '880px'; $('card').style.height = '370px'; $('card').style.paddingTop = '50px'; $('card').style.boxSizing = 'border-box'; $('card').style.background = '#fff';
+    $('sentence').style.top = '760px'; $('say').style.top = '700px'; }
   $('chip').innerHTML = `${th.native}<small>${th.en}</small>`;
   $('kn').textContent = spec.word; $('en').textContent = spec.en;
   $('sentence').textContent = spec.sentence;
@@ -67,7 +69,9 @@ function setup(spec) {
 function render(t) {
   $('chip').style.transform = `translateY(${(1 - easeOut(clamp(t / 0.6))) * -140}px)`;
   // word card
-  const w = pop(clamp((t - T.word1) / 0.7));
+  // cover: the card is there from the start (it hides a word already drawn in the clip)
+  const w = S.cover ? 1 : pop(clamp((t - T.word1) / 0.7));
+  $('kn').style.opacity = S.cover ? clamp((t - T.word1) * 5) : 1;
   let glow = 0; const u2 = (t - T.word2) / 0.6; if (u2 > 0 && u2 < 1) glow = Math.sin(u2 * Math.PI);
   const out = clamp((t - T.bravo) * 4);
   $('card').style.transform = `scale(${w * (1 + glow * 0.08)}) translateY(${out * 320}px)`;
