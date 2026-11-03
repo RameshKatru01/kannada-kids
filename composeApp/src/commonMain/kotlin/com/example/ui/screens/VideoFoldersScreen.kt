@@ -65,7 +65,7 @@ private val Sky = Color(0xFF4DA8FF)
 private val Leaf = Color(0xFF59C173)
 
 private fun folderLook(name: String): FolderLook = when (name.lowercase()) {
-    "vowels" -> FolderLook("ಸ್ವರಗಳು", "ಅ", Teal, ScrapbookInk, Res.drawable.thumb_vowels)
+    "vowels" -> FolderLook(if (com.example.data.Lang.isHindi) "स्वर" else "ಸ್ವರಗಳು", if (com.example.data.Lang.isHindi) "अ" else "ಅ", Teal, ScrapbookInk, Res.drawable.thumb_vowels)
     "consonants" -> FolderLook("ವ್ಯಂಜನಗಳು", "ಕ", Violet, Color.White, Res.drawable.thumb_consonants)
     "birds" -> FolderLook(if (com.example.data.Lang.isHindi) "पक्षी" else "ಪಕ್ಷಿಗಳು", if (com.example.data.Lang.isHindi) "प" else "ನ", Sky, ScrapbookInk, Res.drawable.thumb_birds)
     "animals" -> FolderLook("ಪ್ರಾಣಿಗಳು", "ಸಿಂ", Coral, ScrapbookInk, Res.drawable.thumb_animals)
