@@ -124,11 +124,19 @@ object ThemeWords {
 
     val allHindi = listOf(hindiFruits, hindiBirds, hindiVowelWords)
 
+    /** English explanation spoken after "अ से अनार" in the Hindi vowel videos. */
+    val hindiVowelEnglish = listOf(
+        "Anaar means pomegranate.", "Aam means mango.", "Imli means tamarind.", "Eekh means sugarcane.",
+        "Ullu means owl.", "Oon means wool.", "Rishi means a wise sage.", "Edi means heel.",
+        "Ainak means spectacles.", "Okhli means a grinding stone bowl.", "Aurat means woman.", "Angoor means grapes."
+    )
+
     /** Everything the videos say, for the voice clips. */
     fun phrases(): List<String> = buildList {
         add(SAY_IT); add(WELL_DONE)
         all.forEach { t -> add(t.kannada); t.words.forEach { add(it.kannada); add(it.sentence) } }
         add(SAY_IT_HI); add(WELL_DONE_HI)
         allHindi.forEach { t -> add(t.kannada); t.words.forEach { add(it.kannada); add(it.sentence) } }
+        hindiVowelEnglish.forEach { add(it) }
     }
 }

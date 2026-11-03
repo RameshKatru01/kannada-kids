@@ -42,8 +42,12 @@ def call(url, body=None):
 
 
 def language_of(text):
-    """kn-IN for Kannada script, hi-IN for Devanagari (Hindi)."""
-    return "hi-IN" if any("\u0900" <= c <= "\u097F" for c in text) else "kn-IN"
+    """kn-IN for Kannada script, hi-IN for Devanagari (Hindi), en-IN for plain English."""
+    if any("\u0900" <= c <= "\u097F" for c in text):
+        return "hi-IN"
+    if any("\u0C80" <= c <= "\u0CFF" for c in text):
+        return "kn-IN"
+    return "en-IN"
 
 
 def pick_voice(key, wanted, lang="kn-IN"):
