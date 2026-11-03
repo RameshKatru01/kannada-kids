@@ -105,7 +105,24 @@ object ThemeWords {
         ThemeWord("कौआ", "Crow", "🐦‍⬛", "यह कौआ है"),
     ))
 
-    val allHindi = listOf(hindiFruits, hindiBirds)
+    /** Hindi vowel videos: the word for each vowel, as in the classic chart ("अ से अनार"). */
+    val hindiVowelWords = WordTheme("Vowels", "स्वर", listOf(
+        ThemeWord("अनार", "Pomegranate", "🍎", "अ से अनार"),
+        ThemeWord("आम", "Mango", "🥭", "आ से आम"),
+        ThemeWord("इमली", "Tamarind", "🫛", "इ से इमली"),
+        ThemeWord("ईख", "Sugarcane", "🎋", "ई से ईख"),
+        ThemeWord("उल्लू", "Owl", "🦉", "उ से उल्लू"),
+        ThemeWord("ऊन", "Wool", "🧶", "ऊ से ऊन"),
+        ThemeWord("ऋषि", "Sage", "🧘", "ऋ से ऋषि"),
+        ThemeWord("एड़ी", "Heel", "🦶", "ए से एड़ी"),
+        ThemeWord("ऐनक", "Glasses", "👓", "ऐ से ऐनक"),
+        ThemeWord("ओखली", "Mortar", "🥣", "ओ से ओखली"),
+        ThemeWord("औरत", "Woman", "👩", "औ से औरत"),
+        ThemeWord("अंगूर", "Grapes", "🍇", "अं से अंगूर"),
+        ThemeWord("अः", "Aha", "😮", "अः")
+    ))
+
+    val allHindi = listOf(hindiFruits, hindiBirds, hindiVowelWords)
 
     /** Everything the videos say, for the voice clips. */
     fun phrases(): List<String> = buildList {
