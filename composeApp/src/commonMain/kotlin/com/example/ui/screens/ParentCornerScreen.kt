@@ -54,6 +54,9 @@ import kotlinx.coroutines.launch
 // Grown-ups check: a two-digit addition with carrying (too hard for young children)
 // ---------------------------------------------------------------------------------------------
 
+/** The public privacy policy page (also given to Google Play and the App Store). */
+internal const val PRIVACY_POLICY_URL = "https://rameshkatru01.github.io/kannada-kids/privacy.html"
+
 private fun newSum(): Pair<Int, Int> {
     while (true) {
         val a = Random.nextInt(26, 90)
@@ -485,6 +488,17 @@ fun ParentCornerScreen(
                 fontSize = 14.sp, fontWeight = FontWeight.ExtraBold, color = Color(0xFFD94848)
             )
         }
+        val policyUri = androidx.compose.ui.platform.LocalUriHandler.current
+        Text(
+            "Privacy policy",
+            modifier = Modifier
+                .align(Alignment.CenterHorizontally)
+                .clip(RoundedCornerShape(12.dp))
+                .clickable { policyUri.openUri(PRIVACY_POLICY_URL) }
+                .padding(horizontal = 16.dp, vertical = 6.dp)
+                .testTag("privacy_policy"),
+            fontSize = 13.sp, fontWeight = FontWeight.ExtraBold, color = Color(0xFF1565C0)
+        )
         Text(
             "Credits",
             modifier = Modifier
