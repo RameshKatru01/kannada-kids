@@ -67,8 +67,6 @@ import com.example.resources.thumb_vowels
 import org.jetbrains.compose.resources.DrawableResource
 import org.jetbrains.compose.resources.painterResource
 import androidx.compose.foundation.Image
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.graphics.Brush
 import com.example.ui.progress.lerpColor
@@ -223,7 +221,7 @@ private fun HomeTopBar(coins: Int, streak: Int, onProfile: () -> Unit, onPoints:
             Text(com.example.data.Lang.script("ಅ"), fontSize = 22.sp, fontWeight = FontWeight.ExtraBold, color = HomeInk)
         }
         Column(Modifier.weight(1f)) {
-            Text("${com.example.data.Lang.hello} Hello,", fontSize = 13.sp, fontWeight = FontWeight.Bold, color = HomeInkSoft, maxLines = 1)
+            Text("${com.example.data.Lang.hello} Hello,", fontSize = 13.sp, fontWeight = FontWeight.ExtraBold, color = HomeInkSoft, maxLines = 1)
             Text("Little learner", fontSize = 21.sp, fontWeight = FontWeight.ExtraBold, color = HomeInk, maxLines = 1, overflow = TextOverflow.Ellipsis)
         }
         HomePill(onClick = onPoints) {
@@ -371,8 +369,11 @@ private val folderThumbs: Map<String, DrawableResource> = mapOf(
     "Play Time" to Res.drawable.thumb_playtime
 )
 
-/** Fun Videos shown first on Home (the word videos, then the rest). */
-private val homeFunVideos = listOf("Fruits", "Vegetables", "Body Parts", "Family", "Animals", "Birds", "Colours")
+/** "Continue watching" on Home: Vowels, Consonants and Birds first, then the rest (tablets show more). */
+private val homeFunVideos = listOf("Vowels", "Consonants", "Birds", "Fruits", "Vegetables", "Body Parts", "Family", "Animals", "Colours")
+
+/** "Games for you" on Home: Letter Runner, Musical Balloon Pop and Colour Sort first. */
+private val homeGames = listOf(6, 12, 13)
 
 /** A section's own videos and games (first ones are the closest match). */
 private fun sectionVideos(type: String): List<String> = when (type) {
@@ -427,62 +428,77 @@ private fun StreamHome(
 
     // Videos: on the section in progress the fun word videos; on another section its own videos
     val own = sectionVideos(island.type).filter { !hindi || it in hindiVideoFolders }
-    val videoTitle = if (!isCurrent && own.isNotEmpty()) "${island.name} videos" else "Fun Videos"
+    val videoTitle = if (!isCurrent && own.isNotEmpty()) "${island.name} videos" else "Continue watching"
     val videos = (if (!isCurrent && own.isNotEmpty()) own + homeFunVideos else homeFunVideos)
         .distinct()
         .filter { (!hindi || it in hindiVideoFolders) && it in folderThumbs }
-    val games = sectionGames(island.type).filter { com.example.data.Lang.hasGame(it) }.mapNotNull { GameRegistry.byId(it) }
+    val games = (if (isCurrent) homeGames + sectionGames(island.type) else sectionGames(island.type))
+        .distinct()
+        .filter { com.example.data.Lang.hasGame(it) }
+        .mapNotNull { GameRegistry.byId(it) }
     val gameTitle = if (isCurrent) "Games for you" else "${island.name} games"
 
-    BoxWithConstraints(modifier) {
+    // Top half: the banner and the learning path. Bottom half: the video row and the game row.
+    BoxWithConstraints(modifier.padding(bottom = 8.dp)) {
         val inner = maxWidth - side * 2
         val gap = 10.dp
         val perRow = (inner / 110.dp).toInt().coerceIn(3, 6)
         val cardW = (inner - gap * (perRow - 1)) / perRow
-        Column(
-            Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(bottom = 10.dp),
-            verticalArrangement = Arrangement.spacedBy(10.dp)
-        ) {
-            SectionBanner(
-                island = island,
-                isCurrent = isCurrent,
-                nextGlyph = nextGlyph,
-                nextState = nextState,
-                onLearn = {
-                    com.example.ui.audio.SoundEffectsHelper.playButtonTap()
-                    when {
-                        locked -> Access.showHint(Access.islandHint(island.type))
-                        isCurrent -> onNext()
-                        else -> island.open()
-                    }
-                },
-                onWatch = { own.firstOrNull()?.let(onOpenVideos) ?: onSeeAllVideos() },
-                onPlay = { games.firstOrNull()?.let(onOpenGame) ?: onSeeAllGames() },
-                modifier = Modifier.padding(horizontal = side).fillMaxWidth()
-            )
-            LearningPath(
-                islands = islands,
-                currentIndex = currentIndex,
-                selected = selected,
-                onSelect = { selected = it },
-                modifier = Modifier.padding(horizontal = side).fillMaxWidth()
-            )
-            if (videos.isNotEmpty()) {
-                RowTitle(videoTitle, onSeeAll = onSeeAllVideos, side = side)
-                Row(Modifier.padding(horizontal = side), horizontalArrangement = Arrangement.spacedBy(gap)) {
-                    videos.take(perRow).forEach { folder ->
-                        HomeVideoCard(
-                            folder, folderThumbs.getValue(folder), cardW * 0.78f, Modifier.width(cardW),
-                            remember(sub, folder) { Access.videoFolder(folder) }
-                        ) { onOpenVideos(folder) }
+        val half = maxHeight / 2
+        // Each row in the bottom half: title (~26dp) + picture + name (~18dp)
+        val picture = ((half - gap * 2) / 2 - 26.dp - 18.dp).coerceIn(48.dp, cardW)
+        Column(Modifier.fillMaxSize()) {
+            Column(Modifier.fillMaxWidth().height(half), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                SectionBanner(
+                    island = island,
+                    isCurrent = isCurrent,
+                    nextGlyph = nextGlyph,
+                    nextState = nextState,
+                    onLearn = {
+                        com.example.ui.audio.SoundEffectsHelper.playButtonTap()
+                        when {
+                            locked -> Access.showHint(Access.islandHint(island.type))
+                            isCurrent -> onNext()
+                            else -> island.open()
+                        }
+                    },
+                    onWatch = { own.firstOrNull()?.let(onOpenVideos) ?: onSeeAllVideos() },
+                    onPlay = { games.firstOrNull()?.let(onOpenGame) ?: onSeeAllGames() },
+                    modifier = Modifier.padding(horizontal = side).fillMaxWidth().weight(1f)
+                )
+                LearningPath(
+                    islands = islands,
+                    currentIndex = currentIndex,
+                    selected = selected,
+                    onSelect = { selected = it },
+                    modifier = Modifier.padding(horizontal = side).fillMaxWidth()
+                )
+            }
+            Column(
+                Modifier.fillMaxWidth().height(half).padding(top = gap),
+                verticalArrangement = Arrangement.SpaceEvenly
+            ) {
+                if (videos.isNotEmpty()) {
+                    Column {
+                        RowTitle(videoTitle, onSeeAll = onSeeAllVideos, side = side)
+                        Row(Modifier.padding(horizontal = side), horizontalArrangement = Arrangement.spacedBy(gap)) {
+                            videos.take(perRow).forEach { folder ->
+                                HomeVideoCard(
+                                    folder, folderThumbs.getValue(folder), picture, Modifier.width(cardW),
+                                    remember(sub, folder) { Access.videoFolder(folder) }
+                                ) { onOpenVideos(folder) }
+                            }
+                        }
                     }
                 }
-            }
-            if (games.isNotEmpty()) {
-                RowTitle(gameTitle, onSeeAll = onSeeAllGames, side = side)
-                Row(Modifier.padding(horizontal = side), horizontalArrangement = Arrangement.spacedBy(gap)) {
-                    games.take(perRow).forEach { game ->
-                        HomeGameCard(game, cardW, Modifier.width(cardW), remember(sub, game.id) { Access.game(game) }) { onOpenGame(game) }
+                if (games.isNotEmpty()) {
+                    Column {
+                        RowTitle(gameTitle, onSeeAll = onSeeAllGames, side = side)
+                        Row(Modifier.padding(horizontal = side), horizontalArrangement = Arrangement.spacedBy(gap)) {
+                            games.take(perRow).forEach { game ->
+                                HomeGameCard(game, picture, Modifier.width(cardW), remember(sub, game.id) { Access.game(game) }) { onOpenGame(game) }
+                            }
+                        }
                     }
                 }
             }
@@ -506,7 +522,6 @@ private fun SectionBanner(
     val base = if (locked) LockedSection else island.color
     Box(
         modifier
-            .height(158.dp)
             .clip(RoundedCornerShape(24.dp))
             .background(Brush.linearGradient(listOf(base, lerpColor(base, Color(0xFF1E2250), 0.55f))))
             .clickable { onLearn() }
@@ -533,7 +548,7 @@ private fun SectionBanner(
             Text(island.name, fontSize = 24.sp, fontWeight = FontWeight.ExtraBold, color = Color.White, maxLines = 1, overflow = TextOverflow.Ellipsis)
             Text(
                 if (locked) Access.islandHint(island.type).ifEmpty { "Keep going to open it" } else "${island.done}/${island.total} · ${com.example.data.Lang.islandNative(island.type)}",
-                fontSize = 12.sp, fontWeight = FontWeight.Bold, color = Color.White.copy(alpha = 0.9f), maxLines = 2
+                fontSize = 12.sp, fontWeight = FontWeight.ExtraBold, color = Color.White.copy(alpha = 0.9f), maxLines = 2
             )
             if (!locked) {
                 Box(Modifier.padding(top = 3.dp).width(130.dp).height(7.dp).clip(RoundedCornerShape(4.dp)).background(Color.White.copy(alpha = 0.3f))) {
@@ -654,7 +669,7 @@ private fun LearningPath(islands: List<Island>, currentIndex: Int, selected: Int
                             }
                         }
                         Text(isl.name, fontSize = 10.sp, fontWeight = FontWeight.ExtraBold, color = HomeInk, maxLines = 1, overflow = TextOverflow.Ellipsis)
-                        Text(if (locked) "Locked" else "${isl.done}/${isl.total}", fontSize = 10.sp, fontWeight = FontWeight.Bold, color = HomeInkSoft, maxLines = 1)
+                        Text(if (locked) "Locked" else "${isl.done}/${isl.total}", fontSize = 10.sp, fontWeight = FontWeight.ExtraBold, color = HomeInkSoft, maxLines = 1)
                     }
                 }
             }
