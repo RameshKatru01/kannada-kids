@@ -78,7 +78,13 @@ internal fun learningProgress(userEmail: String, langCode: String): List<ModuleP
         ModuleProgress("vowels", "Vowels", com.example.data.Lang.script("ಅ"), unlocked("vowels").coerceIn(0, LetterData.vowels.size), LetterData.vowels.size, DashTeal, Color(0xFFD9F6F2), "list/vowels"),
         ModuleProgress("consonants", "Consonants", com.example.data.Lang.script("ಕ"), unlocked("consonants").coerceIn(0, LetterData.consonants.size), LetterData.consonants.size, DashViolet, Color(0xFFE6E4FF), "list/consonants"),
         ModuleProgress("guninthakshari", com.example.data.Lang.islandName("guninthakshari"), com.example.data.Lang.script("ಕಾ"), unlocked("guninthakshari").coerceIn(0, LetterData.consonants.size), LetterData.consonants.size, DashCoral, Color(0xFFFFE1E1), "guninthakshari"),
-        ModuleProgress("numbers", "Numbers", com.example.data.Lang.script("೧"), unlocked("numbers").coerceIn(0, 10), 10, DashTangerine, Color(0xFFFFE6CC), "list/numbers")
+        ModuleProgress("numbers", "Numbers", com.example.data.Lang.script("೧"), unlocked("numbers").coerceIn(0, 10), 10, DashTangerine, Color(0xFFFFE6CC), "list/numbers"),
+        com.example.data.OttaksharaData.letters.size.let { n ->
+            ModuleProgress(
+                "ottakshara", com.example.data.Lang.islandName("ottakshara"), if (com.example.data.Lang.isHindi) "क्ष" else "ಕ್ಕ",
+                ActivityTracker.learned("ottakshara").count { it in 0 until n }, n, Color(0xFF14A098), Color(0xFFD3F4EF), "ottakshara"
+            )
+        }
     )
 }
 
@@ -98,7 +104,7 @@ fun DashboardScreen(
     val activityVersion by ActivityTracker.version.collectAsState()
     val gameVersion by GameProgress.version.collectAsState()
 
-    val modules = remember(userEmail, langCode) { learningProgress(userEmail, langCode) }
+    val modules = remember(userEmail, langCode, activityVersion) { learningProgress(userEmail, langCode) }
     val learned = modules.sumOf { it.learned }
     val total = modules.sumOf { it.total }
     val percent = if (total == 0) 0 else learned * 100 / total
@@ -245,9 +251,10 @@ fun DashboardScreen(
                                     }
                                 }
                             }
-                            ProgressBar(m.learned.toFloat() / m.total, m.color)
+                            ProgressBar(if (m.total == 0) 0f else m.learned.toFloat() / m.total, m.color)
                         }
                     }
+                    if (row.size == 1) Spacer(Modifier.weight(1f))
                 }
             }
 
