@@ -348,6 +348,95 @@ fun ParentCornerScreen(
     ) {
         BackHeader("Parent corner", "How your child is doing", onBack)
 
+        // Which language the child is learning (each has its own letters, progress and voice)
+        val learning by com.example.ui.data.LanguageManager.currentLanguage.collectAsState()
+        WhiteCard {
+            Text("Learning language", fontSize = 16.sp, fontWeight = FontWeight.ExtraBold, color = ScrapbookInk)
+            Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                listOf(com.example.ui.data.AppLanguage.KANNADA to "ಕನ್ನಡ Kannada", com.example.ui.data.AppLanguage.HINDI to "हिन्दी Hindi").forEach { (lang, label) ->
+                    val on = learning == lang
+                    Box(
+                        Modifier.weight(1f).height(48.dp).clip(RoundedCornerShape(24.dp))
+                            .background(if (on) ScrapbookInk else Color.White)
+                            .border(2.dp, ScrapbookInk, RoundedCornerShape(24.dp))
+                            .clickable { com.example.ui.data.LanguageManager.setLanguage(context, lang) }
+                            .testTag("language_${lang.code}"),
+                        contentAlignment = Alignment.Center
+                    ) { Text(label, fontSize = 15.sp, fontWeight = FontWeight.ExtraBold, color = if (on) Color.White else ScrapbookInk) }
+                }
+            }
+            Text("Each language keeps its own progress. Gold covers both.", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = ScrapbookInkSoft)
+        }
+
+        // Plan
+        val sub by com.example.ui.data.SubscriptionManager.state.collectAsState()
+        LaunchedEffect(Unit) { com.example.ui.data.SubscriptionManager.refresh() }
+        Column(
+            Modifier.fillMaxWidth().background(Color(0xFFFFF6E0), RoundedCornerShape(22.dp)).border(2.dp, Color(0xFFF2DFAE), RoundedCornerShape(22.dp))
+                .clickable { onOpenPlans() }.padding(14.dp),
+            verticalArrangement = Arrangement.spacedBy(10.dp)
+        ) {
+            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                Box(Modifier.size(44.dp).background(DashSun, CircleShape), contentAlignment = Alignment.Center) { StarIcon(24.dp, Color.White) }
+                Column(Modifier.weight(1f)) {
+                    val p = sub.plan
+                    Text(
+                        if (sub.hasPremium && p != null) "Premium · ${p.title}" else if (sub.hasPremium) "Premium (gift)" else "Free plan",
+                        fontSize = 16.sp, fontWeight = FontWeight.ExtraBold, color = ScrapbookInk
+                    )
+                    Text(
+                        when {
+                            sub.hasPremium && p != null && sub.renewsAt > 0 ->
+                                (if (sub.autoRenew) "Renews " else "Ends ") + formatDate(sub.renewsAt)
+                            sub.bonusUntil > currentTimeMillis() -> "Free until " + formatDate(sub.bonusUntil)
+                            else -> "₹99 a month, ₹499 for 6 months or ₹899 a year"
+                        },
+                        fontSize = 12.sp, fontWeight = FontWeight.Bold, color = ScrapbookInkSoft
+                    )
+                }
+            }
+            PlanButton(if (sub.hasPremium) "See my plan" else "See plans", Modifier.fillMaxWidth()) { onOpenPlans() }
+        }
+
+        // Learning path (how letters, islands and levels open)
+        val pathVersion by com.example.ui.data.Access.version.collectAsState()
+        val everythingOpen = remember(pathVersion) { com.example.ui.data.Access.everythingOpen }
+        val startFrom = remember(pathVersion) { com.example.ui.data.Access.startFrom }
+        Row(
+            Modifier.fillMaxWidth().clip(RoundedCornerShape(22.dp)).background(Color.White).clickable { onOpenLearningPath() }
+                .padding(14.dp).testTag("open_learning_path"),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            Box(Modifier.size(44.dp).background(Color(0xFFE6E4FF), CircleShape), contentAlignment = Alignment.Center) {
+                Text("🗺️", fontSize = 22.sp)
+            }
+            Column(Modifier.weight(1f)) {
+                Text("Learning path", fontSize = 16.sp, fontWeight = FontWeight.ExtraBold, color = ScrapbookInk)
+                Text(
+                    if (everythingOpen) "Everything open"
+                    else "Step by step · from " + listOf("the beginning", "Consonants", com.example.data.Lang.islandName("guninthakshari"), com.example.data.Lang.islandName("ottakshara"))[startFrom],
+                    fontSize = 12.sp, fontWeight = FontWeight.Bold, color = ScrapbookInkSoft
+                )
+            }
+            Text("›", fontSize = 26.sp, fontWeight = FontWeight.ExtraBold, color = ScrapbookInk)
+        }
+
+        // Needs more practice
+        WhiteCard {
+            Row(verticalAlignment = Alignment.Bottom) {
+                Text("Needs more practice", modifier = Modifier.weight(1f), fontSize = 16.sp, fontWeight = FontWeight.ExtraBold, color = ScrapbookInk)
+                Text("most mistakes", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = ScrapbookInkSoft)
+            }
+            LetterChips(weak, Color(0xFFFFE1E1), Color(0xFF9E2B2B), "No tricky letters yet. Keep playing the games!")
+        }
+
+        // Strong letters
+        WhiteCard {
+            Text("Strong letters", fontSize = 16.sp, fontWeight = FontWeight.ExtraBold, color = ScrapbookInk)
+            LetterChips(strong, Color(0xFFD9F6F2), Color(0xFF0F6B62), "Letters answered right again and again will show here.")
+        }
+
         // Minutes this week
         WhiteCard {
             Row(verticalAlignment = Alignment.Bottom) {
@@ -381,91 +470,6 @@ fun ParentCornerScreen(
             StatTile("$learned", "letters learned", DashTeal, Modifier.weight(1f))
             StatTile("$levelsDone", "levels finished", DashViolet, Modifier.weight(1f))
             StatTile(accuracy?.let { "$it%" } ?: "–", "right answers", DashSun, Modifier.weight(1f))
-        }
-
-        // Practice lists
-        WhiteCard {
-            Row(verticalAlignment = Alignment.Bottom) {
-                Text("Needs more practice", modifier = Modifier.weight(1f), fontSize = 16.sp, fontWeight = FontWeight.ExtraBold, color = ScrapbookInk)
-                Text("most mistakes", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = ScrapbookInkSoft)
-            }
-            LetterChips(weak, Color(0xFFFFE1E1), Color(0xFF9E2B2B), "No tricky letters yet. Keep playing the games!")
-            Text("Strong letters", fontSize = 16.sp, fontWeight = FontWeight.ExtraBold, color = ScrapbookInk)
-            LetterChips(strong, Color(0xFFD9F6F2), Color(0xFF0F6B62), "Letters answered right again and again will show here.")
-        }
-
-        // Which language the child is learning (each has its own letters, progress and voice)
-        val learning by com.example.ui.data.LanguageManager.currentLanguage.collectAsState()
-        WhiteCard {
-            Text("Learning language", fontSize = 16.sp, fontWeight = FontWeight.ExtraBold, color = ScrapbookInk)
-            Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                listOf(com.example.ui.data.AppLanguage.KANNADA to "ಕನ್ನಡ Kannada", com.example.ui.data.AppLanguage.HINDI to "हिन्दी Hindi").forEach { (lang, label) ->
-                    val on = learning == lang
-                    Box(
-                        Modifier.weight(1f).height(48.dp).clip(RoundedCornerShape(24.dp))
-                            .background(if (on) ScrapbookInk else Color.White)
-                            .border(2.dp, ScrapbookInk, RoundedCornerShape(24.dp))
-                            .clickable { com.example.ui.data.LanguageManager.setLanguage(context, lang) }
-                            .testTag("language_${lang.code}"),
-                        contentAlignment = Alignment.Center
-                    ) { Text(label, fontSize = 15.sp, fontWeight = FontWeight.ExtraBold, color = if (on) Color.White else ScrapbookInk) }
-                }
-            }
-            Text("Each language keeps its own progress. Gold covers both.", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = ScrapbookInkSoft)
-        }
-
-        // Learning path (how letters, islands and levels open)
-        val pathVersion by com.example.ui.data.Access.version.collectAsState()
-        val everythingOpen = remember(pathVersion) { com.example.ui.data.Access.everythingOpen }
-        val startFrom = remember(pathVersion) { com.example.ui.data.Access.startFrom }
-        Row(
-            Modifier.fillMaxWidth().clip(RoundedCornerShape(22.dp)).background(Color.White).clickable { onOpenLearningPath() }
-                .padding(14.dp).testTag("open_learning_path"),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(12.dp)
-        ) {
-            Box(Modifier.size(44.dp).background(Color(0xFFE6E4FF), CircleShape), contentAlignment = Alignment.Center) {
-                Text("🗺️", fontSize = 22.sp)
-            }
-            Column(Modifier.weight(1f)) {
-                Text("Learning path", fontSize = 16.sp, fontWeight = FontWeight.ExtraBold, color = ScrapbookInk)
-                Text(
-                    if (everythingOpen) "Everything open"
-                    else "Step by step · from " + listOf("the beginning", "Consonants", com.example.data.Lang.islandName("guninthakshari"), com.example.data.Lang.islandName("ottakshara"))[startFrom],
-                    fontSize = 12.sp, fontWeight = FontWeight.Bold, color = ScrapbookInkSoft
-                )
-            }
-            Text("›", fontSize = 26.sp, fontWeight = FontWeight.ExtraBold, color = ScrapbookInk)
-        }
-
-        // Plan
-        val sub by com.example.ui.data.SubscriptionManager.state.collectAsState()
-        LaunchedEffect(Unit) { com.example.ui.data.SubscriptionManager.refresh() }
-        Column(
-            Modifier.fillMaxWidth().background(Color(0xFFFFF6E0), RoundedCornerShape(22.dp)).border(2.dp, Color(0xFFF2DFAE), RoundedCornerShape(22.dp))
-                .clickable { onOpenPlans() }.padding(14.dp),
-            verticalArrangement = Arrangement.spacedBy(10.dp)
-        ) {
-            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                Box(Modifier.size(44.dp).background(DashSun, CircleShape), contentAlignment = Alignment.Center) { StarIcon(24.dp, Color.White) }
-                Column(Modifier.weight(1f)) {
-                    val p = sub.plan
-                    Text(
-                        if (sub.hasPremium && p != null) "Premium · ${p.title}" else if (sub.hasPremium) "Premium (gift)" else "Free plan",
-                        fontSize = 16.sp, fontWeight = FontWeight.ExtraBold, color = ScrapbookInk
-                    )
-                    Text(
-                        when {
-                            sub.hasPremium && p != null && sub.renewsAt > 0 ->
-                                (if (sub.autoRenew) "Renews " else "Ends ") + formatDate(sub.renewsAt)
-                            sub.bonusUntil > currentTimeMillis() -> "Free until " + formatDate(sub.bonusUntil)
-                            else -> "₹99 a month, ₹499 for 6 months or ₹899 a year"
-                        },
-                        fontSize = 12.sp, fontWeight = FontWeight.Bold, color = ScrapbookInkSoft
-                    )
-                }
-            }
-            PlanButton(if (sub.hasPremium) "See my plan" else "See plans", Modifier.fillMaxWidth()) { onOpenPlans() }
         }
 
         // Sign out
