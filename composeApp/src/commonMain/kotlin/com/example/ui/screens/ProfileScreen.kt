@@ -426,26 +426,27 @@ fun ProfileScreen(
 
 
 /** VIBGYOR: violet, indigo, blue, green, yellow (a deeper gold so it reads on white), orange, red. */
-private val Vibgyor = listOf(
+internal val Vibgyor = listOf(
     Color(0xFF8B00FF), Color(0xFF4B0082), Color(0xFF1E6FFF), Color(0xFF1FA23A),
     Color(0xFFE6A800), Color(0xFFFF7A00), Color(0xFFE53935)
 )
 
-/** Colours each letter of a text field in turn with the VIBGYOR colours (spaces skipped). */
-private object RainbowText : androidx.compose.ui.text.input.VisualTransformation {
-    override fun filter(text: androidx.compose.ui.text.AnnotatedString): androidx.compose.ui.text.input.TransformedText {
-        val out = androidx.compose.ui.text.buildAnnotatedString {
-            var n = 0
-            text.text.forEach { ch ->
-                if (ch.isWhitespace()) append(ch)
-                else {
-                    pushStyle(androidx.compose.ui.text.SpanStyle(color = Vibgyor[n % Vibgyor.size]))
-                    append(ch)
-                    pop()
-                    n++
-                }
-            }
+/** [text] with each letter in turn in a VIBGYOR colour (spaces skipped). Used for the learner's name. */
+internal fun rainbowText(text: String): androidx.compose.ui.text.AnnotatedString = androidx.compose.ui.text.buildAnnotatedString {
+    var n = 0
+    text.forEach { ch ->
+        if (ch.isWhitespace()) append(ch)
+        else {
+            pushStyle(androidx.compose.ui.text.SpanStyle(color = Vibgyor[n % Vibgyor.size]))
+            append(ch)
+            pop()
+            n++
         }
-        return androidx.compose.ui.text.input.TransformedText(out, androidx.compose.ui.text.input.OffsetMapping.Identity)
     }
+}
+
+/** Colours each letter of a text field in turn with the VIBGYOR colours. */
+private object RainbowText : androidx.compose.ui.text.input.VisualTransformation {
+    override fun filter(text: androidx.compose.ui.text.AnnotatedString): androidx.compose.ui.text.input.TransformedText =
+        androidx.compose.ui.text.input.TransformedText(rainbowText(text.text), androidx.compose.ui.text.input.OffsetMapping.Identity)
 }

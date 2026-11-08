@@ -225,7 +225,12 @@ private fun HomeTopBar(coins: Int, streak: Int, onProfile: () -> Unit, onPoints:
             Text("${com.example.data.Lang.hello} Hello,", fontSize = 13.sp, fontWeight = FontWeight.ExtraBold, color = HomeInkSoft, maxLines = 1)
             val learner by com.example.ui.data.LearnerName.name.collectAsState()
             LaunchedEffect(Unit) { com.example.ui.data.LearnerName.load() }
-            Text(learner.ifBlank { "Little learner" }, fontSize = 21.sp, fontWeight = FontWeight.ExtraBold, color = HomeInk, maxLines = 1, overflow = TextOverflow.Ellipsis)
+            // The child's own name in rainbow (VIBGYOR) letters; "Little learner" when none is set
+            if (learner.isBlank()) {
+                Text("Little learner", fontSize = 21.sp, fontWeight = FontWeight.ExtraBold, color = HomeInk, maxLines = 1, overflow = TextOverflow.Ellipsis)
+            } else {
+                Text(rainbowText(learner), fontSize = 21.sp, fontWeight = FontWeight.ExtraBold, color = HomeInk, maxLines = 1, overflow = TextOverflow.Ellipsis)
+            }
         }
         HomePill(onClick = onPoints) {
             com.example.ui.progress.StarIcon(16.dp, Color(0xFFFFB300))
