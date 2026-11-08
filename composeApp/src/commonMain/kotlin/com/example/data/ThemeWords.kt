@@ -124,6 +124,17 @@ object ThemeWords {
 
     val allHindi = listOf(hindiFruits, hindiBirds, hindiVowelWords)
 
+    /** Kannada fruit chart videos: the word (Kannada voice), then "Sebu means apple." (English voice). */
+    val kannadaFruitChart = listOf(
+        Triple("ಸೇಬು", "Apple", "Sebu means apple."),
+        Triple("ಬಾಳೆಹಣ್ಣು", "Banana", "Baalehannu means banana."),
+        Triple("ಕಿತ್ತಳೆ", "Orange", "Kittale means orange."),
+        Triple("ಮಾವು", "Mango", "Maavu means mango."),
+        Triple("ದ್ರಾಕ್ಷಿ", "Grapes", "Draakshi means grapes."),
+        Triple("ಅನಾನಸ್", "Pineapple", "Ananas means pineapple."),
+        Triple("ಕಲ್ಲಂಗಡಿ", "Watermelon", "Kallangadi means watermelon."),
+    )
+
     /** English explanation spoken after "अ से अनार" in the Hindi vowel videos. */
     val hindiVowelEnglish = listOf(
         "Anaar means pomegranate.", "Aam means mango.", "Imli means tamarind.", "Eekh means sugarcane.",
@@ -138,5 +149,6 @@ object ThemeWords {
         add(SAY_IT_HI); add(WELL_DONE_HI)
         allHindi.forEach { t -> add(t.kannada); t.words.forEach { add(it.kannada); add(it.sentence) } }
         hindiVowelEnglish.forEach { add(it) }
+        kannadaFruitChart.forEach { add(it.first); add(it.third) }
     }
 }
