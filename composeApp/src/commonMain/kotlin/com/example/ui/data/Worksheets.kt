@@ -166,6 +166,24 @@ object Worksheets {
         "https://firebasestorage.googleapis.com/v0/b/kannadakids-fd92d.firebasestorage.app/o/{object}?alt=media"
     private val http by lazy { createHttpClient() }
 
+    /**
+     * Backup copy of the PDFs in the (public) app repo, used when Firebase Storage refuses or fails
+     * (for example when its published Storage rules don't allow the worksheets folder).
+     */
+    private const val GITHUB_BASE =
+        "https://raw.githubusercontent.com/RameshKatru01/kannada-kids/7da06c43c2a22a9e6707d438e4433e4f996304ac/tools/worksheets/pdf/"
+
+    private suspend fun fetch(url: String): ByteArray? = try {
+        val response = http.get(url)
+        if (!response.status.isSuccess()) null else response.readRawBytes().takeIf { it.isPdf() }
+    } catch (e: Exception) {
+        null
+    }
+
+    /** A real PDF (not an error page). */
+    private fun ByteArray.isPdf(): Boolean =
+        size >= 100 && this[0] == '%'.code.toByte() && this[1] == 'P'.code.toByte() && this[2] == 'D'.code.toByte() && this[3] == 'F'.code.toByte()
+
     private fun url(file: String): String {
         val base = getSharedPreferences("AppSettings").getString("files_base", null)?.takeIf { it.isNotBlank() } ?: DEFAULT_BASE
         val obj = "worksheets/$file"
@@ -193,13 +211,7 @@ object Worksheets {
         for (s in sheets.distinctBy { it.file }) {
             val cached = FileCache.read("ws_${s.file}")
             if (cached != null) { out[s.file] = cached; continue }
-            val bytes = try {
-                val response = http.get(url(s.file))
-                if (!response.status.isSuccess()) null else response.readRawBytes()
-            } catch (e: Exception) {
-                null
-            }
-            if (bytes == null || bytes.size < 100) return@withContext null
+            val bytes = fetch(url(s.file)) ?: fetch(GITHUB_BASE + s.file) ?: return@withContext null
             FileCache.write("ws_${s.file}", bytes)
             out[s.file] = bytes
         }
