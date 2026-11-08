@@ -46,6 +46,7 @@ jobs:
         with:
           name: KannadaKids-debug-apk
           path: composeApp/build/outputs/apk/debug/*.apk
+          retention-days: 5
 
       # If the build fails, save the important part of the log to the "build-logs" branch
       # so it can be read without opening the Actions web page.
