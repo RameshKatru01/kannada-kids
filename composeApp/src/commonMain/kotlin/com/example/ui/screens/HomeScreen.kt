@@ -391,6 +391,13 @@ private fun sectionGames(type: String): List<Int> = when (type) {
     else -> listOf(8, 9, 22, 21, 23, 13)
 }
 
+/** The first two letters shown on a section's banner instead of a picture (Ka-kaa, Ottakshara). */
+private fun bannerLetters(type: String): List<String>? = when (type) {
+    "guninthakshari" -> listOf(com.example.data.Lang.script("ಕ"), com.example.data.Lang.script("ಕಾ"))
+    "ottakshara" -> com.example.data.OttaksharaData.letters.take(2).map { it.glyph }.takeIf { it.size == 2 }
+    else -> null
+}
+
 /** Picture behind a section's banner. */
 private fun sectionThumb(type: String): DrawableResource = when (type) {
     "vowels" -> Res.drawable.thumb_vowels
@@ -528,19 +535,44 @@ private fun SectionBanner(
             .clickable { onLearn() }
             .testTag("home_banner")
     ) {
-        // Picture on the right, fading into the colour
-        Image(
-            painter = painterResource(sectionThumb(island.type)),
-            contentDescription = null,
-            contentScale = ContentScale.Crop,
-            alpha = if (locked) 0.35f else 1f,
-            modifier = Modifier.align(Alignment.CenterEnd).fillMaxHeight().fillMaxWidth(0.55f)
-        )
-        Box(
-            Modifier.fillMaxSize().background(
-                Brush.horizontalGradient(0.42f to base, 0.62f to base.copy(alpha = 0f))
+        val letters = bannerLetters(island.type)
+        if (letters != null) {
+            // Ka-kaa and Ottakshara: their first two letters as big tiles on the right
+            Row(
+                Modifier.align(Alignment.CenterEnd).fillMaxHeight().fillMaxWidth(0.42f).padding(end = 12.dp),
+                horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.CenterHorizontally),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                letters.forEachIndexed { i, g ->
+                    Box(
+                        Modifier
+                            .weight(1f)
+                            .aspectRatio(0.85f)
+                            .graphicsLayer { rotationZ = if (i == 0) -6f else 5f; translationY = if (i == 0) -6f else 6f }
+                            .clip(RoundedCornerShape(18.dp))
+                            .background(Color.White.copy(alpha = if (locked) 0.45f else 1f))
+                            .border(3.dp, HomeSun, RoundedCornerShape(18.dp)),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text(g, fontSize = 34.sp, fontWeight = FontWeight.ExtraBold, color = base, maxLines = 1, softWrap = false)
+                    }
+                }
+            }
+        } else {
+            // Picture on the right, fading into the colour
+            Image(
+                painter = painterResource(sectionThumb(island.type)),
+                contentDescription = null,
+                contentScale = ContentScale.Crop,
+                alpha = if (locked) 0.35f else 1f,
+                modifier = Modifier.align(Alignment.CenterEnd).fillMaxHeight().fillMaxWidth(0.55f)
             )
-        )
+            Box(
+                Modifier.fillMaxSize().background(
+                    Brush.horizontalGradient(0.42f to base, 0.62f to base.copy(alpha = 0f))
+                )
+            )
+        }
         Column(Modifier.padding(14.dp).fillMaxWidth(0.62f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
             Text(
                 when { locked -> "LOCKED"; isCurrent -> "CONTINUE LEARNING"; else -> "SECTION" },
