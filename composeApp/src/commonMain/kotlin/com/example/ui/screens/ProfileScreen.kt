@@ -23,13 +23,11 @@ import com.example.ui.theme.BrightCyan
 import com.example.ui.data.ThemeManager
 import com.example.ui.data.AppTheme
 import com.example.ui.data.LanguageManager
-import com.example.ui.data.AppLanguage
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
-import androidx.compose.material.icons.filled.Star
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.border
 import androidx.compose.foundation.rememberScrollState
@@ -439,35 +437,3 @@ fun ThemeOption(theme: AppTheme, isSelected: Boolean, onClick: () -> Unit) {
     }
 }
 
-@Composable
-fun StatBox(label: String, value: String, color: Color) {
-    Card(
-        modifier = Modifier
-            .size(100.dp),
-        shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(containerColor = Color.White),
-        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
-    ) {
-        Column(
-            modifier = Modifier.fillMaxSize(),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.Center
-        ) {
-            Text(
-                text = value,
-                fontSize = 24.sp,
-                fontWeight = FontWeight.Bold,
-                color = color,
-                textAlign = TextAlign.Center
-            )
-            Spacer(modifier = Modifier.height(4.dp))
-            Text(
-                text = label,
-                fontSize = 12.sp,
-                fontWeight = FontWeight.Bold,
-                color = Color.Gray,
-                textAlign = TextAlign.Center
-            )
-        }
-    }
-}

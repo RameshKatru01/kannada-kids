@@ -59,35 +59,6 @@ data class SurpriseSticker(
     val secondaryColor: Color = rarity.defaultSecondaryColor
 )
 
-/**
- * Convenient builder to generate a new SurpriseSticker simply.
- */
-fun createSticker(
-    id: String,
-    nameKannada: String,
-    nameEnglish: String,
-    emoji: String,
-    rarity: StickerRarity = StickerRarity.COMMON,
-    descriptionKannada: String = "",
-    descriptionEnglish: String = "",
-    bonusCoins: Int = rarity.defaultBonusCoins,
-    primaryColor: Color = rarity.defaultPrimaryColor,
-    secondaryColor: Color = rarity.defaultSecondaryColor
-): SurpriseSticker {
-    return SurpriseSticker(
-        id = id,
-        nameKannada = nameKannada,
-        nameEnglish = nameEnglish,
-        descriptionKannada = descriptionKannada,
-        descriptionEnglish = descriptionEnglish,
-        emoji = emoji,
-        rarity = rarity,
-        bonusCoins = bonusCoins,
-        primaryColor = primaryColor,
-        secondaryColor = secondaryColor
-    )
-}
-
 object SurpriseStickerManager {
     private const val PREFS_NAME = "AppProgress"
     private const val STICKERS_PREFIX = "surprise_stickers_"

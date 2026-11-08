@@ -3,12 +3,10 @@ package com.example.ui.navigation
 import com.example.platform.*
 
 import androidx.compose.animation.*
-import androidx.compose.animation.core.tween
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -22,9 +20,6 @@ import androidx.navigation.compose.*
 import androidx.navigation.navArgument
 import androidx.savedstate.read
 import com.example.ui.screens.*
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.PlayArrow
-import androidx.compose.material.icons.filled.Close
 
 @Composable
 fun AppNavigation(authViewModel: AuthViewModel = viewModel { AuthViewModel() }) {

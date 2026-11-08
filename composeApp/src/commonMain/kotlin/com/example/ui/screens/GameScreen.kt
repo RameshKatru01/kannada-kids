@@ -15,10 +15,8 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.data.KannadaLetter
@@ -27,8 +25,6 @@ import com.example.ui.theme.*
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.ui.auth.AuthViewModel
 import com.example.ui.auth.AuthState
-import androidx.compose.material.icons.filled.Lock
-import com.example.ui.data.AppLanguage
 import com.example.ui.data.LanguageManager
 
 val guninthakshariSigns = listOf(

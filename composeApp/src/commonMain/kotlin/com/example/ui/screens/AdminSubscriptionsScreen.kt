@@ -4,7 +4,6 @@ import com.example.ui.components.readableWidth
 import com.example.platform.*
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.*

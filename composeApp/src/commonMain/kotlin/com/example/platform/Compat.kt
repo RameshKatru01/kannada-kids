@@ -53,17 +53,6 @@ object Uri {
     }
 }
 
-/** Random helpers that replace java.util.Random / Math.random usages. */
-object PlatformRandom {
-    /** Standard normal distributed value (Box-Muller), replacement for java.util.Random.nextGaussian(). */
-    fun nextGaussian(random: Random = Random.Default): Double {
-        var u1 = random.nextDouble()
-        if (u1 < 1e-12) u1 = 1e-12
-        val u2 = random.nextDouble()
-        return kotlin.math.sqrt(-2.0 * kotlin.math.ln(u1)) * kotlin.math.cos(2.0 * kotlin.math.PI * u2)
-    }
-}
-
 /** A short, random identifier (replacement for UUID.randomUUID().toString()). */
 fun randomId(): String {
     val hex = "0123456789abcdef"
@@ -75,9 +64,3 @@ fun randomId(): String {
     return sb.toString()
 }
 
-/** Simple e-mail validation (replacement for android.util.Patterns.EMAIL_ADDRESS). */
-private val EMAIL_REGEX = Regex(
-    "[a-zA-Z0-9+._%\\-]{1,256}@[a-zA-Z0-9][a-zA-Z0-9\\-]{0,64}(\\.[a-zA-Z0-9][a-zA-Z0-9\\-]{0,25})+"
-)
-
-fun isValidEmail(email: String): Boolean = EMAIL_REGEX.matches(email)

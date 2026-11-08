@@ -2,7 +2,6 @@ package com.example.ui.progress
 
 import androidx.compose.ui.graphics.Color
 import com.example.platform.*
-import com.example.ui.data.FeatureFlags
 import com.example.ui.data.ScoreManager
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -32,7 +31,6 @@ const val LEVELS_PER_GAME = 6
 private val Teal = Color(0xFF2EC4B6)
 private val Coral = Color(0xFFFF6B6B)
 private val Violet = Color(0xFF6C63FF)
-private val Sun = Color(0xFFFFC93C)
 private val Tangerine = Color(0xFFFF9F1C)
 private val Berry = Color(0xFFE84393)
 private val Sky = Color(0xFF4DA8FF)

@@ -3,7 +3,6 @@ package com.example.ui.screens
 import com.example.platform.*
 
 import androidx.compose.animation.core.*
-import kotlinx.coroutines.launch
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -22,10 +21,8 @@ import androidx.compose.ui.Alignment
 
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.layout.boundsInRoot
-import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.gestures.awaitEachGesture
 import androidx.compose.foundation.gestures.awaitFirstDown
-import androidx.compose.foundation.gestures.awaitTouchSlopOrCancellation
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.input.pointer.positionChange
 import androidx.compose.ui.input.pointer.changedToUp
@@ -44,10 +41,6 @@ import androidx.compose.ui.unit.sp
 import com.example.ui.theme.BrightCyan
 import com.example.ui.theme.BrightGreen
 import com.example.ui.audio.NativeAudioPlayer
-import kotlin.math.PI
-import kotlin.math.exp
-import kotlin.math.sin
-import kotlin.math.cos
 import kotlin.random.Random
 
 data class PathPuzzle(
@@ -154,70 +147,6 @@ fun ConfettiAnimation(show: Boolean) {
 }
 
 
-
-@Composable
-fun ParticleBurst(center: Offset, onComplete: () -> Unit) {
-    val anim = remember { Animatable(0f) }
-    LaunchedEffect(Unit) {
-        anim.animateTo(1f, animationSpec = tween(600, easing = FastOutSlowInEasing))
-        onComplete()
-    }
-    
-    val particleCount = 12
-    Canvas(modifier = Modifier.fillMaxSize()) {
-        for (i in 0 until particleCount) {
-            val angle = (i * (360f / particleCount)) * (PI / 180f)
-            val distance = anim.value * 200f
-            val x = center.x + (distance * cos(angle)).toFloat()
-            val y = center.y + (distance * sin(angle)).toFloat()
-            val radius = (1f - anim.value) * 15f
-            val color = if (i % 2 == 0) Color(0xFFFFD54F) else Color(0xFFFF8A65)
-            drawCircle(
-                color = color.copy(alpha = 1f - anim.value),
-                radius = radius,
-                center = Offset(x, y)
-            )
-        }
-    }
-}
-
-@Composable
-fun FloatingBackground(items: List<String>) {
-    val infiniteTransition = rememberInfiniteTransition(label="float")
-    val offsetY by infiniteTransition.animateFloat(
-        initialValue = 0f,
-        targetValue = 1000f,
-        animationSpec = infiniteRepeatable(
-            animation = tween(20000, easing = LinearEasing),
-            repeatMode = RepeatMode.Restart
-        ),
-        label = "bg_float"
-    )
-
-    Box(modifier = Modifier.fillMaxSize().zIndex(-1f)) {
-        for (i in 0..15) {
-            val startX = (i * 123) % 400
-            val startY = (i * 321) % 800
-            val speed = 0.5f + (i % 3) * 0.2f
-            val item = items[i % items.size]
-            val currentY = (startY - (offsetY * speed)) % 1000f
-            // handle wrap around seamlessly
-            val wrappedY = if (currentY < -100f) currentY + 1100f else currentY
-            
-            Text(
-                text = item,
-                color = Color.White.copy(alpha = 0.15f),
-                fontSize = (40 + (i % 4) * 20).sp,
-                fontWeight = FontWeight.Bold,
-                modifier = Modifier
-                    .offset(x = startX.dp, y = wrappedY.dp)
-                    .graphicsLayer {
-                        rotationZ = (offsetY * speed * 0.5f) % 360f
-                    }
-            )
-        }
-    }
-}
 
 @Composable
 fun DancingAnimal(animal: String, show: Boolean) {

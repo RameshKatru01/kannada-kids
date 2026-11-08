@@ -23,7 +23,6 @@ import com.example.ui.auth.AuthViewModel
 import com.example.ui.auth.AuthState
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import com.example.ui.data.AppLanguage
 import com.example.ui.data.LanguageManager
 
 @OptIn(ExperimentalMaterial3Api::class)

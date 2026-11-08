@@ -45,7 +45,6 @@ import com.example.ui.data.LanguageManager
 import com.example.ui.data.ScoreManager
 import com.example.ui.progress.GameProgress
 import com.example.ui.progress.GameRegistry
-import com.example.ui.progress.PointsPill
 import com.example.ui.progress.StarGold
 import com.example.ui.progress.StarIcon
 import com.example.ui.progress.formatPoints

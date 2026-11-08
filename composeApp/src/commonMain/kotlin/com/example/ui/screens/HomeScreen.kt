@@ -4,7 +4,6 @@ import com.example.platform.*
 
 import androidx.compose.animation.core.*
 import androidx.compose.foundation.Canvas
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -33,15 +32,9 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.Path
-import androidx.compose.ui.graphics.PathEffect
 import androidx.compose.ui.graphics.StrokeCap
-import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.drawscope.rotate
-import androidx.compose.ui.layout.ContentScale
-import com.example.ui.components.GameArt
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
@@ -50,22 +43,11 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.data.LetterData
-import com.example.resources.Res
-import com.example.resources.thumb_animals
-import com.example.resources.thumb_fruits
-import com.example.resources.thumb_birds
-import com.example.resources.thumb_colours
-import com.example.resources.thumb_consonants
-import com.example.resources.thumb_numbers
-import com.example.resources.thumb_vowels
 import com.example.ui.data.Access
 import com.example.ui.data.ActivityTracker
 import com.example.ui.data.ScoreManager
 import com.example.ui.progress.GameInfo
-import com.example.ui.progress.GameRegistry
 import com.example.ui.progress.lerpColor
-import org.jetbrains.compose.resources.DrawableResource
-import org.jetbrains.compose.resources.painterResource
 
 /*
  * Home (after sign-in): greeting + points + streak, then the "Play TV": a cartoon TV showing the
@@ -77,8 +59,6 @@ import org.jetbrains.compose.resources.painterResource
 private val HomeInk = Color(0xFF0B3B66)
 private val HomeInkSoft = Color(0xFF3A5F82)
 private val HomeSky = Color(0xFFEAF6FF)
-private val MapWater = Color(0xFFBDE6FF)
-private val MapHill = Color(0xFF8FD694)
 private val HomeCoral = Color(0xFFFF6B6B)
 private val HomeSun = Color(0xFFFFC93C)
 
@@ -158,17 +138,9 @@ fun HomeScreen(
     // "New island opened!" once, when the child unlocks Consonants / Ka-kaa by learning
     val celebrate = remember(version, pathVersion, sub) { Access.newlyOpenedIsland() }
 
-    // Everything fits on one screen (no scrolling): the two shelves take a fixed height and the
-    // map gets whatever is left. All three share the same 16dp side margins so their edges line up.
-    BoxWithConstraints(Modifier.fillMaxSize().background(HomeSky)) {
+    // Everything fits on one screen (no scrolling): the top bar, then the Play TV fills the rest.
+    Box(Modifier.fillMaxSize().background(HomeSky)) {
         val side = 16.dp
-        val gap = 10.dp
-        val inner = maxWidth - side * 2
-        // 3 cards per row on phones, more on tablets
-        val perRow = (inner / 120.dp).toInt().coerceIn(3, 6)
-        val cardWidth = (inner - gap * (perRow - 1)) / perRow
-        val pictureHeight = (cardWidth * 0.66f).coerceAtMost(130.dp)
-        val picks = remember { listOf(1, 21, 23, 22, 12, 13).mapNotNull { GameRegistry.byId(it) } }
         Column(
             Modifier
                 .fillMaxSize()
@@ -213,16 +185,6 @@ fun HomeScreen(
         }
     }
 }
-
-private val homeVideos: List<Pair<String, DrawableResource>> = listOf(
-    "Fruits" to Res.drawable.thumb_fruits,
-    "Vowels" to Res.drawable.thumb_vowels,
-    "Consonants" to Res.drawable.thumb_consonants,
-    "Animals" to Res.drawable.thumb_animals,
-    "Birds" to Res.drawable.thumb_birds,
-    "Colours" to Res.drawable.thumb_colours,
-    "Numbers" to Res.drawable.thumb_numbers
-)
 
 @Composable
 private fun HomeTopBar(coins: Int, streak: Int, onProfile: () -> Unit, onPoints: () -> Unit, modifier: Modifier = Modifier) {
@@ -271,305 +233,7 @@ private fun HomePill(onClick: (() -> Unit)? = null, content: @Composable RowScop
     )
 }
 
-/** Where each planet sits in space, as fractions of the box (centre of the planet). */
-private val islandSpots = listOf(Offset(0.20f, 0.80f), Offset(0.76f, 0.71f), Offset(0.40f, 0.48f), Offset(0.81f, 0.36f), Offset(0.51f, 0.14f))
-
-private val SpaceTop = Color(0xFF3B3F8F)
-private val SpaceDeep = Color(0xFF141A3A)
 private val LockedPlanet = Color(0xFF3D4A66)
-private val Glow = Color(0xFFFFC93C)
-
-/** Fixed "random" star positions (fractions of the box) so the sky doesn't jump around. */
-private val spaceStars: List<Triple<Float, Float, Float>> = (0 until 60).map { i ->
-    Triple(((i * 73) % 354) / 354f, ((i * 41) % 340) / 340f, 1f + (i % 3) * 0.6f)
-}
-
-/**
- * Space trip: each learning section is a planet, joined by a dotted flight path. Finished planets
- * get a gold star, the current one glows ("Land!") with a rocket flying to it, locked ones are dark
- * with a padlock. A "Next" button sits in the corner.
- */
-@Composable
-private fun IslandMap(islands: List<Island>, currentIndex: Int, nextGlyph: String, nextState: Access.State, onNext: () -> Unit, modifier: Modifier = Modifier) {
-    val anim = rememberInfiniteTransition(label = "space")
-    val glow by anim.animateFloat(0.25f, 0.6f, infiniteRepeatable(tween(1100, easing = FastOutSlowInEasing), RepeatMode.Reverse), label = "glow")
-    val bob by anim.animateFloat(-4f, 4f, infiniteRepeatable(tween(1300, easing = FastOutSlowInEasing), RepeatMode.Reverse), label = "bob")
-    val dash by anim.animateFloat(0f, 40f, infiniteRepeatable(tween(2000, easing = LinearEasing)), label = "dash")
-    val twinkle by anim.animateFloat(0.3f, 1f, infiniteRepeatable(tween(1700), RepeatMode.Reverse), label = "twinkle")
-
-    BoxWithConstraints(
-        modifier
-            .clip(RoundedCornerShape(28.dp))
-            .background(SpaceDeep)
-    ) {
-        val w = maxWidth
-        val h = maxHeight
-        val base = (minOf(w, h) * 0.10f).coerceIn(24.dp, 44.dp)   // planet radius
-
-        // Sky, stars and the flight path
-        Canvas(Modifier.fillMaxSize()) {
-            drawRect(
-                androidx.compose.ui.graphics.Brush.radialGradient(
-                    listOf(SpaceTop, SpaceDeep),
-                    center = Offset(size.width * 0.8f, size.height * 0.1f),
-                    radius = size.width * 1.1f
-                )
-            )
-            spaceStars.forEachIndexed { i, (fx, fy, r) ->
-                val a = if (i % 4 == 0) twinkle else 0.55f + (i % 3) * 0.15f
-                drawCircle(Color.White.copy(alpha = a.coerceIn(0f, 1f)), radius = r * density, center = Offset(fx * size.width, fy * size.height))
-            }
-            val pts = islandSpots.map { Offset(it.x * size.width, it.y * size.height) }
-            val path = Path().apply {
-                moveTo(pts[0].x, pts[0].y)
-                for (i in 1 until pts.size) {
-                    val p0 = pts[i - 1]
-                    val p1 = pts[i]
-                    val midY = (p0.y + p1.y) / 2
-                    cubicTo(p0.x, midY, p1.x, midY, p1.x, p1.y)
-                }
-            }
-            drawPath(
-                path, Color.White.copy(alpha = 0.45f),
-                style = Stroke(width = 3.dp.toPx(), cap = StrokeCap.Round,
-                    pathEffect = PathEffect.dashPathEffect(floatArrayOf(4.dp.toPx(), 10.dp.toPx()), phase = -dash))
-            )
-        }
-
-        islands.forEachIndexed { i, island ->
-            val isCurrent = i == currentIndex
-            val locked = island.state == Access.State.NeedsProgress
-            val r = if (isCurrent) base * 1.3f else base
-            val spot = islandSpots[i]
-            val boxW = 140.dp
-            Column(
-                horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.spacedBy(4.dp),
-                modifier = Modifier
-                    .width(boxW)
-                    .offset(x = w * spot.x - boxW / 2, y = h * spot.y - r)
-                    .clip(RoundedCornerShape(20.dp))
-                    .clickable {
-                        com.example.ui.audio.SoundEffectsHelper.playButtonTap()
-                        if (locked) Access.showHint(Access.islandHint(island.type)) else island.open()
-                    }
-                    .testTag("home_island_${island.type}")
-            ) {
-                Box(Modifier.size(r * 2), contentAlignment = Alignment.Center) {
-                    val color = if (locked) LockedPlanet else island.color
-                    val fraction = if (island.total == 0) 0f else island.done.toFloat() / island.total
-                    Canvas(Modifier.fillMaxSize()) {
-                        val rad = size.minDimension / 2
-                        // Glow around the current planet
-                        if (isCurrent) drawCircle(Glow.copy(alpha = glow), radius = rad * 1.25f)
-                        // Saturn-style ring on the 2nd planet
-                        if (i == 1 && !locked) {
-                            rotate(-14f) {
-                                drawOval(Glow, topLeft = Offset(-rad * 0.35f, rad * 0.82f), size = Size(rad * 2.7f, rad * 0.36f), style = Stroke(2.5f.dp.toPx()))
-                            }
-                        }
-                        drawCircle(color, radius = rad)
-                        // Shine
-                        drawCircle(
-                            androidx.compose.ui.graphics.Brush.radialGradient(
-                                listOf(Color.White.copy(alpha = 0.35f), Color.Transparent),
-                                center = Offset(rad * 0.7f, rad * 0.6f), radius = rad
-                            ),
-                            radius = rad
-                        )
-                        // Progress around the planet
-                        if (!locked && fraction > 0f) {
-                            val sw = 3.dp.toPx()
-                            drawArc(
-                                Color.White.copy(alpha = 0.9f), startAngle = -90f, sweepAngle = 360f * fraction.coerceIn(0f, 1f),
-                                useCenter = false, topLeft = Offset(sw, sw), size = Size(size.width - 2 * sw, size.height - 2 * sw),
-                                style = Stroke(width = sw, cap = StrokeCap.Round)
-                            )
-                        }
-                    }
-                    Text(island.glyph, fontSize = (r.value * 0.72f).sp, fontWeight = FontWeight.ExtraBold, color = Color.White)
-                    when {
-                        locked -> LockBadge(Modifier.align(Alignment.TopEnd).offset(x = 4.dp, y = (-4).dp), size = 24.dp)
-                        isCurrent -> Text(
-                            "Land!",
-                            fontSize = 11.sp, fontWeight = FontWeight.ExtraBold, color = Color.White,
-                            modifier = Modifier
-                                .align(Alignment.TopEnd)
-                                .offset(x = 12.dp, y = (-6).dp)
-                                .background(HomeCoral, RoundedCornerShape(10.dp))
-                                .padding(horizontal = 8.dp, vertical = 1.dp)
-                        )
-                        island.finished -> com.example.ui.progress.StarIcon(
-                            24.dp, Color(0xFFFFC93C),
-                            Modifier.align(Alignment.TopEnd).offset(x = 4.dp, y = (-4).dp)
-                        )
-                    }
-                }
-                Text(
-                    if (locked) island.name else "${island.name} · ${island.done}/${island.total}",
-                    fontSize = 11.sp, fontWeight = FontWeight.ExtraBold, color = Color.White, maxLines = 1,
-                    modifier = Modifier.background(Color.White.copy(alpha = 0.16f), RoundedCornerShape(10.dp)).padding(horizontal = 8.dp, vertical = 1.dp)
-                )
-            }
-        }
-
-        // Rocket flying towards the current planet
-        islandSpots.getOrNull(currentIndex)?.let { spot ->
-            Text(
-                "🚀",
-                fontSize = 30.sp,
-                modifier = Modifier
-                    .offset(x = w * spot.x + base * 1.3f + 4.dp, y = h * spot.y - base * 0.4f + bob.dp)
-                    .graphicsLayer { rotationZ = -35f }
-            )
-        }
-
-        // "Next letter" button
-        Row(
-            Modifier
-                .align(Alignment.TopStart)
-                .padding(10.dp)
-                .shadow(4.dp, RoundedCornerShape(22.dp))
-                .clip(RoundedCornerShape(22.dp))
-                .background(Color.White.copy(alpha = 0.95f))
-                .clickable { onNext() }
-                .padding(start = 12.dp, end = 5.dp, top = 5.dp, bottom = 5.dp)
-                .testTag("home_next_letter"),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(8.dp)
-        ) {
-            Text("Next:", fontSize = 13.sp, fontWeight = FontWeight.ExtraBold, color = HomeInk)
-            Text(nextGlyph, fontSize = 20.sp, fontWeight = FontWeight.ExtraBold, color = HomeInk)
-            if (nextState == Access.State.NeedsPremium) {
-                CrownBadge(size = 30.dp)
-            } else {
-                Box(Modifier.size(30.dp).background(HomeCoral, CircleShape), contentAlignment = Alignment.Center) {
-                    Icon(Icons.Default.PlayArrow, contentDescription = "Start the next letter", tint = Color.White, modifier = Modifier.size(20.dp))
-                }
-            }
-        }
-    }
-}
-
-@Composable
-private fun ProgressRing(fraction: Float, color: Color, modifier: Modifier = Modifier) {
-    Canvas(modifier) {
-        val stroke = 8.dp.toPx()
-        drawCircle(Color.White)
-        drawArc(
-            color = color,
-            startAngle = -90f,
-            sweepAngle = 360f * fraction.coerceIn(0f, 1f),
-            useCenter = false,
-            topLeft = Offset(stroke / 2, stroke / 2),
-            size = Size(size.width - stroke, size.height - stroke),
-            style = Stroke(width = stroke, cap = StrokeCap.Round)
-        )
-    }
-}
-
-@Composable
-private fun ShelfTitle(title: String, onSeeAll: () -> Unit, side: Dp = 16.dp) {
-    Row(
-        Modifier.fillMaxWidth().padding(start = side, end = side - 6.dp),
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        Text(title, fontSize = 18.sp, fontWeight = FontWeight.ExtraBold, color = HomeInk, modifier = Modifier.weight(1f))
-        Text(
-            "See all",
-            fontSize = 13.sp, fontWeight = FontWeight.ExtraBold, color = HomeInk,
-            modifier = Modifier.clip(RoundedCornerShape(10.dp)).clickable { onSeeAll() }.padding(horizontal = 6.dp, vertical = 4.dp)
-        )
-    }
-}
-
-/** A game card: its drawn picture (same art as the Games tab) with the name below, like a video card. */
-@Composable
-private fun HomeGameCard(game: GameInfo, pictureHeight: Dp, modifier: Modifier = Modifier, state: Access.State = Access.State.Open, onClick: () -> Unit) {
-    HomeCard(
-        label = game.name,
-        pictureHeight = pictureHeight,
-        modifier = modifier.testTag("home_game_${game.id}"),
-        state = state,
-        onClick = onClick
-    ) {
-        // The art is drawn for a ~150x112dp box; scale it to whatever size the card has
-        BoxWithConstraints(
-            Modifier.fillMaxSize().background(lerpColor(game.color, Color.White, 0.82f)),
-            contentAlignment = Alignment.Center
-        ) {
-            val scale = minOf(maxWidth / 150.dp, maxHeight / 112.dp)
-            Box(
-                Modifier
-                    .requiredSize(150.dp, 112.dp)
-                    .graphicsLayer { scaleX = scale; scaleY = scale }
-            ) {
-                GameArt(
-                    kind = artFor(game),
-                    color = game.color,
-                    background = lerpColor(game.color, Color.White, 0.82f),
-                    glyph = game.glyph,
-                    ink = game.ink
-                )
-            }
-        }
-    }
-}
-
-@Composable
-private fun HomeVideoCard(folder: String, photo: DrawableResource, pictureHeight: Dp, modifier: Modifier = Modifier, state: Access.State = Access.State.Open, onClick: () -> Unit) {
-    HomeCard(
-        label = folder,
-        pictureHeight = pictureHeight,
-        modifier = modifier.testTag("home_video_$folder"),
-        state = state,
-        onClick = onClick
-    ) {
-        Image(
-            painter = painterResource(photo),
-            contentDescription = "$folder videos",
-            contentScale = ContentScale.Crop,
-            modifier = Modifier.fillMaxSize()
-        )
-        Box(
-            Modifier.align(Alignment.BottomEnd).padding(6.dp).size(24.dp).background(HomeInk.copy(alpha = 0.8f), CircleShape),
-            contentAlignment = Alignment.Center
-        ) {
-            Icon(Icons.Default.PlayArrow, contentDescription = null, tint = Color.White, modifier = Modifier.size(16.dp))
-        }
-    }
-}
-
-/** Shared card frame for the Home shelves: rounded picture on top, one-line name below. */
-@Composable
-private fun HomeCard(label: String, pictureHeight: Dp, modifier: Modifier, state: Access.State = Access.State.Open, onClick: () -> Unit, picture: @Composable BoxScope.() -> Unit) {
-    Column(
-        modifier
-            .clip(RoundedCornerShape(16.dp))
-            .clickable {
-                com.example.ui.audio.SoundEffectsHelper.playButtonTap()
-                onClick()
-            },
-        verticalArrangement = Arrangement.spacedBy(3.dp)
-    ) {
-        Box(
-            Modifier
-                .fillMaxWidth()
-                .height(pictureHeight)
-                .clip(RoundedCornerShape(16.dp))
-                .background(lerpColor(HomeInk, Color.White, 0.8f))
-        ) {
-            picture()
-            AccessBadge(state, Modifier.align(Alignment.TopEnd).padding(5.dp), size = 26.dp)
-        }
-        Text(
-            label,
-            fontSize = 12.sp, fontWeight = FontWeight.ExtraBold, color = HomeInk,
-            maxLines = 1, overflow = TextOverflow.Ellipsis
-        )
-    }
-}
-
 @Composable
 fun BentoBottomNav(
     currentRoute: String,
