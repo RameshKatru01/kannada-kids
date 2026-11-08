@@ -316,7 +316,7 @@ private fun WritingVideoCard(url: String, letter: KannadaLetter) {
                 .border(2.dp, Color(0xFFF2E6C4), RoundedCornerShape(18.dp))
                 .background(Color.White)
         ) {
-            VideoSurface(controller = player, showNativeControls = false, modifier = Modifier.fillMaxSize())
+            VideoSurface(controller = player, showNativeControls = false, modifier = Modifier.fillMaxSize(), whiteBackground = true)
             // Tap layer (play / pause)
             Box(
                 modifier = Modifier

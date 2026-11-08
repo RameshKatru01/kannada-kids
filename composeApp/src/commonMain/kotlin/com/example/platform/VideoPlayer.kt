@@ -39,7 +39,9 @@ expect fun rememberVideoPlayer(url: String, loop: Boolean, autoPlay: Boolean): V
 expect fun VideoSurface(
     controller: VideoPlayerController,
     showNativeControls: Boolean,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    /** Fill any space the video doesn't cover with white (for white-background videos, e.g. letter strokes). */
+    whiteBackground: Boolean = false
 )
 
 /** Hides the system status / navigation bars while in the composition (immersive video). */

@@ -105,8 +105,6 @@ fun LetterGameFlowScreen(
         bottomBar = {
             if (canPrint && worksheetSheet != null) {
                 PracticeOnPaperBar(
-                    letter = letter.character,
-                    pages = worksheetSheet.pages,
                     locked = !com.example.ui.data.Worksheets.isOpen(worksheetSheet),
                     onPreview = { previewAfterGate = true; showPrintGate = true },
                     onPrint = { previewAfterGate = false; showPrintGate = true }
@@ -224,50 +222,42 @@ fun LetterGameFlowScreen(
  */
 @Composable
 private fun PracticeOnPaperBar(
-    letter: String,
-    pages: Int,
     locked: Boolean,
     onPreview: () -> Unit,
     onPrint: () -> Unit
 ) {
-    Surface(color = Color.White, shadowElevation = 8.dp) {
+    // One slim line, so the tracing above gets the space
+    Surface(color = Color.White, shadowElevation = 4.dp) {
         Row(
             Modifier
                 .fillMaxWidth()
                 .navigationBarsPadding()
-                .padding(horizontal = 16.dp, vertical = 10.dp)
+                .padding(horizontal = 12.dp, vertical = 4.dp)
                 .testTag("practice_on_paper_bar"),
             verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(10.dp)
+            horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.CenterHorizontally)
         ) {
-            Text("🖨️", fontSize = 24.sp)
-            Column(Modifier.weight(1f)) {
-                Text(
-                    "Practice on paper" + if (locked) "  👑" else "",
-                    fontSize = 15.sp, fontWeight = FontWeight.ExtraBold, color = Color(0xFF1F2A44)
-                )
-                Text(
-                    "Want more practice? Print the $letter worksheet ($pages pages).",
-                    fontSize = 12.sp, fontWeight = FontWeight.Bold, color = Color(0xFF5B6B82), maxLines = 2
-                )
-            }
+            Text("🖨️", fontSize = 16.sp)
+            Text(
+                "Practice on paper" + if (locked) " 👑" else "",
+                fontSize = 13.sp, fontWeight = FontWeight.ExtraBold, color = Color(0xFF1F2A44), maxLines = 1
+            )
             // Preview and Print share one solid style, so neither looks greyed out.
-            Button(
-                onClick = onPreview,
-                enabled = true,
-                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF2E86DE), contentColor = Color.White),
-                modifier = Modifier.testTag("practice_preview")
-            ) {
-                Text("Preview", fontWeight = FontWeight.ExtraBold)
-            }
-            Button(
-                onClick = onPrint,
-                enabled = true,
-                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF2E86DE), contentColor = Color.White),
-                modifier = Modifier.testTag("practice_print")
-            ) {
-                Text("Print", fontWeight = FontWeight.ExtraBold)
-            }
+            SlimButton("Preview", "practice_preview", onPreview)
+            SlimButton("Print", "practice_print", onPrint)
         }
     }
 }
+
+@Composable
+private fun SlimButton(label: String, tag: String, onClick: () -> Unit) {
+    Button(
+        onClick = onClick,
+        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF2E86DE), contentColor = Color.White),
+        contentPadding = PaddingValues(horizontal = 12.dp, vertical = 0.dp),
+        modifier = Modifier.height(32.dp).testTag(tag)
+    ) {
+        Text(label, fontSize = 13.sp, fontWeight = FontWeight.ExtraBold)
+    }
+}
+

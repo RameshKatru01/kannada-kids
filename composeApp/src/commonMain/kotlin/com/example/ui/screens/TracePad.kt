@@ -58,12 +58,13 @@ import kotlin.math.roundToInt
 /*
  * Letter tracing used at the start of every letter lesson.
  *
- *  - The letter fills the whole tracing area (as big as fits).
- *  - The grey letter fills with colour where the child's finger goes, and a bar shows how much is
- *    done, so they can see what is left.
- *  - The trace is judged only after the child pauses (about 1.5 s with the finger up): about 85%
- *    of the letter coloured and most of the ink on the letter. Not there yet = a gentle nudge
- *    ("Colour the grey bits too!"); lots of ink off the letter = "Oops, stay on the letter".
+ *  - The letter fills the whole tracing area: it is sized by its real shape (not the font's line
+ *    box), so every letter is as big as fits.
+ *  - The grey letter fills with colour where the child's finger goes. Nothing is judged while
+ *    drawing: the child taps Done when finished (Clear starts again).
+ *  - On Done the trace passes with at least 80% of the letter coloured and at least 80% of the
+ *    ink on the letter. Not enough coloured = the parts still to colour glow orange and the child
+ *    carries on; too much ink off the letter = "Oops, stay on the grey letter" and it clears.
  *  - 5 stars across the top show how many good traces are done; "Trace ಅ 5 times" and
  *    "2 more to go!" say it in words, a pointing hand shows where to start, and the letter is
  *    spoken after each good trace.
@@ -74,7 +75,7 @@ private val PadInkSoft = Color(0xFF3A5F82)
 private val PadPaper = Color(0xFFFFFBF0)
 private val PadGuide = Color(0xFFD6CCB4)
 private val PadStroke = Color(0xFF6C63FF)
-private val PadFill = Color(0xFFFF9F1C)
+private val PadFill = Color(0xFFFF5C8A)   // the child's colour (pink, so the orange "still to colour" parts stand out)
 private val PadGood = Color(0xFF2EC4B6)
 private val PadOops = Color(0xFFFF6B6B)
 private val PadStar = Color(0xFFFFB300)
@@ -82,7 +83,10 @@ private val PadStarEmpty = Color(0xFFD5DEE6)
 
 private const val REQUIRED_TRACES = 5
 
-private enum class TraceFeedback { None, Good, TryAgain }
+private enum class TraceFeedback { None, Good, NotYet, TryAgain }
+
+/** The parts still to colour after Done (not enough coloured yet). */
+private val PadMissing = Color(0xFFFFB25C)
 
 /** The instructions, stars and buttons above/below the pad, plus the pad itself. */
 @Composable
@@ -97,10 +101,7 @@ fun TraceExercise(
     var done by remember(letter.character) { mutableIntStateOf(0) }
     var strokes by remember(letter.character) { mutableStateOf(listOf<List<Offset>>()) }
     var feedback by remember(letter.character) { mutableStateOf(TraceFeedback.None) }
-    var checkJob by remember { mutableStateOf<kotlinx.coroutines.Job?>(null) }
     var checker by remember { mutableStateOf<((List<List<Offset>>) -> TraceScore)?>(null) }
-    var progress by remember(letter.character) { mutableFloatStateOf(0f) }
-    var nudge by remember(letter.character) { mutableStateOf<String?>(null) }
 
     LaunchedEffect(letter.character) {
         delay(400)
@@ -117,7 +118,6 @@ fun TraceExercise(
             onSpeakText(letter.character)
             delay(650)
             strokes = emptyList()
-            progress = 0f
             feedback = TraceFeedback.None
             if (done >= REQUIRED_TRACES) {
                 delay(300)
@@ -132,29 +132,25 @@ fun TraceExercise(
         scope.launch {
             delay(1300)
             strokes = emptyList()
-            progress = 0f
             feedback = TraceFeedback.None
         }
     }
 
-    // Called when the finger lifts. Nothing is judged mid-letter: only after the child pauses.
-    fun onStrokeFinished() {
-        checkJob?.cancel()
-        if (feedback != TraceFeedback.None) return
-        checker?.invoke(strokes)?.let { progress = it.coverage }
-        checkJob = scope.launch {
-            delay(1500)
-            val score = checker?.invoke(strokes) ?: return@launch
-            progress = score.coverage
-            when {
-                score.passed -> { nudge = null; success() }
-                !score.inked -> Unit
-                score.accuracy < OK_ACCURACY -> { nudge = null; tryAgain() }
-                score.coverage >= 0.65f -> nudge = "Almost! Colour the last grey bits"
-                else -> nudge = "Colour all of the grey letter"
+    // Checked only when the child taps Done (nothing is judged while drawing)
+    fun checkOnDone() {
+        if (feedback == TraceFeedback.Good || feedback == TraceFeedback.TryAgain) return
+        val score = checker?.invoke(strokes) ?: return
+        when {
+            score.passed -> success()
+            score.accuracy < OK_ACCURACY -> tryAgain()
+            else -> {
+                // Not enough coloured: show the parts still to colour (orange) and let them carry on
+                feedback = TraceFeedback.NotYet
+                SoundEffectsHelper.playOops(context)
             }
         }
     }
+    val canCheck = strokes.isNotEmpty() && feedback != TraceFeedback.Good && feedback != TraceFeedback.TryAgain
 
     Column(modifier, horizontalAlignment = Alignment.CenterHorizontally) {
         // Instruction + progress
@@ -173,14 +169,15 @@ fun TraceExercise(
                         feedback == TraceFeedback.Good && left == 0 -> "All $REQUIRED_TRACES done! 🎉"
                         feedback == TraceFeedback.Good -> "Great! $left more to go"
                         feedback == TraceFeedback.TryAgain -> "Oops! Stay on the grey letter"
-                        nudge != null -> nudge!!
-                        done == 0 -> "Use your finger to colour the whole grey letter"
-                        else -> "$left more to go!"
+                        feedback == TraceFeedback.NotYet -> "Almost! Colour the orange bits, then tap Done"
+                        done == 0 -> "Colour the whole grey letter, then tap Done"
+                        else -> "$left more to go! Tap Done when finished"
                     },
                     fontSize = 15.sp, fontWeight = FontWeight.Bold,
                     color = when (feedback) {
                         TraceFeedback.Good -> PadGood
                         TraceFeedback.TryAgain -> PadOops
+                        TraceFeedback.NotYet -> Color(0xFFE8711A)
                         TraceFeedback.None -> PadInkSoft
                     }
                 )
@@ -189,32 +186,51 @@ fun TraceExercise(
         Spacer(Modifier.height(6.dp))
         TraceStars(done = done, celebrate = feedback == TraceFeedback.Good)
         Spacer(Modifier.height(8.dp))
-        FillBar(progress = progress, good = feedback == TraceFeedback.Good)
-        Spacer(Modifier.height(8.dp))
 
         TracePad(
             letter = letter.character,
             strokes = strokes,
             feedback = feedback,
             showHint = done == 0 && strokes.isEmpty(),
-            onStrokesChange = {
-                checkJob?.cancel()
-                nudge = null
-                strokes = it
-            },
-            onLive = { live -> checker?.invoke(live)?.let { progress = it.coverage } },
-            onStrokeFinished = { onStrokeFinished() },
+            onStrokesChange = { strokes = it },
             onChecker = { checker = it },
             onSpeak = { onSpeakText(letter.character) },
-            onClear = {
-                checkJob?.cancel()
-                strokes = emptyList()
-                progress = 0f
-                nudge = null
-                feedback = TraceFeedback.None
-            },
             modifier = Modifier.fillMaxWidth().weight(1f)
         )
+        Spacer(Modifier.height(8.dp))
+        // Clear + Done: the trace is checked only when the child taps Done
+        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+            Row(
+                Modifier
+                    .weight(1f)
+                    .height(52.dp)
+                    .clip(RoundedCornerShape(26.dp))
+                    .border(2.dp, PadInk, RoundedCornerShape(26.dp))
+                    .clickable(enabled = feedback != TraceFeedback.Good) {
+                        strokes = emptyList()
+                        feedback = TraceFeedback.None
+                    }
+                    .testTag("trace_clear"),
+                horizontalArrangement = Arrangement.Center,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Icon(Icons.Default.Refresh, contentDescription = null, tint = PadInk, modifier = Modifier.size(22.dp))
+                Spacer(Modifier.width(6.dp))
+                Text("Clear", fontSize = 18.sp, fontWeight = FontWeight.ExtraBold, color = PadInk)
+            }
+            Box(
+                Modifier
+                    .weight(1f)
+                    .height(52.dp)
+                    .clip(RoundedCornerShape(26.dp))
+                    .background(if (canCheck) PadGood else Color(0xFFB8C7D4))
+                    .clickable(enabled = canCheck) { checkOnDone() }
+                    .testTag("trace_done"),
+                contentAlignment = Alignment.Center
+            ) {
+                Text("✓ Done", fontSize = 18.sp, fontWeight = FontWeight.ExtraBold, color = Color.White)
+            }
+        }
     }
 }
 
@@ -247,30 +263,8 @@ private fun TraceStars(done: Int, celebrate: Boolean) {
 }
 
 /** How much of the letter must be coloured, and how much of the ink must be on the letter. */
-private const val GOAL_COVERAGE = 0.85f
-private const val OK_ACCURACY = 0.6f
-
-/** "How much is coloured" bar; the flag marks the goal. */
-@Composable
-private fun FillBar(progress: Float, good: Boolean) {
-    val shown by animateFloatAsState((progress / GOAL_COVERAGE).coerceIn(0f, 1f), tween(250), label = "fill")
-    Row(
-        Modifier.fillMaxWidth().padding(horizontal = 6.dp),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(8.dp)
-    ) {
-        Text("🖍️", fontSize = 18.sp)
-        Box(
-            Modifier.weight(1f).height(14.dp).clip(RoundedCornerShape(7.dp)).background(Color(0xFFE6ECF1))
-        ) {
-            Box(
-                Modifier.fillMaxHeight().fillMaxWidth(shown).clip(RoundedCornerShape(7.dp))
-                    .background(if (good || shown >= 1f) PadGood else PadFill)
-            )
-        }
-        Text(if (shown >= 1f) "⭐" else "🏁", fontSize = 18.sp)
-    }
-}
+private const val GOAL_COVERAGE = 0.80f
+private const val OK_ACCURACY = 0.80f
 
 /** How well a drawing matches the letter. */
 data class TraceScore(val coverage: Float, val accuracy: Float, val inked: Boolean) {
@@ -285,11 +279,8 @@ private fun TracePad(
     feedback: TraceFeedback,
     showHint: Boolean,
     onStrokesChange: (List<List<Offset>>) -> Unit,
-    onStrokeFinished: () -> Unit,
-    onLive: (List<List<Offset>>) -> Unit = {},
     onChecker: ((List<List<Offset>>) -> TraceScore) -> Unit,
     onSpeak: () -> Unit,
-    onClear: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     val measurer = rememberTextMeasurer()
@@ -305,7 +296,7 @@ private fun TracePad(
                 when (feedback) {
                     TraceFeedback.Good -> Color(0xFFE3FAF6)
                     TraceFeedback.TryAgain -> Color(0xFFFFECEC)
-                    TraceFeedback.None -> PadPaper
+                    TraceFeedback.NotYet, TraceFeedback.None -> PadPaper
                 }
             )
             .border(3.dp, PadGuide, RoundedCornerShape(24.dp))
@@ -313,24 +304,32 @@ private fun TracePad(
         val wPx = with(density) { maxWidth.toPx() }
         val hPx = with(density) { maxHeight.toPx() }
 
-        // Measure the letter as big as it fits (about 90% of the width, 85% of the height)
-        val layout: TextLayoutResult = remember(letter, wPx, hPx) {
-            val base = with(density) { (min(maxWidth.value, maxHeight.value) * 0.8f).dp.toSp() }
+        // The letter as big as it fits: sized by its real (ink) shape, ~92% of the width and ~90% of
+        // the height, and centred on that shape (a font's line box has lots of empty space)
+        val fitted = remember(letter, wPx, hPx) {
+            val base = with(density) { 100.dp.toSp() }
             val style = TextStyle(fontSize = base, fontWeight = FontWeight.Bold)
             val first = measurer.measure(letter, style)
-            val k = min(1f, min(wPx * 0.9f / max(1, first.size.width), hPx * 0.85f / max(1, first.size.height)))
-            if (k < 0.999f) measurer.measure(letter, style.copy(fontSize = base * k)) else first
+            val ink = inkBounds(first)
+            val k = min(wPx * 0.92f / max(1f, ink.width), hPx * 0.90f / max(1f, ink.height))
+            val layout = measurer.measure(letter, style.copy(fontSize = base * k))
+            val box = inkBounds(layout)
+            val topLeft = Offset((wPx - box.width) / 2f - box.left, (hPx - box.height) / 2f - box.top)
+            Triple(layout, topLeft, box)
         }
-        val topLeft = Offset((wPx - layout.size.width) / 2f, (hPx - layout.size.height) / 2f)
+        val layout: TextLayoutResult = fitted.first
+        val topLeft = fitted.second
+        val inkBox = fitted.third
 
-        // The checker compares strokes against a small mask of the letter
+        // How far a finger line "reaches" grows with the letter (a bigger letter has thicker strokes)
+        val reachPx = max(with(density) { 16.dp.toPx() }, inkBox.height * 0.065f)
         val brushPx = with(density) { 22.dp.toPx() }
         // Width of the colour that fills the letter (matches how far the check "reaches")
-        val fillPx = with(density) { 32.dp.toPx() }
-        LaunchedEffect(layout, wPx, hPx) {
+        val fillPx = reachPx * 2f
+        LaunchedEffect(layout, topLeft, wPx, hPx) {
             val cellPx = with(density) { 4.dp.toPx() }
             val mask = letterMask(layout, topLeft, wPx, hPx, cellPx, density, direction)
-            onChecker { s -> scoreTrace(mask, s, cellPx, with(density) { 16.dp.toPx() }, with(density) { 18.dp.toPx() }) }
+            onChecker { s -> scoreTrace(mask, s, cellPx, reachPx, reachPx * 1.15f) }
         }
 
         val hint = rememberInfiniteTransition(label = "hint")
@@ -346,20 +345,17 @@ private fun TracePad(
                         onDrag = { change, _ ->
                             change.consume()
                             current = current + change.position
-                            // Update the "how much is coloured" bar every few points
-                            if (current.size % 6 == 0) onLive(latestStrokes + listOf(current))
                         },
                         onDragEnd = {
                             if (current.isNotEmpty()) onStrokesChange(latestStrokes + listOf(current))
                             current = emptyList()
-                            onStrokeFinished()
                         },
                         onDragCancel = { current = emptyList() }
                     )
                 }
         ) {
-            // Guide letter
-            drawText(layout, color = PadGuide, topLeft = topLeft)
+            // Guide letter (orange after Done when parts are still to colour)
+            drawText(layout, color = if (feedback == TraceFeedback.NotYet) PadMissing else PadGuide, topLeft = topLeft)
             // The finger's line, faint (shows where it went off the letter)
             val line = if (feedback == TraceFeedback.TryAgain) PadOops else PadStroke.copy(alpha = 0.35f)
             (strokes + listOf(current)).forEach { stroke -> drawStroke(stroke, line, brushPx * 0.45f) }
@@ -368,7 +364,7 @@ private fun TracePad(
         val fill = when (feedback) {
             TraceFeedback.Good -> PadGood
             TraceFeedback.TryAgain -> PadOops
-            TraceFeedback.None -> PadFill
+            TraceFeedback.NotYet, TraceFeedback.None -> PadFill
         }
         Canvas(
             Modifier
@@ -381,21 +377,26 @@ private fun TracePad(
 
         // Pointing hand that slides across the letter until the child starts
         if (showHint && current.isEmpty()) {
-            val handX = with(density) { (topLeft.x + layout.size.width * (0.25f + 0.5f * hintMove)).toDp() }
-            val handY = with(density) { (topLeft.y + layout.size.height * 0.55f).toDp() }
+            val handX = with(density) { (topLeft.x + inkBox.left + inkBox.width * (0.25f + 0.5f * hintMove)).toDp() }
+            val handY = with(density) { (topLeft.y + inkBox.top + inkBox.height * 0.55f).toDp() }
             Text("👆", fontSize = 44.sp, modifier = Modifier.offset(x = handX - 16.dp, y = handY))
         }
 
-        // Listen + clear buttons
-        Row(Modifier.align(Alignment.TopEnd).padding(8.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+        // Listen button (Clear is under the pad, next to Done)
+        Row(Modifier.align(Alignment.TopEnd).padding(8.dp)) {
             PadButton(onClick = onSpeak) {
                 Icon(Icons.AutoMirrored.Filled.VolumeUp, contentDescription = "Hear the letter", tint = PadInk)
             }
-            PadButton(onClick = onClear) {
-                Icon(Icons.Default.Refresh, contentDescription = "Start again", tint = PadInk)
-            }
         }
     }
+}
+
+/** The letter's ink (drawn shape) inside its text layout; the whole layout box if unknown. */
+private fun inkBounds(layout: TextLayoutResult): androidx.compose.ui.geometry.Rect {
+    val r = runCatching { layout.getPathForRange(0, layout.layoutInput.text.length).getBounds() }.getOrNull()
+    return if (r == null || r.width < 1f || r.height < 1f)
+        androidx.compose.ui.geometry.Rect(0f, 0f, layout.size.width.toFloat(), layout.size.height.toFloat())
+    else r
 }
 
 private fun androidx.compose.ui.graphics.drawscope.DrawScope.drawStroke(stroke: List<Offset>, color: Color, width: Float) {

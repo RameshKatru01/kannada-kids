@@ -131,7 +131,9 @@ fun LetterTraceVideoPlayer(
                     .fillMaxWidth()
                     .weight(1f)
                     .clip(RoundedCornerShape(16.dp))
-                    .background(Color(0xFF1A1A1A))
+                    // The stroke videos are drawn on white: a white box means no dark bars around them
+                    .background(Color.White)
+                    .border(2.dp, Color(0xFFFFE0CC), RoundedCornerShape(16.dp))
                     .clickable(
                         interactionSource = remember { MutableInteractionSource() },
                         indication = null
@@ -143,7 +145,8 @@ fun LetterTraceVideoPlayer(
                 VideoSurface(
                     controller = videoPlayer,
                     showNativeControls = false,
-                    modifier = Modifier.fillMaxSize()
+                    modifier = Modifier.fillMaxSize().padding(2.dp),
+                    whiteBackground = true
                 )
 
                 // Transparent tap layer above the video (native video views would otherwise take the tap)

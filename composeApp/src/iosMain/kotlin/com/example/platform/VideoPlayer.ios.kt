@@ -240,6 +240,14 @@ private class PlayerLayerView(player: AVPlayer) : UIView(frame = CGRectMake(0.0,
     }
     private val blurView = UIVisualEffectView(effect = UIBlurEffect.effectWithStyle(UIBlurEffectStyle.UIBlurEffectStyleDark))
 
+    /** White-background videos: fit the whole video and show white (not a dark blur) around it. */
+    var whiteBackground: Boolean = false
+        set(value) {
+            field = value
+            backgroundColor = if (value) UIColor.whiteColor else UIColor.blackColor
+            setNeedsLayout()
+        }
+
     init {
         backgroundColor = UIColor.blackColor
         clipsToBounds = true
@@ -257,7 +265,8 @@ private class PlayerLayerView(player: AVPlayer) : UIView(frame = CGRectMake(0.0,
         val viewAspect = if (h > 0.0) w / h else videoAspect
         // Share of the picture that aspect-fill would cut away
         val cropped = 1.0 - minOf(viewAspect, videoAspect) / maxOf(viewAspect, videoAspect)
-        val fill = cropped <= 0.2
+        val fill = !whiteBackground && cropped <= 0.2
+        val backdrop = !whiteBackground && !fill
 
         // Keep the video exactly fitted to the view, with no implicit animation
         CATransaction.begin()
@@ -265,9 +274,9 @@ private class PlayerLayerView(player: AVPlayer) : UIView(frame = CGRectMake(0.0,
         playerLayer.frame = bounds
         playerLayer.videoGravity = if (fill) AVLayerVideoGravityResizeAspectFill else AVLayerVideoGravityResizeAspect
         backdropLayer.frame = bounds
-        backdropLayer.hidden = fill
+        backdropLayer.hidden = !backdrop
         blurView.setFrame(bounds)
-        blurView.hidden = fill
+        blurView.hidden = !backdrop
         CATransaction.commit()
     }
 }
@@ -282,7 +291,8 @@ private class PlayerLayerView(player: AVPlayer) : UIView(frame = CGRectMake(0.0,
 actual fun VideoSurface(
     controller: VideoPlayerController,
     showNativeControls: Boolean,
-    modifier: Modifier
+    modifier: Modifier,
+    whiteBackground: Boolean
 ) {
     val ios = controller as IosVideoPlayerController
     val tap = if (showNativeControls) {
@@ -293,7 +303,7 @@ actual fun VideoSurface(
     Box(modifier = modifier.then(tap)) {
         UIKitView(
             factory = {
-                PlayerLayerView(ios.player)
+                PlayerLayerView(ios.player).also { it.whiteBackground = whiteBackground }
             },
             modifier = Modifier.fillMaxSize(),
             update = { view ->

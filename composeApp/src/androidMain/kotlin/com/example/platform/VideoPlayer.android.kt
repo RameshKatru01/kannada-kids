@@ -135,7 +135,8 @@ actual fun rememberVideoPlayer(url: String, loop: Boolean, autoPlay: Boolean): V
 actual fun VideoSurface(
     controller: VideoPlayerController,
     showNativeControls: Boolean,
-    modifier: Modifier
+    modifier: Modifier,
+    whiteBackground: Boolean
 ) {
     val player = (controller as AndroidVideoPlayerController).player
     AndroidView(
@@ -158,6 +159,10 @@ actual fun VideoSurface(
             }
             view.resizeMode = AspectRatioFrameLayout.RESIZE_MODE_FIT
             if (!showNativeControls) view.setBackgroundColor(android.graphics.Color.TRANSPARENT)
+            if (whiteBackground) {
+                view.setBackgroundColor(android.graphics.Color.WHITE)
+                view.setShutterBackgroundColor(android.graphics.Color.WHITE)
+            }
             view
         },
         update = { view ->
