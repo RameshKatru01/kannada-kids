@@ -193,7 +193,7 @@ class SoundEffects {
     }
 
     fun playLevelComplete() {
-        com.example.ui.audio.SoundEffectsHelper.playFanfare()
+        com.example.ui.audio.SoundEffectsHelper.playApplause()
     }
 
     fun release() {

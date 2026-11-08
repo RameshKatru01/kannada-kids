@@ -7,14 +7,6 @@ object AudioFeedbackManager {
     private var tts: TextToSpeech? = null
     private var isInitialized = false
 
-    private val encouragements = listOf(
-        "Great job!",
-        "Awesome!",
-        "You did it!",
-        "Fantastic!",
-        "Super star!"
-    )
-
     private val badgeUnlockMessages = listOf(
         "Wow, you earned a new badge!",
         "Badge unlocked! Great work!",
@@ -34,11 +26,8 @@ object AudioFeedbackManager {
 
     @Suppress("UNUSED_PARAMETER")
     fun playLevelComplete(context: Context) {
-        // The celebration tune is played by SoundEffectsHelper; here we only add the spoken cheer.
-        if (isInitialized) {
-            val message = encouragements[Random.nextInt(encouragements.size)]
-            tts?.speak(message, TextToSpeech.QUEUE_FLUSH, null, null)
-        }
+        // Finishing a lesson or game is cheered with applause (no spoken "Fantastic!")
+        com.example.ui.audio.SoundEffectsHelper.playApplause()
     }
 
     @Suppress("UNUSED_PARAMETER")

@@ -110,18 +110,11 @@ object SoundEffectsHelper {
         playPcm(celebrationBuffer)
     }
 
-    /** Level / game complete: celebration tune + applause (+ spoken encouragement). */
+    /** Level / game complete: applause only (no tune, no spoken "Fantastic!"). */
+    @Suppress("UNUSED_PARAMETER")
     fun playGameCompletion(context: Context? = null) {
         streak = 0
-        playPcm(celebrationBuffer)
-        if (context != null) {
-            playApplause()
-            try {
-                com.example.ui.data.AudioFeedbackManager.playLevelComplete(context)
-            } catch (e: Exception) {
-                // Ignore audio feedback manager errors
-            }
-        }
+        playApplause()
     }
 
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)

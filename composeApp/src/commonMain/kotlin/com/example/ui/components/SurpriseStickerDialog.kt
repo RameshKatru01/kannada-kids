@@ -66,7 +66,6 @@ fun SurpriseStickerDialog(
             SurpriseStickerManager.unlockSticker(context, userEmail, sticker.id)
             try {
                 com.example.ui.audio.SoundEffectsHelper.playSuccess(context)
-                com.example.ui.audio.SoundEffectsHelper.playFanfare(context)
                 AudioFeedbackManager.playBadgeUnlocked(context)
             } catch (e: Exception) {
                 // Ignore audio failure
