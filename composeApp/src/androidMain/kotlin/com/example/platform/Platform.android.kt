@@ -183,3 +183,15 @@ actual fun addToDate(millis: Long, years: Int, months: Int, days: Int): Long {
 }
 
 actual val platformName: String = "Android"
+
+actual fun supportDeviceInfo(): String {
+    val ctx = AppContextHolder.context
+    val app = try {
+        val info = ctx.packageManager.getPackageInfo(ctx.packageName, 0)
+        val code = if (android.os.Build.VERSION.SDK_INT >= 28) info.longVersionCode else @Suppress("DEPRECATION") info.versionCode.toLong()
+        "${info.versionName} ($code)"
+    } catch (e: Exception) {
+        "?"
+    }
+    return "App $app · ${android.os.Build.MANUFACTURER} ${android.os.Build.MODEL} · Android ${android.os.Build.VERSION.RELEASE}"
+}

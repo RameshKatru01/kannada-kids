@@ -44,3 +44,6 @@ expect fun addToDate(millis: Long, years: Int = 0, months: Int = 0, days: Int = 
 
 /** "Android" or "iOS" */
 expect val platformName: String
+
+/** App version and phone model, e.g. "App 1.1 (2) · Pixel 7 · Android 15" (for support emails). */
+expect fun supportDeviceInfo(): String

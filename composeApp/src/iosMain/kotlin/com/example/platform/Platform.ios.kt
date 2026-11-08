@@ -167,3 +167,11 @@ actual fun addToDate(millis: Long, years: Int, months: Int, days: Int): Long {
 }
 
 actual val platformName: String = "iOS"
+
+actual fun supportDeviceInfo(): String {
+    val bundle = platform.Foundation.NSBundle.mainBundle
+    val version = bundle.objectForInfoDictionaryKey("CFBundleShortVersionString") as? String ?: "?"
+    val build = bundle.objectForInfoDictionaryKey("CFBundleVersion") as? String ?: "?"
+    val device = platform.UIKit.UIDevice.currentDevice
+    return "App $version ($build) · ${device.model} · ${device.systemName} ${device.systemVersion}"
+}

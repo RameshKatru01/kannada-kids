@@ -57,6 +57,26 @@ import kotlinx.coroutines.launch
 /** The public privacy policy page (also given to Google Play and the App Store). */
 internal const val PRIVACY_POLICY_URL = "https://rameshkatru01.github.io/kannada-kids/privacy.html"
 
+/** Common questions for parents (GitHub Pages). */
+internal const val HELP_URL = "https://rameshkatru01.github.io/kannada-kids/help.html"
+
+/** Where parents' help emails go. Change it here (and in docs/) when there is a support address. */
+internal const val SUPPORT_EMAIL = "ramesh.katru01@gmail.com"
+
+/** A help email with the details we usually need already filled in. */
+internal fun supportMailUri(plan: String, language: String): String {
+    fun enc(t: String) = buildString {
+        for (b in t.encodeToByteArray()) {
+            val u = b.toInt() and 0xFF
+            val ch = u.toChar()
+            if (u < 128 && (ch.isLetterOrDigit() || ch in "-_.~")) append(ch) else append('%').append(u.toString(16).uppercase().padStart(2, '0'))
+        }
+    }
+    val body = "Hi,\n\nPlease tell us what happened:\n\n\n\n---\n" +
+        "${com.example.platform.supportDeviceInfo()}\nLanguage: $language · Plan: $plan"
+    return "mailto:$SUPPORT_EMAIL?subject=${enc("Fun Learn – Help")}&body=${enc(body)}"
+}
+
 private fun newSum(): Pair<Int, Int> {
     while (true) {
         val a = Random.nextInt(26, 90)
@@ -470,6 +490,42 @@ fun ParentCornerScreen(
             StatTile("$learned", "letters learned", DashTeal, Modifier.weight(1f))
             StatTile("$levelsDone", "levels finished", DashViolet, Modifier.weight(1f))
             StatTile(accuracy?.let { "$it%" } ?: "–", "right answers", DashSun, Modifier.weight(1f))
+        }
+
+        // Help & support (email with details filled in, and common questions)
+        val helpUri = androidx.compose.ui.platform.LocalUriHandler.current
+        val helpSub by com.example.ui.data.SubscriptionManager.state.collectAsState()
+        val helpLang by com.example.ui.data.LanguageManager.currentLanguage.collectAsState()
+        WhiteCard {
+            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                Box(Modifier.size(44.dp).background(Color(0xFFD9F6F2), CircleShape), contentAlignment = Alignment.Center) {
+                    Text("💬", fontSize = 22.sp)
+                }
+                Column(Modifier.weight(1f)) {
+                    Text("Help & support", fontSize = 16.sp, fontWeight = FontWeight.ExtraBold, color = ScrapbookInk)
+                    Text("Questions or a problem? We're happy to help.", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = ScrapbookInkSoft)
+                }
+            }
+            Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                Box(
+                    Modifier.weight(1f).height(46.dp).clip(RoundedCornerShape(23.dp)).background(ScrapbookInk)
+                        .clickable {
+                            val plan = helpSub.plan?.title ?: if (helpSub.hasPremium) "Premium (gift)" else "Free"
+                            try { helpUri.openUri(supportMailUri(plan, helpLang.name)) } catch (e: Exception) {
+                                Toast.makeText(context, "Please email us at $SUPPORT_EMAIL", Toast.LENGTH_LONG).show()
+                            }
+                        }
+                        .testTag("support_email"),
+                    contentAlignment = Alignment.Center
+                ) { Text("📧 Email us", fontSize = 15.sp, fontWeight = FontWeight.ExtraBold, color = Color.White) }
+                Box(
+                    Modifier.weight(1f).height(46.dp).clip(RoundedCornerShape(23.dp)).border(2.dp, ScrapbookInk, RoundedCornerShape(23.dp))
+                        .clickable { helpUri.openUri(HELP_URL) }
+                        .testTag("support_faq"),
+                    contentAlignment = Alignment.Center
+                ) { Text("❓ Common questions", fontSize = 14.sp, fontWeight = FontWeight.ExtraBold, color = ScrapbookInk, maxLines = 1) }
+            }
+            Text(SUPPORT_EMAIL, fontSize = 12.sp, fontWeight = FontWeight.Bold, color = ScrapbookInkSoft)
         }
 
         // Sign out
