@@ -348,6 +348,17 @@ fun videoUrlsFor(title: String): List<String> {
                 "https://raw.githubusercontent.com/RameshKatru01/kannada-app-assets/0aab9912cfa6f8ad8eddc0fd3e46873b956c32b8/assets/videos/fruits_ai/hi/fruits_hi_09.mp4",
                 "https://raw.githubusercontent.com/RameshKatru01/kannada-app-assets/0aab9912cfa6f8ad8eddc0fd3e46873b956c32b8/assets/videos/fruits_ai/hi/fruits_hi_10.mp4"
             ) else listOf(
+                // Word-chart videos: Kannada word + English name, Kannada voice
+                "https://raw.githubusercontent.com/RameshKatru01/kannada-app-assets/54d7d8a9fb07e331bfb123b46e0c9362937aceb5/assets/videos/chart_kn/fruits/fruit_kn_01_apple.mp4",
+                "https://raw.githubusercontent.com/RameshKatru01/kannada-app-assets/54d7d8a9fb07e331bfb123b46e0c9362937aceb5/assets/videos/chart_kn/fruits/fruit_kn_02_banana.mp4",
+                "https://raw.githubusercontent.com/RameshKatru01/kannada-app-assets/54d7d8a9fb07e331bfb123b46e0c9362937aceb5/assets/videos/chart_kn/fruits/fruit_kn_03_orange.mp4",
+                "https://raw.githubusercontent.com/RameshKatru01/kannada-app-assets/54d7d8a9fb07e331bfb123b46e0c9362937aceb5/assets/videos/chart_kn/fruits/fruit_kn_04_mango.mp4",
+                "https://raw.githubusercontent.com/RameshKatru01/kannada-app-assets/54d7d8a9fb07e331bfb123b46e0c9362937aceb5/assets/videos/chart_kn/fruits/fruit_kn_05_grapes.mp4",
+                "https://raw.githubusercontent.com/RameshKatru01/kannada-app-assets/54d7d8a9fb07e331bfb123b46e0c9362937aceb5/assets/videos/chart_kn/fruits/fruit_kn_06_pineapple.mp4",
+                "https://raw.githubusercontent.com/RameshKatru01/kannada-app-assets/54d7d8a9fb07e331bfb123b46e0c9362937aceb5/assets/videos/chart_kn/fruits/fruit_kn_07_watermelon.mp4",
+                "https://raw.githubusercontent.com/RameshKatru01/kannada-app-assets/54d7d8a9fb07e331bfb123b46e0c9362937aceb5/assets/videos/chart_kn/fruits/fruit_kn_08_strawberry.mp4",
+                "https://raw.githubusercontent.com/RameshKatru01/kannada-app-assets/54d7d8a9fb07e331bfb123b46e0c9362937aceb5/assets/videos/chart_kn/fruits/fruit_kn_09_pomegranate.mp4",
+                "https://raw.githubusercontent.com/RameshKatru01/kannada-app-assets/54d7d8a9fb07e331bfb123b46e0c9362937aceb5/assets/videos/chart_kn/fruits/fruit_kn_10_guava.mp4",
                 "https://raw.githubusercontent.com/RameshKatru01/kannada-app-assets/0aab9912cfa6f8ad8eddc0fd3e46873b956c32b8/assets/videos/fruits_ai/kn/fruits_kn_01.mp4",
                 "https://raw.githubusercontent.com/RameshKatru01/kannada-app-assets/0aab9912cfa6f8ad8eddc0fd3e46873b956c32b8/assets/videos/fruits_ai/kn/fruits_kn_02.mp4",
                 "https://raw.githubusercontent.com/RameshKatru01/kannada-app-assets/0aab9912cfa6f8ad8eddc0fd3e46873b956c32b8/assets/videos/fruits_ai/kn/fruits_kn_03.mp4",
@@ -361,6 +372,17 @@ fun videoUrlsFor(title: String): List<String> {
             )
         } else if (title == "Vegetables") {
             listOf(
+                // Word-chart videos: Kannada word + English name, Kannada voice
+                "https://raw.githubusercontent.com/RameshKatru01/kannada-app-assets/54d7d8a9fb07e331bfb123b46e0c9362937aceb5/assets/videos/chart_kn/vegetables/veg_kn_01_potato.mp4",
+                "https://raw.githubusercontent.com/RameshKatru01/kannada-app-assets/54d7d8a9fb07e331bfb123b46e0c9362937aceb5/assets/videos/chart_kn/vegetables/veg_kn_02_brinjal.mp4",
+                "https://raw.githubusercontent.com/RameshKatru01/kannada-app-assets/54d7d8a9fb07e331bfb123b46e0c9362937aceb5/assets/videos/chart_kn/vegetables/veg_kn_03_cucumber.mp4",
+                "https://raw.githubusercontent.com/RameshKatru01/kannada-app-assets/54d7d8a9fb07e331bfb123b46e0c9362937aceb5/assets/videos/chart_kn/vegetables/veg_kn_04_onion.mp4",
+                "https://raw.githubusercontent.com/RameshKatru01/kannada-app-assets/54d7d8a9fb07e331bfb123b46e0c9362937aceb5/assets/videos/chart_kn/vegetables/veg_kn_05_ladysfinger.mp4",
+                "https://raw.githubusercontent.com/RameshKatru01/kannada-app-assets/54d7d8a9fb07e331bfb123b46e0c9362937aceb5/assets/videos/chart_kn/vegetables/veg_kn_06_greens.mp4",
+                "https://raw.githubusercontent.com/RameshKatru01/kannada-app-assets/54d7d8a9fb07e331bfb123b46e0c9362937aceb5/assets/videos/chart_kn/vegetables/veg_kn_07_beans.mp4",
+                "https://raw.githubusercontent.com/RameshKatru01/kannada-app-assets/54d7d8a9fb07e331bfb123b46e0c9362937aceb5/assets/videos/chart_kn/vegetables/veg_kn_08_radish.mp4",
+                "https://raw.githubusercontent.com/RameshKatru01/kannada-app-assets/54d7d8a9fb07e331bfb123b46e0c9362937aceb5/assets/videos/chart_kn/vegetables/veg_kn_09_cabbage.mp4",
+                "https://raw.githubusercontent.com/RameshKatru01/kannada-app-assets/54d7d8a9fb07e331bfb123b46e0c9362937aceb5/assets/videos/chart_kn/vegetables/veg_kn_10_cauliflower.mp4",
                 "https://raw.githubusercontent.com/RameshKatru01/kannada-app-assets/9bb58166ebfdeed205319cc42b9d1c6099dc686f/assets/videos/themes/vegetables/vegetables_01.mp4",
                 "https://raw.githubusercontent.com/RameshKatru01/kannada-app-assets/9bb58166ebfdeed205319cc42b9d1c6099dc686f/assets/videos/themes/vegetables/vegetables_02.mp4",
                 "https://raw.githubusercontent.com/RameshKatru01/kannada-app-assets/9bb58166ebfdeed205319cc42b9d1c6099dc686f/assets/videos/themes/vegetables/vegetables_03.mp4",
@@ -374,6 +396,17 @@ fun videoUrlsFor(title: String): List<String> {
             )
         } else if (title == "Body Parts") {
             listOf(
+                // Word-chart videos: Kannada word + English name, Kannada voice
+                "https://raw.githubusercontent.com/RameshKatru01/kannada-app-assets/54d7d8a9fb07e331bfb123b46e0c9362937aceb5/assets/videos/chart_kn/body_parts/body_kn_01_head.mp4",
+                "https://raw.githubusercontent.com/RameshKatru01/kannada-app-assets/54d7d8a9fb07e331bfb123b46e0c9362937aceb5/assets/videos/chart_kn/body_parts/body_kn_02_eye.mp4",
+                "https://raw.githubusercontent.com/RameshKatru01/kannada-app-assets/54d7d8a9fb07e331bfb123b46e0c9362937aceb5/assets/videos/chart_kn/body_parts/body_kn_03_ear.mp4",
+                "https://raw.githubusercontent.com/RameshKatru01/kannada-app-assets/54d7d8a9fb07e331bfb123b46e0c9362937aceb5/assets/videos/chart_kn/body_parts/body_kn_04_nose.mp4",
+                "https://raw.githubusercontent.com/RameshKatru01/kannada-app-assets/54d7d8a9fb07e331bfb123b46e0c9362937aceb5/assets/videos/chart_kn/body_parts/body_kn_05_mouth.mp4",
+                "https://raw.githubusercontent.com/RameshKatru01/kannada-app-assets/54d7d8a9fb07e331bfb123b46e0c9362937aceb5/assets/videos/chart_kn/body_parts/body_kn_06_hand.mp4",
+                "https://raw.githubusercontent.com/RameshKatru01/kannada-app-assets/54d7d8a9fb07e331bfb123b46e0c9362937aceb5/assets/videos/chart_kn/body_parts/body_kn_07_leg.mp4",
+                "https://raw.githubusercontent.com/RameshKatru01/kannada-app-assets/54d7d8a9fb07e331bfb123b46e0c9362937aceb5/assets/videos/chart_kn/body_parts/body_kn_08_tooth.mp4",
+                "https://raw.githubusercontent.com/RameshKatru01/kannada-app-assets/54d7d8a9fb07e331bfb123b46e0c9362937aceb5/assets/videos/chart_kn/body_parts/body_kn_09_stomach.mp4",
+                "https://raw.githubusercontent.com/RameshKatru01/kannada-app-assets/54d7d8a9fb07e331bfb123b46e0c9362937aceb5/assets/videos/chart_kn/body_parts/body_kn_10_back.mp4",
                 "https://raw.githubusercontent.com/RameshKatru01/kannada-app-assets/9bb58166ebfdeed205319cc42b9d1c6099dc686f/assets/videos/themes/body_parts/body_parts_01.mp4",
                 "https://raw.githubusercontent.com/RameshKatru01/kannada-app-assets/9bb58166ebfdeed205319cc42b9d1c6099dc686f/assets/videos/themes/body_parts/body_parts_02.mp4",
                 "https://raw.githubusercontent.com/RameshKatru01/kannada-app-assets/9bb58166ebfdeed205319cc42b9d1c6099dc686f/assets/videos/themes/body_parts/body_parts_03.mp4",
@@ -387,6 +420,17 @@ fun videoUrlsFor(title: String): List<String> {
             )
         } else if (title == "Family") {
             listOf(
+                // Word-chart videos: Kannada word + English name, Kannada voice
+                "https://raw.githubusercontent.com/RameshKatru01/kannada-app-assets/54d7d8a9fb07e331bfb123b46e0c9362937aceb5/assets/videos/chart_kn/family/family_kn_01_mother.mp4",
+                "https://raw.githubusercontent.com/RameshKatru01/kannada-app-assets/54d7d8a9fb07e331bfb123b46e0c9362937aceb5/assets/videos/chart_kn/family/family_kn_02_father.mp4",
+                "https://raw.githubusercontent.com/RameshKatru01/kannada-app-assets/54d7d8a9fb07e331bfb123b46e0c9362937aceb5/assets/videos/chart_kn/family/family_kn_03_elderbrother.mp4",
+                "https://raw.githubusercontent.com/RameshKatru01/kannada-app-assets/54d7d8a9fb07e331bfb123b46e0c9362937aceb5/assets/videos/chart_kn/family/family_kn_04_youngerbrother.mp4",
+                "https://raw.githubusercontent.com/RameshKatru01/kannada-app-assets/54d7d8a9fb07e331bfb123b46e0c9362937aceb5/assets/videos/chart_kn/family/family_kn_05_eldersister.mp4",
+                "https://raw.githubusercontent.com/RameshKatru01/kannada-app-assets/54d7d8a9fb07e331bfb123b46e0c9362937aceb5/assets/videos/chart_kn/family/family_kn_06_youngersister.mp4",
+                "https://raw.githubusercontent.com/RameshKatru01/kannada-app-assets/54d7d8a9fb07e331bfb123b46e0c9362937aceb5/assets/videos/chart_kn/family/family_kn_07_son.mp4",
+                "https://raw.githubusercontent.com/RameshKatru01/kannada-app-assets/54d7d8a9fb07e331bfb123b46e0c9362937aceb5/assets/videos/chart_kn/family/family_kn_08_daughter.mp4",
+                "https://raw.githubusercontent.com/RameshKatru01/kannada-app-assets/54d7d8a9fb07e331bfb123b46e0c9362937aceb5/assets/videos/chart_kn/family/family_kn_09_grandfather.mp4",
+                "https://raw.githubusercontent.com/RameshKatru01/kannada-app-assets/54d7d8a9fb07e331bfb123b46e0c9362937aceb5/assets/videos/chart_kn/family/family_kn_10_grandmother.mp4",
                 "https://raw.githubusercontent.com/RameshKatru01/kannada-app-assets/9bb58166ebfdeed205319cc42b9d1c6099dc686f/assets/videos/themes/family/family_01.mp4",
                 "https://raw.githubusercontent.com/RameshKatru01/kannada-app-assets/9bb58166ebfdeed205319cc42b9d1c6099dc686f/assets/videos/themes/family/family_02.mp4",
                 "https://raw.githubusercontent.com/RameshKatru01/kannada-app-assets/9bb58166ebfdeed205319cc42b9d1c6099dc686f/assets/videos/themes/family/family_03.mp4",
