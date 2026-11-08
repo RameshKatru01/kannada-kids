@@ -20,8 +20,6 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.ui.theme.BrightCyan
-import com.example.ui.data.ThemeManager
-import com.example.ui.data.AppTheme
 import com.example.ui.data.LanguageManager
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -72,7 +70,6 @@ fun ProfileScreen(
     val consonantsCount = (consonantsUnlocked + 1).coerceAtMost(34)
     val numbersCount = (numbersUnlocked + 1).coerceAtMost(10)
     
-    val currentTheme by ThemeManager.currentTheme.collectAsState()
     
     var subscriptionPlan by remember(userEmail, langCode) { mutableStateOf(prefs.getString("${langCode}_subscriptionPlan_$userEmail", "Free") ?: "Free") }
     
@@ -300,31 +297,6 @@ fun ProfileScreen(
 
                 Spacer(modifier = Modifier.height(16.dp))
                 
-                Text(
-                    text = "App Theme",
-                    fontSize = 20.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = Color(0xFF333333),
-                    modifier = Modifier.align(Alignment.Start).padding(horizontal = 8.dp)
-                )
-
-                Spacer(modifier = Modifier.height(16.dp))
-
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceEvenly
-                ) {
-                    AppTheme.entries.forEach { theme ->
-                        ThemeOption(
-                            theme = theme,
-                            isSelected = currentTheme == theme,
-                            onClick = { ThemeManager.setTheme(context, theme) }
-                        )
-                    }
-                }
-
-                Spacer(modifier = Modifier.height(28.dp))
-
                 // Sign Out Button
                 Card(
                     modifier = Modifier
@@ -404,36 +376,4 @@ fun ProfileScreen(
     }
 }
 
-@Composable
-fun ThemeOption(theme: AppTheme, isSelected: Boolean, onClick: () -> Unit) {
-    val color = when(theme) {
-        AppTheme.DEFAULT -> Color(0xFFE1F5FE)
-        AppTheme.OCEAN -> Color(0xFF039BE5)
-        AppTheme.FOREST -> Color(0xFF43A047)
-        AppTheme.SUNSET -> Color(0xFFF4511E)
-    }
-    
-    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-        Box(
-            modifier = Modifier
-                .size(60.dp)
-                .clip(RoundedCornerShape(16.dp))
-                .background(color)
-                .border(
-                    width = if (isSelected) 4.dp else 1.dp,
-                    color = if (isSelected) Color.Black else Color.LightGray,
-                    shape = RoundedCornerShape(16.dp)
-                )
-                .clickable { onClick() }
-        )
-        Spacer(modifier = Modifier.height(8.dp))
-        Text(
-            text = theme.displayName.replace(" ", "\n"),
-            fontSize = 12.sp,
-            fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
-            color = Color.DarkGray,
-            textAlign = TextAlign.Center
-        )
-    }
-}
 

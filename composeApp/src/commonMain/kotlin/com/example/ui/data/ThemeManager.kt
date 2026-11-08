@@ -13,10 +13,10 @@ object ThemeManager {
     private val _currentTheme = MutableStateFlow(AppTheme.DEFAULT)
     val currentTheme: StateFlow<AppTheme> = _currentTheme.asStateFlow()
 
+    /** The theme picker was taken out of Profile, so everyone uses the default look again. */
     fun init(context: Context) {
-        val prefs = getSharedPreferences(PREFS_NAME)
-        val themeName = prefs.getString(THEME_KEY, AppTheme.DEFAULT.name) ?: AppTheme.DEFAULT.name
-        _currentTheme.value = AppTheme.valueOf(themeName)
+        getSharedPreferences(PREFS_NAME).edit().putString(THEME_KEY, AppTheme.DEFAULT.name).apply()
+        _currentTheme.value = AppTheme.DEFAULT
     }
 
     fun setTheme(context: Context, theme: AppTheme) {
