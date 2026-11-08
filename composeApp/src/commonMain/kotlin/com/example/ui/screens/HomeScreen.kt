@@ -460,20 +460,43 @@ private fun StreamHome(
         val rowH = ((half - gap) / 2).coerceAtMost(34.dp + cardW + 24.dp)
         Column(Modifier.fillMaxSize()) {
             Column(Modifier.fillMaxWidth().height(half), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                SectionBanner(
-                    island = island,
-                    isCurrent = isCurrent,
-                    nextGlyph = nextGlyph,
-                    nextState = nextState,
-                    onLearn = {
+                // Swipe left / right to move between sections (the path and the rows below follow)
+                val pager = androidx.compose.foundation.pager.rememberPagerState(initialPage = selected) { islands.size }
+                LaunchedEffect(pager.currentPage) {
+                    if (pager.currentPage != selected) {
+                        selected = pager.currentPage
                         com.example.ui.audio.SoundEffectsHelper.playButtonTap()
-                        // Every section opens its letter list, where the child picks a letter
-                        if (locked) Access.showHint(Access.islandHint(island.type)) else island.open()
-                    },
-                    onWatch = { own.firstOrNull()?.let(onOpenVideos) ?: onSeeAllVideos() },
-                    onPlay = { games.firstOrNull()?.let(onOpenGame) ?: onSeeAllGames() },
-                    modifier = Modifier.padding(horizontal = side).fillMaxWidth().weight(1f)
-                )
+                    }
+                }
+                LaunchedEffect(selected) {
+                    if (pager.currentPage != selected && selected in islands.indices) pager.animateScrollToPage(selected)
+                }
+                androidx.compose.foundation.pager.HorizontalPager(
+                    state = pager,
+                    contentPadding = PaddingValues(horizontal = side),
+                    pageSpacing = 10.dp,
+                    modifier = Modifier.fillMaxWidth().weight(1f).testTag("home_banner_pager")
+                ) { page ->
+                    val pageIsland = islands[page]
+                    val pageLocked = pageIsland.state == Access.State.NeedsProgress
+                    val pageVideos = sectionVideos(pageIsland.type).filter { !hindi || it in hindiVideoFolders }
+                    val pageGames = (if (page == currentIndex) homeGames + sectionGames(pageIsland.type) else sectionGames(pageIsland.type))
+                        .distinct().filter { com.example.data.Lang.hasGame(it) }.mapNotNull { GameRegistry.byId(it) }
+                    SectionBanner(
+                        island = pageIsland,
+                        isCurrent = page == currentIndex,
+                        nextGlyph = nextGlyph,
+                        nextState = nextState,
+                        onLearn = {
+                            com.example.ui.audio.SoundEffectsHelper.playButtonTap()
+                            // Every section opens its letter list, where the child picks a letter
+                            if (pageLocked) Access.showHint(Access.islandHint(pageIsland.type)) else pageIsland.open()
+                        },
+                        onWatch = { pageVideos.firstOrNull()?.let(onOpenVideos) ?: onSeeAllVideos() },
+                        onPlay = { pageGames.firstOrNull()?.let(onOpenGame) ?: onSeeAllGames() },
+                        modifier = Modifier.fillMaxSize()
+                    )
+                }
                 LearningPath(
                     islands = islands,
                     currentIndex = currentIndex,
