@@ -108,6 +108,7 @@ internal fun artFor(game: GameInfo): GameArtKind = when (game.id) {
     8 -> GameArtKind.Tiles
     9 -> GameArtKind.Grid
     13 -> GameArtKind.Jars
+    6 -> GameArtKind.Runner
     else -> GameArtKind.Letter
 }
 

@@ -138,7 +138,7 @@ fun ScrapbookHeader(title: String, onBack: () -> Unit, trailing: @Composable () 
 // Drawn pictures for the games (no image files needed)
 // ---------------------------------------------------------------------------------------------
 
-enum class GameArtKind { Monster, Train, Paint, Balloons, Tiles, Grid, Jars, Letter }
+enum class GameArtKind { Monster, Train, Paint, Balloons, Tiles, Grid, Jars, Runner, Letter }
 
 private val ArtInk = Color(0xFF1E2A47)
 
@@ -167,6 +167,7 @@ fun GameArt(kind: GameArtKind, color: Color, background: Color, glyph: String, m
                             GameArtKind.Tiles -> drawTilesArt(k)
                             GameArtKind.Grid -> drawGridArt(k)
                             GameArtKind.Jars -> drawJarsArt(k)
+                            GameArtKind.Runner -> drawRunnerArt(k)
                             GameArtKind.Letter -> Unit
                         }
                     }
@@ -177,6 +178,7 @@ fun GameArt(kind: GameArtKind, color: Color, background: Color, glyph: String, m
                             ArtLetter("ಖ", x = 74, y = 42, size = 0, bg = Color.Transparent)
                         }
                         GameArtKind.Balloons -> ArtLetter("ಉ", x = 40, y = 16, size = 0, bg = Color.Transparent, ink = Color.White)
+                        GameArtKind.Runner -> ArtLetter("ಅ", x = 72, y = 4, size = 24, bg = Color(0xFFFFC93C))
                         GameArtKind.Tiles -> {
                             ArtLetter("ಆ", x = 6, y = 50, size = 0, bg = Color.Transparent)
                             ArtLetter("ನೆ", x = 38, y = 58, size = 0, bg = Color.Transparent)
@@ -287,6 +289,41 @@ private fun DrawScope.drawBalloonArt(k: Float) {
     drawOval(Color(0xFFFFC93C), Offset(57 * k, 19 * k), Size(34 * k, 42 * k))
     drawOval(Color(0xFF6C63FF), Offset(33 * k, 5 * k), Size(38 * k, 46 * k))
     drawOval(Color.White.copy(alpha = 0.5f), Offset(41 * k, 11 * k), Size(8 * k, 14 * k))
+}
+
+/** A child running along a track, with speed lines (Letter Runner). */
+private fun DrawScope.drawRunnerArt(k: Float) {
+    fun limb(color: Color, width: Float, vararg pts: Pair<Float, Float>) {
+        val path = Path().apply {
+            moveTo(pts[0].first * k, pts[0].second * k)
+            for (i in 1 until pts.size) lineTo(pts[i].first * k, pts[i].second * k)
+        }
+        drawPath(path, color, style = Stroke(width = width * k, cap = androidx.compose.ui.graphics.StrokeCap.Round, join = androidx.compose.ui.graphics.StrokeJoin.Round))
+    }
+    val skin = Color(0xFFF5C08A)
+    val shirt = Color(0xFFFF6B6B)
+    // Track with lane marks
+    drawRoundRect(Color(0xFF59C173), Offset(4 * k, 86 * k), Size(92 * k, 8 * k), CornerRadius(4 * k))
+    listOf(10f, 40f, 70f).forEach { x -> limb(Color.White, 2f, x to 90f, (x + 12) to 90f) }
+    // Speed lines
+    limb(ArtInk, 2.5f, 4f to 40f, 16f to 40f)
+    limb(ArtInk, 2.5f, 8f to 52f, 20f to 52f)
+    limb(ArtInk, 2.5f, 2f to 64f, 12f to 64f)
+    // Back arm and back leg
+    limb(Color(0xFFE0A86E), 5f, 48f to 38f, 36f to 46f, 30f to 40f)
+    limb(ArtInk, 7f, 46f to 58f, 36f to 68f, 24f to 68f)
+    drawCircle(shirt, 4 * k, Offset(22 * k, 69 * k))
+    // Body
+    limb(shirt, 12f, 50f to 34f, 46f to 58f)
+    // Front leg with shoe, front arm
+    limb(ArtInk, 7f, 46f to 58f, 58f to 68f, 60f to 82f)
+    drawOval(shirt, Offset(57 * k, 79.5f * k), Size(12 * k, 7 * k))
+    limb(skin, 5f, 50f to 38f, 62f to 46f, 70f to 38f)
+    // Head: face, hair, eye and smile
+    drawCircle(skin, 10 * k, Offset(54 * k, 22 * k))
+    drawArc(ArtInk, 189f, 162f, false, Offset(43.5f * k, 9.5f * k), Size(21 * k, 21 * k))
+    drawCircle(ArtInk, 1.4f * k, Offset(58 * k, 23 * k))
+    drawArc(ArtInk, 11f, 75f, false, Offset(54 * k, 23 * k), Size(6 * k, 6 * k), style = Stroke(1.5f * k, cap = androidx.compose.ui.graphics.StrokeCap.Round))
 }
 
 private fun DrawScope.drawTilesArt(k: Float) {

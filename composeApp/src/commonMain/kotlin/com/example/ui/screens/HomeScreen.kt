@@ -445,8 +445,9 @@ private fun StreamHome(
         val perRow = (inner / 110.dp).toInt().coerceIn(3, 6)
         val cardW = (inner - gap * (perRow - 1)) / perRow
         val half = maxHeight / 2
-        // Each row in the bottom half: title (~26dp) + picture + name (~18dp)
-        val picture = ((half - gap * 2) / 2 - 26.dp - 18.dp).coerceIn(48.dp, cardW)
+        // Each row in the bottom half gets the same height: its title, then the cards. Inside a card
+        // the picture takes whatever is left after the name, so the name always shows.
+        val rowH = ((half - gap) / 2).coerceAtMost(34.dp + cardW + 24.dp)
         Column(Modifier.fillMaxSize()) {
             Column(Modifier.fillMaxWidth().height(half), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 SectionBanner(
@@ -479,12 +480,12 @@ private fun StreamHome(
                 verticalArrangement = Arrangement.SpaceEvenly
             ) {
                 if (videos.isNotEmpty()) {
-                    Column {
+                    Column(Modifier.fillMaxWidth().height(rowH)) {
                         RowTitle(videoTitle, onSeeAll = onSeeAllVideos, side = side)
-                        Row(Modifier.padding(horizontal = side), horizontalArrangement = Arrangement.spacedBy(gap)) {
+                        Row(Modifier.weight(1f).padding(horizontal = side), horizontalArrangement = Arrangement.spacedBy(gap)) {
                             videos.take(perRow).forEach { folder ->
                                 HomeVideoCard(
-                                    folder, folderThumbs.getValue(folder), picture, Modifier.width(cardW),
+                                    folder, folderThumbs.getValue(folder), Modifier.width(cardW).fillMaxHeight(),
                                     remember(sub, folder) { Access.videoFolder(folder) }
                                 ) { onOpenVideos(folder) }
                             }
@@ -492,11 +493,11 @@ private fun StreamHome(
                     }
                 }
                 if (games.isNotEmpty()) {
-                    Column {
+                    Column(Modifier.fillMaxWidth().height(rowH)) {
                         RowTitle(gameTitle, onSeeAll = onSeeAllGames, side = side)
-                        Row(Modifier.padding(horizontal = side), horizontalArrangement = Arrangement.spacedBy(gap)) {
+                        Row(Modifier.weight(1f).padding(horizontal = side), horizontalArrangement = Arrangement.spacedBy(gap)) {
                             games.take(perRow).forEach { game ->
-                                HomeGameCard(game, picture, Modifier.width(cardW), remember(sub, game.id) { Access.game(game) }) { onOpenGame(game) }
+                                HomeGameCard(game, Modifier.width(cardW).fillMaxHeight(), remember(sub, game.id) { Access.game(game) }) { onOpenGame(game) }
                             }
                         }
                     }
@@ -691,10 +692,9 @@ private fun RowTitle(title: String, onSeeAll: () -> Unit, side: Dp) {
 
 /** A game card: its drawn picture (same art as the Games tab) with the name below. */
 @Composable
-private fun HomeGameCard(game: GameInfo, pictureHeight: Dp, modifier: Modifier = Modifier, state: Access.State = Access.State.Open, onClick: () -> Unit) {
+private fun HomeGameCard(game: GameInfo, modifier: Modifier = Modifier, state: Access.State = Access.State.Open, onClick: () -> Unit) {
     HomeCard(
         label = game.name,
-        pictureHeight = pictureHeight,
         modifier = modifier.testTag("home_game_${game.id}"),
         state = state,
         onClick = onClick
@@ -720,10 +720,9 @@ private fun HomeGameCard(game: GameInfo, pictureHeight: Dp, modifier: Modifier =
 
 /** A Fun Videos folder card: its picture with a play button, the name below. */
 @Composable
-private fun HomeVideoCard(folder: String, photo: DrawableResource, pictureHeight: Dp, modifier: Modifier = Modifier, state: Access.State = Access.State.Open, onClick: () -> Unit) {
+private fun HomeVideoCard(folder: String, photo: DrawableResource, modifier: Modifier = Modifier, state: Access.State = Access.State.Open, onClick: () -> Unit) {
     HomeCard(
         label = folder,
-        pictureHeight = pictureHeight,
         modifier = modifier.testTag("home_video_$folder"),
         state = state,
         onClick = onClick
@@ -745,7 +744,7 @@ private fun HomeVideoCard(folder: String, photo: DrawableResource, pictureHeight
 
 /** Shared card frame: rounded picture on top, one-line name below. */
 @Composable
-private fun HomeCard(label: String, pictureHeight: Dp, modifier: Modifier, state: Access.State = Access.State.Open, onClick: () -> Unit, picture: @Composable BoxScope.() -> Unit) {
+private fun HomeCard(label: String, modifier: Modifier, state: Access.State = Access.State.Open, onClick: () -> Unit, picture: @Composable BoxScope.() -> Unit) {
     Column(
         modifier
             .clip(RoundedCornerShape(16.dp))
@@ -758,7 +757,7 @@ private fun HomeCard(label: String, pictureHeight: Dp, modifier: Modifier, state
         Box(
             Modifier
                 .fillMaxWidth()
-                .height(pictureHeight)
+                .weight(1f)
                 .clip(RoundedCornerShape(16.dp))
                 .background(lerpColor(HomeInk, Color.White, 0.8f))
         ) {
