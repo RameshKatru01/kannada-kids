@@ -316,11 +316,17 @@ private fun TracePad(
         val brushPx = with(density) { 22.dp.toPx() }
         // Width of the colour that fills the letter (matches how far the check "reaches")
         val fillPx = reachPx * 2f
+        val cellPx = with(density) { 4.dp.toPx() }
+        // A finger only draws on the grey letter (a small edge allowance so the outline is easy to reach)
+        val edgePx = with(density) { 4.dp.toPx() }
+        var mask by remember(letter, wPx, hPx) { mutableStateOf<LetterMask?>(null) }
+        val latestMask by rememberUpdatedState(mask)
         LaunchedEffect(layout, topLeft, wPx, hPx) {
-            val cellPx = with(density) { 4.dp.toPx() }
-            val mask = letterMask(layout, topLeft, wPx, hPx, cellPx, density, direction)
-            onChecker { s -> scoreTrace(mask, s, cellPx, reachPx, reachPx * 1.15f) }
+            val m = letterMask(layout, topLeft, wPx, hPx, cellPx, density, direction)
+            mask = m
+            onChecker { s -> scoreTrace(m, s, cellPx, reachPx, reachPx * 1.15f) }
         }
+        fun onLetter(p: Offset): Boolean = latestMask?.near(p, cellPx, edgePx) ?: true
 
         val hint = rememberInfiniteTransition(label = "hint")
         val hintMove by hint.animateFloat(0f, 1f, infiniteRepeatable(tween(1400, easing = FastOutSlowInEasing), RepeatMode.Reverse), label = "hintMove")
@@ -330,23 +336,26 @@ private fun TracePad(
                 .fillMaxSize()
                 .testTag("trace_pad")
                 .pointerInput(letter) {
+                    // Lines are kept only on the letter: leaving it ends the line, coming back starts a new one
+                    fun finish() {
+                        if (current.isNotEmpty()) onStrokesChange(latestStrokes + listOf(current))
+                        current = emptyList()
+                    }
                     detectDragGestures(
-                        onDragStart = { current = listOf(it) },
+                        onDragStart = { start -> current = if (onLetter(start)) listOf(start) else emptyList() },
                         onDrag = { change, _ ->
                             change.consume()
-                            current = current + change.position
+                            val p = change.position
+                            if (onLetter(p)) current = current + p else finish()
                         },
-                        onDragEnd = {
-                            if (current.isNotEmpty()) onStrokesChange(latestStrokes + listOf(current))
-                            current = emptyList()
-                        },
+                        onDragEnd = { finish() },
                         onDragCancel = { current = emptyList() }
                     )
                 }
         ) {
             // Guide letter (orange after Done when parts are still to colour)
             drawText(layout, color = if (feedback == TraceFeedback.NotYet) PadMissing else PadGuide, topLeft = topLeft)
-            // The finger's line, faint (shows where it went off the letter)
+            // The finger's line, faint (only drawn on the letter)
             val line = if (feedback == TraceFeedback.TryAgain) PadOops else PadStroke.copy(alpha = 0.35f)
             (strokes + listOf(current)).forEach { stroke -> drawStroke(stroke, line, brushPx * 0.45f) }
         }
@@ -464,6 +473,21 @@ private fun PadButton(onClick: () -> Unit, content: @Composable () -> Unit) {
 /** The letter as a grid of on/off cells ([cellPx] pixels each). */
 class LetterMask(val cols: Int, val rows: Int, val on: BooleanArray) {
     val count: Int = on.count { it }
+
+    /** True when [p] is on the letter, or within [edgePx] of it. */
+    fun near(p: Offset, cellPx: Float, edgePx: Float): Boolean {
+        val cx = (p.x / cellPx).toInt()
+        val cy = (p.y / cellPx).toInt()
+        val t = ceil(edgePx / cellPx).toInt()
+        val t2 = (edgePx / cellPx) * (edgePx / cellPx)
+        for (dy in -t..t) for (dx in -t..t) {
+            if (dx * dx + dy * dy > t2) continue
+            val x = cx + dx
+            val y = cy + dy
+            if (x in 0 until cols && y in 0 until rows && on[y * cols + x]) return true
+        }
+        return false
+    }
 }
 
 internal fun letterMask(

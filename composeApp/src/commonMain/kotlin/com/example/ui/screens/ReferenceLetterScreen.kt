@@ -363,6 +363,17 @@ private fun TracePanel(letter: KannadaLetter, onHear: () -> Unit, onDone: () -> 
     var strokes by remember(letter.id) { mutableStateOf(listOf<List<Offset>>()) }
     var current by remember(letter.id) { mutableStateOf(listOf<Offset>()) }
     val ink = Color(0xFFFF6B6B)
+    // The finger only draws on the grey letter: leaving it ends the line, coming back starts a new one
+    val panelDensity = androidx.compose.ui.platform.LocalDensity.current
+    val cellPx = with(panelDensity) { 4.dp.toPx() }
+    val edgePx = with(panelDensity) { 4.dp.toPx() }
+    var mask by remember(letter.id) { mutableStateOf<LetterMask?>(null) }
+    val latestMask by rememberUpdatedState(mask)
+    fun onLetter(p: Offset): Boolean = latestMask?.near(p, cellPx, edgePx) ?: true
+    fun finish() {
+        if (current.isNotEmpty()) strokes = strokes + listOf(current)
+        current = emptyList()
+    }
 
     Column(
         modifier = Modifier
@@ -387,9 +398,12 @@ private fun TracePanel(letter: KannadaLetter, onHear: () -> Unit, onDone: () -> 
                 .background(Color.White)
                 .pointerInput(letter.id) {
                     detectDragGestures(
-                        onDragStart = { current = listOf(it) },
-                        onDrag = { change, _ -> change.consume(); current = current + change.position },
-                        onDragEnd = { if (current.isNotEmpty()) strokes = strokes + listOf(current); current = emptyList() },
+                        onDragStart = { start -> current = if (onLetter(start)) listOf(start) else emptyList() },
+                        onDrag = { change, _ ->
+                            change.consume()
+                            if (onLetter(change.position)) current = current + change.position else finish()
+                        },
+                        onDragEnd = { finish() },
                         onDragCancel = { current = emptyList() }
                     )
                 }
@@ -404,6 +418,9 @@ private fun TracePanel(letter: KannadaLetter, onHear: () -> Unit, onDone: () -> 
                 val wPx = with(density) { maxWidth.toPx() }
                 val hPx = with(density) { maxHeight.toPx() }
                 val fitted = remember(letter.character, wPx, hPx) { fitLetter(measurer, letter.character, wPx, hPx, density, direction) }
+                LaunchedEffect(fitted, wPx, hPx) {
+                    mask = letterMask(fitted.first, fitted.second, wPx, hPx, cellPx, density, direction)
+                }
                 Canvas(Modifier.fillMaxSize()) {
                     drawText(fitted.first, color = Color(0xFFE3EEF8), topLeft = fitted.second)
                 }
