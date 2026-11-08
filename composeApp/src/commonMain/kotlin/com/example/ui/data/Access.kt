@@ -37,9 +37,21 @@ object Access {
     fun isAdmin(): Boolean =
         UserManager.isAdmin(user()) || UserManager.isAdmin(PlatformAuth.currentUser()?.email)
 
+    /**
+     * Test accounts that always have Gold (for trying the full app without buying).
+     * Remove an address here when it is no longer needed.
+     */
+    private val testGoldEmails = setOf("neeraja.katru@gmail.com")
+
+    fun isTestGold(): Boolean {
+        val signedIn = PlatformAuth.currentUser()?.email?.trim()?.lowercase()
+        return signedIn != null && signedIn in testGoldEmails
+    }
+
     fun isPremium(): Boolean {
         if (SubscriptionManager.state.value.hasPremium) return true
         if (isAdmin()) return true
+        if (isTestGold()) return true
         val email = user().trim().lowercase()
         val p = prefs()
         return listOf("kn", "en", "hi").any { (p.getString("${it}_subscriptionPlan_$email", "") ?: "").equals("Gold", true) }

@@ -401,7 +401,8 @@ fun ParentCornerScreen(
                 Column(Modifier.weight(1f)) {
                     val p = sub.plan
                     Text(
-                        if (sub.hasPremium && p != null) "Premium · ${p.title}" else if (sub.hasPremium) "Premium (gift)" else "Free plan",
+                        if (sub.hasPremium && p != null) "Premium · ${p.title}" else if (sub.hasPremium) "Premium (gift)"
+                        else if (com.example.ui.data.Access.isTestGold()) "Gold (test account)" else "Free plan",
                         fontSize = 16.sp, fontWeight = FontWeight.ExtraBold, color = ScrapbookInk
                     )
                     Text(
