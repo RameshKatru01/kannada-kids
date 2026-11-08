@@ -14,7 +14,6 @@ import com.android.billingclient.api.PurchasesUpdatedListener
 import com.android.billingclient.api.QueryProductDetailsParams
 import com.android.billingclient.api.QueryPurchasesParams
 import com.android.billingclient.api.acknowledgePurchase
-import com.android.billingclient.api.queryProductDetails
 import com.android.billingclient.api.queryPurchasesAsync
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.sync.Mutex
@@ -43,6 +42,7 @@ actual object PlatformBilling {
         val c = existing ?: BillingClient.newBuilder(AppContextHolder.context)
             .setListener(listener)
             .enablePendingPurchases(PendingPurchasesParams.newBuilder().enableOneTimeProducts().build())
+            .enableAutoServiceReconnection()
             .build()
         client = c
         val ok = suspendCancellableCoroutine<Boolean> { cont ->
@@ -70,8 +70,16 @@ actual object PlatformBilling {
                     .build()
             })
             .build()
-        val result = ready().queryProductDetails(params)
-        details = result.productDetailsList.orEmpty().associateBy { it.productId }
+        val c = ready()
+        // Billing 8: the callback gives a QueryProductDetailsResult; products Play can't find are
+        // listed separately (unfetchedProductList) instead of being left out.
+        val found = suspendCancellableCoroutine<List<ProductDetails>> { cont ->
+            c.queryProductDetailsAsync(params) { result, query ->
+                val list = if (result.responseCode == BillingClient.BillingResponseCode.OK) query.productDetailsList else emptyList()
+                if (cont.isActive) cont.resume(list)
+            }
+        }
+        details = found.associateBy { it.productId }
         return details
     }
 
