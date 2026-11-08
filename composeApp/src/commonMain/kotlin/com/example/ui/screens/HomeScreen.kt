@@ -26,6 +26,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -67,9 +68,10 @@ import org.jetbrains.compose.resources.DrawableResource
 import org.jetbrains.compose.resources.painterResource
 
 /*
- * Home (after sign-in): greeting + points + streak, the letter-islands map (Vowels → Consonants →
- * Ka-kaa → Numbers, each with a progress ring and a "Next letter" button), then a row of games and
- * a row of Fun Videos.
+ * Home (after sign-in): greeting + points + streak, then the "Play TV": a cartoon TV showing the
+ * chosen section (Vowels, Consonants, Ka-kaa, Numbers, Ottakshara) with its progress and next letter,
+ * three big buttons (Watch / Play / Learn) and the sections as cartridges on a shelf.
+ * (The older space map, IslandMap, is kept below but no longer shown.)
  */
 
 private val HomeInk = Color(0xFF0B3B66)
@@ -181,34 +183,23 @@ fun HomeScreen(
                 onPoints = onNavigateToLeaderboard,
                 modifier = Modifier.padding(horizontal = side)
             )
-            IslandMap(
+            // Play TV: the TV shows the chosen section; Watch / Play / Learn below; sections are cartridges
+            PlayTvHome(
                 islands = islands,
                 currentIndex = currentIndex,
                 nextGlyph = nextGlyph,
                 nextState = nextState,
                 onNext = openNext,
+                onWatch = { island ->
+                    val folder = watchFolderFor(island.type)
+                    if (folder != null) onOpenVideos(folder) else onSeeAllVideos()
+                },
+                onPlay = onSeeAllGames,
                 modifier = Modifier
                     .padding(horizontal = side)
                     .fillMaxWidth()
                     .weight(1f)
             )
-            ShelfTitle("Games", onSeeAll = onSeeAllGames, side = side)
-            Row(Modifier.fillMaxWidth().padding(horizontal = side), horizontalArrangement = Arrangement.spacedBy(gap)) {
-                picks.take(perRow).forEach { game ->
-                    HomeGameCard(game, pictureHeight, Modifier.width(cardWidth), remember(sub) { Access.game(game) }) { onOpenGame(game) }
-                }
-            }
-            // Fun Videos are in Kannada; Hindi videos come later
-            // Hindi has its own (shorter) list of videos
-            val shelf = if (com.example.data.Lang.isHindi) homeVideos.filter { it.first in hindiVideoFolders } else homeVideos
-            if (shelf.isNotEmpty()) {
-            ShelfTitle("Fun Videos", onSeeAll = onSeeAllVideos, side = side)
-            Row(Modifier.fillMaxWidth().padding(horizontal = side), horizontalArrangement = Arrangement.spacedBy(gap)) {
-                shelf.take(perRow).forEach { (folder, photo) ->
-                    HomeVideoCard(folder, photo, pictureHeight, Modifier.width(cardWidth), remember(sub) { Access.videoFolder(folder) }) { onOpenVideos(folder) }
-                }
-            }
-            }
         }
         if (celebrate != null) {
             IslandOpenedCard(
@@ -672,5 +663,224 @@ fun NavItem(icon: androidx.compose.ui.graphics.vector.ImageVector, label: String
             fontWeight = FontWeight.ExtraBold,
             color = if (isActive) Color(0xFFFF4081) else Color.Gray
         )
+    }
+}
+
+
+/** The Fun Videos folder that goes with a section, or null (then all Fun Videos open). */
+private fun watchFolderFor(type: String): String? {
+    val folder = when (type) {
+        "vowels" -> "Vowels"
+        "consonants" -> "Consonants"
+        "numbers" -> "Numbers"
+        else -> null
+    } ?: return null
+    return if (com.example.data.Lang.isHindi && folder !in hindiVideoFolders) null else folder
+}
+
+private val TvBody = Color(0xFF5C6BC0)
+private val TvBodyDark = Color(0xFF3F4A9A)
+private val TvRoom = Color(0xFFFFE5EC)
+
+/**
+ * Landing page "Play TV": a big cartoon TV shows one section (its letter, name, progress and the next
+ * letter). Three big buttons under it: Watch (the section's videos), Play (games), Learn (the next
+ * letter). The sections sit on a shelf as cartridges; tapping one shows it on the TV.
+ */
+@Composable
+private fun PlayTvHome(
+    islands: List<Island>,
+    currentIndex: Int,
+    nextGlyph: String,
+    nextState: Access.State,
+    onNext: () -> Unit,
+    onWatch: (Island) -> Unit,
+    onPlay: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    var selected by androidx.compose.runtime.saveable.rememberSaveable(currentIndex) { androidx.compose.runtime.mutableIntStateOf(currentIndex) }
+    val island = islands.getOrNull(selected) ?: islands[currentIndex]
+    val isCurrent = selected == currentIndex
+    val anim = rememberInfiniteTransition(label = "tv")
+    val wiggle by anim.animateFloat(-6f, 6f, infiniteRepeatable(tween(900, easing = FastOutSlowInEasing), RepeatMode.Reverse), label = "wiggle")
+    val bounce by anim.animateFloat(1f, 1.06f, infiniteRepeatable(tween(800, easing = FastOutSlowInEasing), RepeatMode.Reverse), label = "bounce")
+    val glow by anim.animateFloat(0.35f, 0.9f, infiniteRepeatable(tween(900), RepeatMode.Reverse), label = "glow")
+    val learn: () -> Unit = {
+        com.example.ui.audio.SoundEffectsHelper.playButtonTap()
+        when {
+            island.state == Access.State.NeedsProgress -> Access.showHint(Access.islandHint(island.type))
+            isCurrent -> onNext()
+            else -> island.open()
+        }
+    }
+
+    BoxWithConstraints(
+        modifier
+            .clip(RoundedCornerShape(28.dp))
+            .background(androidx.compose.ui.graphics.Brush.verticalGradient(listOf(TvRoom, Color(0xFFFFD1DC))))
+            .padding(horizontal = 12.dp, vertical = 10.dp)
+    ) {
+        val w = maxWidth
+        val h = maxHeight
+        val buttonSize = ((w - 24.dp) / 3).coerceAtMost(104.dp).coerceAtMost(h * 0.2f)
+        val cartH = (h * 0.11f).coerceIn(44.dp, 62.dp)
+        Column(Modifier.fillMaxSize(), horizontalAlignment = Alignment.CenterHorizontally) {
+            // ---- The TV ----
+            Box(Modifier.fillMaxWidth().weight(1f), contentAlignment = Alignment.BottomCenter) {
+                // Antennae
+                Canvas(Modifier.fillMaxSize()) {
+                    val cx = size.width / 2
+                    val top = 2.dp.toPx()
+                    rotate(wiggle, pivot = Offset(cx, 26.dp.toPx())) {
+                        drawLine(TvBodyDark, Offset(cx - 6.dp.toPx(), 26.dp.toPx()), Offset(cx - 46.dp.toPx(), top + 6.dp.toPx()), strokeWidth = 5.dp.toPx(), cap = StrokeCap.Round)
+                        drawLine(TvBodyDark, Offset(cx + 6.dp.toPx(), 26.dp.toPx()), Offset(cx + 46.dp.toPx(), top + 6.dp.toPx()), strokeWidth = 5.dp.toPx(), cap = StrokeCap.Round)
+                        drawCircle(HomeCoral, 6.dp.toPx(), Offset(cx - 46.dp.toPx(), top + 6.dp.toPx()))
+                        drawCircle(HomeSun, 6.dp.toPx(), Offset(cx + 46.dp.toPx(), top + 6.dp.toPx()))
+                    }
+                }
+                Column(Modifier.fillMaxWidth().padding(top = 24.dp), horizontalAlignment = Alignment.CenterHorizontally) {
+                    Box(
+                        Modifier
+                            .fillMaxWidth()
+                            .weight(1f)
+                            .shadow(0.dp, RoundedCornerShape(28.dp))
+                            .clip(RoundedCornerShape(28.dp))
+                            .background(TvBodyDark)
+                            .padding(bottom = 6.dp)
+                            .clip(RoundedCornerShape(28.dp))
+                            .background(TvBody)
+                            .padding(12.dp)
+                    ) {
+                        // The screen: tap it to learn
+                        val screen = if (island.state == Access.State.NeedsProgress) LockedPlanet else island.color
+                        Box(
+                            Modifier
+                                .fillMaxSize()
+                                .clip(RoundedCornerShape(18.dp))
+                                .background(
+                                    androidx.compose.ui.graphics.Brush.radialGradient(
+                                        listOf(lerpColor(screen, Color.White, 0.35f), screen),
+                                        center = Offset(120f, 80f), radius = 900f
+                                    )
+                                )
+                                .clickable { learn() }
+                                .testTag("home_tv_screen"),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                                Text(
+                                    island.glyph,
+                                    fontSize = 72.sp, fontWeight = FontWeight.ExtraBold, color = Color.White,
+                                    modifier = Modifier.scale(if (isCurrent) bounce else 1f)
+                                )
+                                Text(island.name, fontSize = 20.sp, fontWeight = FontWeight.ExtraBold, color = Color.White, maxLines = 1)
+                                Text(com.example.data.Lang.islandNative(island.type), fontSize = 14.sp, fontWeight = FontWeight.Bold, color = Color.White.copy(alpha = 0.85f), maxLines = 1)
+                                if (island.state != Access.State.NeedsProgress) {
+                                    Box(Modifier.width(150.dp).height(9.dp).clip(RoundedCornerShape(5.dp)).background(Color.White.copy(alpha = 0.3f))) {
+                                        val f = if (island.total == 0) 0f else island.done.toFloat() / island.total
+                                        Box(Modifier.fillMaxHeight().fillMaxWidth(f.coerceIn(0f, 1f)).clip(RoundedCornerShape(5.dp)).background(HomeSun))
+                                    }
+                                    Text("${island.done} / ${island.total}", fontSize = 13.sp, fontWeight = FontWeight.ExtraBold, color = Color.White)
+                                }
+                            }
+                            // Corner badge: Next letter / finished / locked
+                            Row(
+                                Modifier
+                                    .align(Alignment.TopEnd)
+                                    .padding(8.dp)
+                                    .clip(RoundedCornerShape(16.dp))
+                                    .background(Color.White.copy(alpha = 0.95f))
+                                    .clickable { learn() }
+                                    .padding(start = 10.dp, end = 4.dp, top = 3.dp, bottom = 3.dp)
+                                    .testTag("home_next_letter"),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(6.dp)
+                            ) {
+                                when {
+                                    island.state == Access.State.NeedsProgress -> { Text("Locked", fontSize = 12.sp, fontWeight = FontWeight.ExtraBold, color = HomeInk); LockBadge(size = 22.dp) }
+                                    isCurrent -> {
+                                        Text("Next:", fontSize = 12.sp, fontWeight = FontWeight.ExtraBold, color = HomeInk)
+                                        Text(nextGlyph, fontSize = 18.sp, fontWeight = FontWeight.ExtraBold, color = HomeInk)
+                                        if (nextState == Access.State.NeedsPremium) CrownBadge(size = 24.dp)
+                                        else Box(Modifier.size(24.dp).background(HomeCoral, CircleShape), contentAlignment = Alignment.Center) {
+                                            Icon(Icons.Default.PlayArrow, contentDescription = "Start the next letter", tint = Color.White, modifier = Modifier.size(16.dp))
+                                        }
+                                    }
+                                    island.finished -> { Text("Done", fontSize = 12.sp, fontWeight = FontWeight.ExtraBold, color = HomeInk); com.example.ui.progress.StarIcon(20.dp, HomeSun) }
+                                    else -> { Text("Open", fontSize = 12.sp, fontWeight = FontWeight.ExtraBold, color = HomeInk)
+                                        Box(Modifier.size(24.dp).background(HomeCoral, CircleShape), contentAlignment = Alignment.Center) {
+                                            Icon(Icons.Default.PlayArrow, contentDescription = "Open ${island.name}", tint = Color.White, modifier = Modifier.size(16.dp))
+                                        } }
+                                }
+                            }
+                        }
+                    }
+                    // Stand
+                    Box(Modifier.width(110.dp).height(12.dp).clip(RoundedCornerShape(bottomStart = 10.dp, bottomEnd = 10.dp)).background(TvBodyDark))
+                }
+            }
+            Spacer(Modifier.height(10.dp))
+            // ---- Watch / Play / Learn ----
+            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceEvenly) {
+                TvButton("🎬", "Watch", Color(0xFFFF7043), buttonSize, "home_tv_watch") {
+                    com.example.ui.audio.SoundEffectsHelper.playButtonTap(); onWatch(island)
+                }
+                TvButton("🎮", "Play", Color(0xFFAB47BC), buttonSize, "home_tv_play") {
+                    com.example.ui.audio.SoundEffectsHelper.playButtonTap(); onPlay()
+                }
+                TvButton("📖", "Learn", Color(0xFF26A69A), buttonSize, "home_tv_learn") { learn() }
+            }
+            Spacer(Modifier.height(12.dp))
+            // ---- Cartridge shelf ----
+            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(6.dp), verticalAlignment = Alignment.Bottom) {
+                islands.forEachIndexed { i, isl ->
+                    val locked = isl.state == Access.State.NeedsProgress
+                    val on = i == selected
+                    Box(
+                        Modifier
+                            .weight(1f)
+                            .height(cartH)
+                            .graphicsLayer { translationY = if (on) -6.dp.toPx() else 0f }
+                            .then(if (on) Modifier.border(3.dp, HomeSun.copy(alpha = if (i == currentIndex) glow else 1f), RoundedCornerShape(topStart = 10.dp, topEnd = 10.dp, bottomStart = 4.dp, bottomEnd = 4.dp)) else Modifier)
+                            .clip(RoundedCornerShape(topStart = 10.dp, topEnd = 10.dp, bottomStart = 4.dp, bottomEnd = 4.dp))
+                            .background(if (locked) LockedPlanet.copy(alpha = 0.55f) else isl.color)
+                            .clickable {
+                                com.example.ui.audio.SoundEffectsHelper.playButtonTap()
+                                selected = i
+                            }
+                            .testTag("home_island_${isl.type}"),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text(isl.glyph, fontSize = (cartH.value * 0.4f).sp, fontWeight = FontWeight.ExtraBold, color = Color.White, maxLines = 1)
+                        when {
+                            locked -> LockBadge(Modifier.align(Alignment.TopEnd).offset(x = 3.dp, y = (-3).dp), size = 18.dp)
+                            isl.finished -> com.example.ui.progress.StarIcon(18.dp, HomeSun, Modifier.align(Alignment.TopEnd).offset(x = 3.dp, y = (-3).dp))
+                            i == currentIndex && !on -> Box(Modifier.align(Alignment.TopEnd).offset(x = 2.dp, y = (-2).dp).size(10.dp).background(HomeCoral, CircleShape))
+                        }
+                    }
+                }
+            }
+            Box(Modifier.fillMaxWidth().height(10.dp).clip(RoundedCornerShape(5.dp)).background(Color(0xFFA1887F)))
+            Spacer(Modifier.height(4.dp))
+            Text("Pick a cartridge to change the lesson", fontSize = 12.sp, fontWeight = FontWeight.ExtraBold, color = Color(0xFF8E3B5A))
+        }
+    }
+}
+
+@Composable
+private fun TvButton(emoji: String, label: String, color: Color, size: Dp, tag: String, onClick: () -> Unit) {
+    Column(
+        Modifier
+            .size(size)
+            .shadow(6.dp, CircleShape)
+            .clip(CircleShape)
+            .background(color)
+            .clickable { onClick() }
+            .testTag(tag),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.Center
+    ) {
+        Text(emoji, fontSize = (size.value * 0.3f).sp)
+        Text(label, fontSize = (size.value * 0.17f).sp, fontWeight = FontWeight.ExtraBold, color = Color.White)
     }
 }
