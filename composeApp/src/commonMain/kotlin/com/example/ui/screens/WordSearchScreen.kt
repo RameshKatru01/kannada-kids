@@ -8,6 +8,8 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.gestures.detectTapGestures
+import androidx.compose.foundation.horizontalScroll
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Text
@@ -38,6 +40,8 @@ import kotlin.random.Random
 /*
  * Word Search: find the picture words hidden in a grid of letters by sliding a finger across them.
  * 6 levels: the grid grows (4×4 → 6×6), more words hide, and from level 5 words also run diagonally.
+ * Topics: the words from the Fun Videos word charts (Fruits, Vegetables, Body Parts, Family, Mix) or
+ * the general picture words. A found video word can be watched (▶) right away.
  */
 
 private data class SearchLevel(val size: Int, val words: Int, val vertical: Boolean, val diagonal: Boolean, val label: String)
@@ -60,7 +64,13 @@ internal val fillerSyllables = listOf(
     "ಕಾ", "ಮಾ", "ನಿ", "ರು", "ಲೆ", "ಬೆ", "ಗೆ", "ಹು", "ತೆ"
 )
 
-private fun makePuzzle(spec: SearchLevel): Puzzle {
+/** Filler letters for a topic: the topic's own letter blocks (so wrong answers look believable) plus a few common ones. */
+private fun fillerFor(words: List<PictureWord>): List<String> {
+    val own = words.flatMap { it.syllables }.distinct()
+    return if (own.size >= 12) own + fillerSyllables.shuffled().take(6) else fillerSyllables + own
+}
+
+private fun makePuzzle(spec: SearchLevel, words: List<PictureWord>, filler: List<String>): Puzzle {
     val dirs = buildList {
         add(0 to 1)
         if (spec.vertical) add(1 to 0)
@@ -68,11 +78,12 @@ private fun makePuzzle(spec: SearchLevel): Puzzle {
     }
     repeat(60) {
         val grid = Array(spec.size) { arrayOfNulls<String>(spec.size) }
-        val chosen = pictureWords.filter { it.syllables.size in 2..spec.size }.shuffled()
+        val chosen = words.filter { it.syllables.size in 2..spec.size }.shuffled()
         val placed = mutableListOf<Placed>()
         for (w in chosen) {
             if (placed.size == spec.words) break
-            if (placed.any { it.word.text == w.text }) continue
+            // Skip a word that is part of another chosen word (ಮಗ in ಮಗಳು) or the same word
+            if (placed.any { it.word.text.contains(w.text) || w.text.contains(it.word.text) }) continue
             var ok = false
             for (attempt in 0 until 80) {
                 val (dr, dc) = dirs.random()
@@ -90,14 +101,15 @@ private fun makePuzzle(spec: SearchLevel): Puzzle {
             if (!ok) continue
         }
         if (placed.size == spec.words) {
-            val filled = grid.map { row -> row.map { it ?: fillerSyllables.random() } }
+            val filled = grid.map { row -> row.map { it ?: filler.random() } }
             return Puzzle(filled, placed)
         }
     }
     // Fallback: simple rows
-    val words = pictureWords.filter { it.syllables.size == 2 }.shuffled().take(spec.words)
-    val grid = Array(spec.size) { r -> Array(spec.size) { fillerSyllables.random() } }
-    val placed = words.mapIndexed { i, w ->
+    val fallback = words.filter { it.syllables.size == 2 }.ifEmpty { pictureWords.filter { it.syllables.size == 2 } }
+        .distinctBy { it.text }.shuffled().take(spec.words)
+    val grid = Array(spec.size) { r -> Array(spec.size) { filler.random() } }
+    val placed = fallback.mapIndexed { i, w ->
         val cells = w.syllables.indices.map { Cell(i, it) }
         cells.forEachIndexed { k, cell -> grid[cell.r][cell.c] = w.syllables[k] }
         Placed(w, cells, CandyColors[i % CandyColors.size])
@@ -107,15 +119,27 @@ private fun makePuzzle(spec: SearchLevel): Puzzle {
 
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
-fun WordSearchScreen(firstLevel: Int = 1, onBack: () -> Unit) {
+fun WordSearchScreen(firstLevel: Int = 1, topic: String? = null, onBack: () -> Unit) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
+    val settings = remember { getSharedPreferences("AppSettings") }
+    // The chosen topic: from the video folder that opened the game, else the last one played
+    var topicId by remember {
+        mutableStateOf(
+            topic?.takeIf { t -> wordTopics.any { it.id == t } }
+                ?: settings.getString("word_search_topic", null)?.takeIf { t -> wordTopics.any { it.id == t } }
+                ?: "mix"
+        )
+    }
     var level by remember { mutableIntStateOf((firstLevel - 1).coerceIn(0, searchLevels.size - 1)) }
     val spec = searchLevels[level]
     var round by remember { mutableIntStateOf(0) }
-    val puzzle = remember(level, round) { makePuzzle(spec) }
-    var found by remember(level, round) { mutableStateOf(listOf<Placed>()) }
-    var selection by remember(level, round) { mutableStateOf(listOf<Cell>()) }
+    val topicWords = remember(topicId) { wordsForTopic(topicId) }
+    val filler = remember(topicId) { fillerFor(topicWords) }
+    val puzzle = remember(level, round, topicId) { makePuzzle(spec, topicWords, filler) }
+    var watching by remember { mutableStateOf<PictureWord?>(null) }
+    var found by remember(level, round, topicId) { mutableStateOf(listOf<Placed>()) }
+    var selection by remember(level, round, topicId) { mutableStateOf(listOf<Cell>()) }
     val tally = remember { LevelTally() }
     var levelResult by remember { mutableStateOf<LevelResult?>(null) }
     var showConfetti by remember { mutableStateOf(false) }
@@ -192,7 +216,36 @@ fun WordSearchScreen(firstLevel: Int = 1, onBack: () -> Unit) {
         onPlayAgain = { startLevel(level) },
         onBack = onBack
     ) {
-        // Words to find (tap to hear)
+        // Topic: the words from a Fun Videos folder, all of them (Mix) or the general picture words
+        Row(
+            Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),
+            horizontalArrangement = Arrangement.spacedBy(6.dp)
+        ) {
+            wordTopics.forEach { t ->
+                val on = t.id == topicId
+                Text(
+                    "${t.icon} ${t.label}",
+                    fontSize = 13.sp,
+                    fontWeight = FontWeight.ExtraBold,
+                    color = if (on) Color.White else GameInk,
+                    modifier = Modifier
+                        .clip(RoundedCornerShape(16.dp))
+                        .background(if (on) Color(0xFF6C63FF) else Color.White)
+                        .clickable {
+                            if (!on) {
+                                topicId = t.id
+                                settings.edit().putString("word_search_topic", t.id).apply()
+                                justFound = null
+                                tally.reset()
+                            }
+                        }
+                        .padding(horizontal = 12.dp, vertical = 6.dp)
+                        .testTag("ws_topic_${t.id}")
+                )
+            }
+        }
+        Spacer(Modifier.height(10.dp))
+        // Words to find (tap to hear; a found video word can be watched)
         FlowRow(
             horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.CenterHorizontally),
             verticalArrangement = Arrangement.spacedBy(8.dp),
@@ -205,7 +258,10 @@ fun WordSearchScreen(firstLevel: Int = 1, onBack: () -> Unit) {
                         .clip(RoundedCornerShape(20.dp))
                         .background(if (isFound) p.color else Color.White)
                         .border(2.dp, p.color, RoundedCornerShape(20.dp))
-                        .clickable { NativeAudioPlayer.playPhonics(context, p.word.text) }
+                        .clickable {
+                            if (isFound && p.word.video != null) watching = p.word
+                            else NativeAudioPlayer.playPhonics(context, p.word.text)
+                        }
                         .padding(horizontal = 12.dp, vertical = 6.dp),
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(6.dp)
@@ -215,12 +271,12 @@ fun WordSearchScreen(firstLevel: Int = 1, onBack: () -> Unit) {
                         if (isFound) p.word.text else p.word.english,
                         fontSize = 15.sp, fontWeight = FontWeight.ExtraBold, color = GameInk
                     )
-                    if (isFound) Text("✓", fontSize = 15.sp, fontWeight = FontWeight.ExtraBold, color = GameInk)
+                    if (isFound) Text(if (p.word.video != null) "▶" else "✓", fontSize = 15.sp, fontWeight = FontWeight.ExtraBold, color = GameInk)
                 }
             }
         }
         Spacer(Modifier.height(6.dp))
-        Text("Slide your finger across the letters", fontSize = 13.sp, fontWeight = FontWeight.Bold, color = GameInk.copy(alpha = 0.6f))
+        Text(if (found.any { it.word.video != null }) "Slide across the letters · tap a found word ▶ to watch" else "Slide your finger across the letters", fontSize = 13.sp, fontWeight = FontWeight.Bold, color = GameInk.copy(alpha = 0.6f))
         Spacer(Modifier.height(12.dp))
 
         BoxWithConstraints(Modifier.fillMaxWidth().weight(1f), contentAlignment = Alignment.Center) {
@@ -231,7 +287,7 @@ fun WordSearchScreen(firstLevel: Int = 1, onBack: () -> Unit) {
                     .size(side)
                     .clip(RoundedCornerShape(22.dp))
                     .background(Color.White)
-                    .pointerInput(level, round) {
+                    .pointerInput(level, round, topicId) {
                         gridPx = size.width.toFloat()
                         var start: Cell? = null
                         detectDragGestures(
@@ -249,7 +305,7 @@ fun WordSearchScreen(firstLevel: Int = 1, onBack: () -> Unit) {
                             onDragCancel = { selection = emptyList() }
                         )
                     }
-                    .pointerInput(level, round, "tap") {
+                    .pointerInput(level, round, topicId, "tap") {
                         detectTapGestures { p ->
                             cellAt(p)?.let { c -> NativeAudioPlayer.playPhonics(context, puzzle.grid[c.r][c.c]) }
                         }
@@ -293,5 +349,50 @@ fun WordSearchScreen(firstLevel: Int = 1, onBack: () -> Unit) {
             }
         }
         Spacer(Modifier.height(8.dp))
+    }
+    watching?.let { w -> WordVideoDialog(w, onClose = { watching = null }) }
+}
+
+/** Plays a found word's video from the Fun Videos word charts. */
+@Composable
+private fun WordVideoDialog(word: PictureWord, onClose: () -> Unit) {
+    val url = word.video ?: return
+    androidx.compose.ui.window.Dialog(
+        onDismissRequest = onClose,
+        properties = androidx.compose.ui.window.DialogProperties(usePlatformDefaultWidth = false)
+    ) {
+        val player = rememberVideoPlayer(url = url, loop = false, autoPlay = true)
+        val playing by player.isPlaying
+        val ended by player.isEnded
+        Column(
+            Modifier.fillMaxWidth(0.9f).clip(RoundedCornerShape(24.dp)).background(Color.White).padding(12.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            Box(
+                Modifier
+                    .fillMaxWidth()
+                    .aspectRatio(9f / 16f)
+                    .clip(RoundedCornerShape(18.dp))
+                    .background(Color.Black)
+                    .clickable { if (playing) player.pause() else player.play() },
+                contentAlignment = Alignment.Center
+            ) {
+                VideoSurface(controller = player, showNativeControls = false, modifier = Modifier.fillMaxSize())
+                if (!playing) Text(if (ended) "↻" else "▶", fontSize = 48.sp, color = Color.White, fontWeight = FontWeight.ExtraBold)
+            }
+            Spacer(Modifier.height(10.dp))
+            Text(
+                "Close ✕",
+                fontSize = 16.sp,
+                fontWeight = FontWeight.ExtraBold,
+                color = Color.White,
+                modifier = Modifier
+                    .clip(RoundedCornerShape(16.dp))
+                    .background(Color(0xFF6C63FF))
+                    .clickable { onClose() }
+                    .padding(horizontal = 24.dp, vertical = 8.dp)
+                    .testTag("ws_video_close")
+            )
+        }
     }
 }

@@ -28,6 +28,9 @@ object SpeechCatalog {
         // Picture words and their syllable tiles (Scrambled Words, Word Search)
         pictureWords.forEach { w -> out += w.text; w.syllables.forEach { out += it } }
         fillerSyllables.forEach { out += it }
+        // Word-chart video words (Word Search topics) and their syllable tiles, plus ಕೈ from the videos
+        com.example.ui.screens.videoWords.forEach { w -> out += w.text; w.syllables.forEach { out += it } }
+        out += "ಕೈ"
         // Swara Adventure
         vowelWords.forEach { out += it.word; out += it.vowel }
         // Ottakshara island: the joined letters, their parts and example words

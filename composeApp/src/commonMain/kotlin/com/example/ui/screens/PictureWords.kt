@@ -1,7 +1,15 @@
 package com.example.ui.screens
 
 /** A picture word made of Kannada syllables (aksharas), used by Scrambled Words and Word Search. */
-internal data class PictureWord(val syllables: List<String>, val picture: String, val meaning: String) {
+internal data class PictureWord(
+    val syllables: List<String>,
+    val picture: String,
+    val meaning: String,
+    /** The word's video (Fun Videos word charts), if it has one. */
+    val video: String? = null,
+    /** Word Search topic id (see VideoWords.kt); null for the general picture words. */
+    val topic: String? = null
+) {
     val text: String get() = syllables.joinToString("")
     /** English meaning only, e.g. "King" from "Arasa (King)". */
     val english: String get() = meaning.substringAfter("(", meaning).substringBefore(")")

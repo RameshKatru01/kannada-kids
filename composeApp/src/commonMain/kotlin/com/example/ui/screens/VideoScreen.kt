@@ -14,6 +14,8 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.foundation.clickable
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -424,7 +426,13 @@ fun videoUrlsFor(title: String): List<String> {
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun VideoScreen(title: String, onBack: () -> Unit, authViewModel: AuthViewModel = viewModel { AuthViewModel() }) {
+fun VideoScreen(
+    title: String,
+    onBack: () -> Unit,
+    /** Shown as a "Play Word Search" button when this folder's words are a Word Search topic. */
+    onPlayWordSearch: (() -> Unit)? = null,
+    authViewModel: AuthViewModel = viewModel { AuthViewModel() }
+) {
     val context = LocalContext.current
     val authState by authViewModel.authState.collectAsState()
     val userEmail = (authState as? AuthState.Authenticated)?.email ?: "guest"
@@ -556,6 +564,24 @@ fun VideoScreen(title: String, onBack: () -> Unit, authViewModel: AuthViewModel 
             }
         }
         
+        // Practise this folder's words in Word Search
+        if (onPlayWordSearch != null) {
+            Text(
+                "🔍 Play Word Search",
+                fontSize = 15.sp,
+                fontWeight = FontWeight.ExtraBold,
+                color = Color.White,
+                modifier = Modifier
+                    .align(Alignment.TopEnd)
+                    .padding(16.dp)
+                    .clip(RoundedCornerShape(20.dp))
+                    .background(Color(0xFF6C63FF).copy(alpha = 0.92f))
+                    .clickable { onPlayWordSearch() }
+                    .padding(horizontal = 14.dp, vertical = 8.dp)
+                    .testTag("video_play_word_search")
+            )
+        }
+
         // Floating Back Button
         IconButton(
             onClick = onBack,

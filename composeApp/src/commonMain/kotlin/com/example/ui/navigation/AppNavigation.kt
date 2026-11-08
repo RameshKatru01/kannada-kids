@@ -307,14 +307,16 @@ fun AppNavigation(authViewModel: AuthViewModel = viewModel { AuthViewModel() }) 
                 }
 
                 composable(
-                    "game/{gameIndex}?level={level}",
+                    "game/{gameIndex}?level={level}&topic={topic}",
                     arguments = listOf(
                         navArgument("gameIndex") { type = NavType.IntType },
-                        navArgument("level") { type = NavType.IntType; defaultValue = 1 }
+                        navArgument("level") { type = NavType.IntType; defaultValue = 1 },
+                        navArgument("topic") { type = NavType.StringType; defaultValue = "" }
                     )
                 ) { backStackEntry ->
                     val gameIndex = backStackEntry.arguments?.read { getIntOrNull("gameIndex") } ?: 1
                     val level = backStackEntry.arguments?.read { getIntOrNull("level") } ?: 1
+                    val topic = backStackEntry.arguments?.read { getStringOrNull("topic") }?.ifBlank { null }
                     val back: () -> Unit = { navController.popBackStack() }
                     when (gameIndex) {
                         in 1..4 -> FeedTheMonsterScreen(mode = gameIndex, firstLevel = level, onBack = back)
@@ -323,7 +325,7 @@ fun AppNavigation(authViewModel: AuthViewModel = viewModel { AuthViewModel() }) 
                         6 -> LetterRunnerScreen(onBack = back)
                         23 -> LetterDashScreen(onBack = back)
                         8 -> ScrambledWordsScreen(firstLevel = level, onBack = back)
-                        9 -> WordSearchScreen(firstLevel = level, onBack = back)
+                        9 -> WordSearchScreen(firstLevel = level, topic = topic, onBack = back)
                         11 -> MatchLetterScreen(firstLevel = level, onBack = back)
                         12 -> MusicalBalloonPopScreen(onBack = back)
                         13 -> ColourSortScreen(firstLevel = level, onBack = back)
@@ -377,7 +379,11 @@ fun AppNavigation(authViewModel: AuthViewModel = viewModel { AuthViewModel() }) 
                     val folderName = backStackEntry.arguments?.read { getStringOrNull("folderName") } ?: "Video"
                     VideoScreen(
                         title = folderName,
-                        onBack = { navController.popBackStack() }
+                        onBack = { navController.popBackStack() },
+                        // Word-chart folders: practise the same words in Word Search
+                        onPlayWordSearch = com.example.ui.screens.topicForFolder(folderName)
+                            ?.takeIf { !com.example.data.Lang.isHindi }
+                            ?.let { t -> { navController.navigate("game/9?level=1&topic=$t") } }
                     )
                 }
             }
