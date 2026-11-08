@@ -60,6 +60,22 @@ internal const val PRIVACY_POLICY_URL = "https://rameshkatru01.github.io/kannada
 /** Common questions for parents (GitHub Pages). */
 internal const val HELP_URL = "https://rameshkatru01.github.io/kannada-kids/help.html"
 
+/** The app's Play Store page (change the id here if the app id changes before publishing). */
+internal const val STORE_URL = "https://play.google.com/store/apps/details?id=com.aistudio.kannadakids.ycpceg"
+
+/** The ready-made message parents can send to friends on WhatsApp. */
+internal fun shareMessageUri(): String {
+    val text = "We're learning Kannada with Fun Learn – ಕನ್ನಡ! 🎉 Tracing letters, word videos and fun games for kids. Try it: $STORE_URL"
+    val enc = buildString {
+        for (b in text.encodeToByteArray()) {
+            val u = b.toInt() and 0xFF
+            val ch = u.toChar()
+            if (u < 128 && (ch.isLetterOrDigit() || ch in "-_.~")) append(ch) else append('%').append(u.toString(16).uppercase().padStart(2, '0'))
+        }
+    }
+    return "https://wa.me/?text=$enc"
+}
+
 /** Where parents' help emails go. Change it here (and in docs/) when there is a support address. */
 internal const val SUPPORT_EMAIL = "ramesh.katru01@gmail.com"
 
@@ -493,6 +509,53 @@ fun ParentCornerScreen(
             StatTile(accuracy?.let { "$it%" } ?: "–", "right answers", DashSun, Modifier.weight(1f))
         }
 
+        // Rate us: asked once, after the child has made real progress (Google Play only for now)
+        val rateUri = androidx.compose.ui.platform.LocalUriHandler.current
+        val ratePrefs = remember { getSharedPreferences("AppSettings") }
+        var rateAsked by remember { mutableStateOf(ratePrefs.getBoolean("rate_prompt_done", false)) }
+        val onPlay = PlatformBilling.storeName() == "Google Play"
+        if (onPlay && !rateAsked && (learned >= 10 || levelsDone >= 5)) {
+            Column(
+                Modifier.fillMaxWidth().background(Color(0xFFFFF0C2), RoundedCornerShape(22.dp)).border(2.dp, DashSun, RoundedCornerShape(22.dp)).padding(14.dp),
+                verticalArrangement = Arrangement.spacedBy(10.dp)
+            ) {
+                Text("Enjoying Fun Learn? ⭐", fontSize = 16.sp, fontWeight = FontWeight.ExtraBold, color = ScrapbookInk)
+                Text("Your child has learned $learned letters! A quick rating helps other families find the app.", fontSize = 13.sp, fontWeight = FontWeight.Bold, color = ScrapbookInkSoft)
+                Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                    Box(
+                        Modifier.weight(1f).height(44.dp).clip(RoundedCornerShape(22.dp)).background(ScrapbookInk)
+                            .clickable {
+                                ratePrefs.edit().putBoolean("rate_prompt_done", true).apply(); rateAsked = true
+                                rateUri.openUri(STORE_URL)
+                            }.testTag("rate_now"),
+                        contentAlignment = Alignment.Center
+                    ) { Text("⭐ Rate the app", fontSize = 15.sp, fontWeight = FontWeight.ExtraBold, color = Color.White) }
+                    Box(
+                        Modifier.weight(1f).height(44.dp).clip(RoundedCornerShape(22.dp)).border(2.dp, ScrapbookInk, RoundedCornerShape(22.dp))
+                            .clickable { ratePrefs.edit().putBoolean("rate_prompt_done", true).apply(); rateAsked = true }
+                            .testTag("rate_later"),
+                        contentAlignment = Alignment.Center
+                    ) { Text("Maybe later", fontSize = 15.sp, fontWeight = FontWeight.ExtraBold, color = ScrapbookInk) }
+                }
+            }
+        }
+
+        // Share with a friend (WhatsApp, with a ready-made message)
+        Row(
+            Modifier.fillMaxWidth().clip(RoundedCornerShape(22.dp)).background(Color.White)
+                .clickable { rateUri.openUri(shareMessageUri()) }
+                .padding(14.dp).testTag("share_app"),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            Box(Modifier.size(44.dp).background(Color(0xFFDCF8C6), CircleShape), contentAlignment = Alignment.Center) { Text("💚", fontSize = 22.sp) }
+            Column(Modifier.weight(1f)) {
+                Text("Share with a friend", fontSize = 16.sp, fontWeight = FontWeight.ExtraBold, color = ScrapbookInk)
+                Text("Send Fun Learn to other Kannada families on WhatsApp", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = ScrapbookInkSoft)
+            }
+            Text("›", fontSize = 26.sp, fontWeight = FontWeight.ExtraBold, color = ScrapbookInk)
+        }
+
         // Help & support (email with details filled in, and common questions)
         val helpUri = androidx.compose.ui.platform.LocalUriHandler.current
         val helpSub by com.example.ui.data.SubscriptionManager.state.collectAsState()
@@ -550,6 +613,18 @@ fun ParentCornerScreen(
             )
         }
         val policyUri = androidx.compose.ui.platform.LocalUriHandler.current
+        if (PlatformBilling.storeName() == "Google Play") {
+            Text(
+                "⭐ Rate the app",
+                modifier = Modifier
+                    .align(Alignment.CenterHorizontally)
+                    .clip(RoundedCornerShape(12.dp))
+                    .clickable { policyUri.openUri(STORE_URL) }
+                    .padding(horizontal = 16.dp, vertical = 6.dp)
+                    .testTag("rate_link"),
+                fontSize = 13.sp, fontWeight = FontWeight.ExtraBold, color = Color(0xFF1565C0)
+            )
+        }
         Text(
             "Privacy policy",
             modifier = Modifier
