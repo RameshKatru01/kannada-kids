@@ -83,11 +83,13 @@ fun MyApplicationTheme(
     appTheme: AppTheme = AppTheme.DEFAULT,
     content: @Composable () -> Unit,
 ) {
-    val colorScheme = when {
-        darkTheme -> DarkColorScheme
-        appTheme == AppTheme.OCEAN -> OceanColorScheme
-        appTheme == AppTheme.FOREST -> ForestColorScheme
-        appTheme == AppTheme.SUNSET -> SunsetColorScheme
+    // Every screen is drawn on light colours, so the app always uses the light scheme. (On phones
+    // set to dark mode the dark scheme made typed text and dialogs white on white.)
+    @Suppress("UNUSED_VARIABLE") val ignoredDark = darkTheme
+    val colorScheme = when (appTheme) {
+        AppTheme.OCEAN -> OceanColorScheme
+        AppTheme.FOREST -> ForestColorScheme
+        AppTheme.SUNSET -> SunsetColorScheme
         else -> LightColorScheme
     }
 
