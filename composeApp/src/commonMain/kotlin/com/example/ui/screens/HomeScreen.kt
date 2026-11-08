@@ -270,7 +270,7 @@ fun BentoBottomNav(
             modifier = Modifier
                 .fillMaxWidth()
                 .windowInsetsPadding(WindowInsets.navigationBars)
-                .padding(vertical = 6.dp, horizontal = if (isAdmin) 2.dp else 4.dp),
+                .padding(vertical = 6.dp, horizontal = 4.dp),
             horizontalArrangement = Arrangement.SpaceEvenly,
             verticalAlignment = Alignment.CenterVertically
         ) {
@@ -304,14 +304,6 @@ fun BentoBottomNav(
                 isActive = currentRoute == "dashboard",
                 onClick = { onNavigate("dashboard") }
             )
-            if (isAdmin) {
-                NavItem(
-                    icon = Icons.Default.AdminPanelSettings,
-                    label = "Admin",
-                    isActive = currentRoute == "admin",
-                    onClick = { onNavigate("admin") }
-                )
-            }
         }
     }
 }
