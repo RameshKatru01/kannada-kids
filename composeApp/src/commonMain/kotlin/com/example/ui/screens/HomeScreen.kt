@@ -467,11 +467,8 @@ private fun StreamHome(
                     nextState = nextState,
                     onLearn = {
                         com.example.ui.audio.SoundEffectsHelper.playButtonTap()
-                        when {
-                            locked -> Access.showHint(Access.islandHint(island.type))
-                            isCurrent -> onNext()
-                            else -> island.open()
-                        }
+                        // Every section opens its letter list, where the child picks a letter
+                        if (locked) Access.showHint(Access.islandHint(island.type)) else island.open()
                     },
                     onWatch = { own.firstOrNull()?.let(onOpenVideos) ?: onSeeAllVideos() },
                     onPlay = { games.firstOrNull()?.let(onOpenGame) ?: onSeeAllGames() },
@@ -606,12 +603,6 @@ private fun SectionBanner(
                 ) {
                     when {
                         locked -> { LockBadge(size = 18.dp); Text("Coming up", fontSize = 14.sp, fontWeight = FontWeight.ExtraBold, color = HomeInk) }
-                        isCurrent -> {
-                            Icon(Icons.Default.PlayArrow, contentDescription = null, tint = HomeInk, modifier = Modifier.size(18.dp))
-                            Text("Next:", fontSize = 14.sp, fontWeight = FontWeight.ExtraBold, color = HomeInk)
-                            Text(nextGlyph, fontSize = 18.sp, fontWeight = FontWeight.ExtraBold, color = HomeInk)
-                            if (nextState == Access.State.NeedsPremium) CrownBadge(size = 20.dp)
-                        }
                         else -> {
                             Icon(Icons.Default.PlayArrow, contentDescription = null, tint = HomeInk, modifier = Modifier.size(18.dp))
                             Text("Learn", fontSize = 14.sp, fontWeight = FontWeight.ExtraBold, color = HomeInk)
