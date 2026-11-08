@@ -22,6 +22,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
@@ -222,7 +223,9 @@ private fun HomeTopBar(coins: Int, streak: Int, onProfile: () -> Unit, onPoints:
         }
         Column(Modifier.weight(1f)) {
             Text("${com.example.data.Lang.hello} Hello,", fontSize = 13.sp, fontWeight = FontWeight.ExtraBold, color = HomeInkSoft, maxLines = 1)
-            Text("Little learner", fontSize = 21.sp, fontWeight = FontWeight.ExtraBold, color = HomeInk, maxLines = 1, overflow = TextOverflow.Ellipsis)
+            val learner by com.example.ui.data.LearnerName.name.collectAsState()
+            LaunchedEffect(Unit) { com.example.ui.data.LearnerName.load() }
+            Text(learner.ifBlank { "Little learner" }, fontSize = 21.sp, fontWeight = FontWeight.ExtraBold, color = HomeInk, maxLines = 1, overflow = TextOverflow.Ellipsis)
         }
         HomePill(onClick = onPoints) {
             com.example.ui.progress.StarIcon(16.dp, Color(0xFFFFB300))

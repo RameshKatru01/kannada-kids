@@ -19,6 +19,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.platform.testTag
 import com.example.ui.theme.BrightCyan
 import com.example.ui.data.LanguageManager
 import androidx.compose.runtime.collectAsState
@@ -178,6 +179,40 @@ fun ProfileScreen(
                     .verticalScroll(rememberScrollState()),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
+                // Learner name: the child types their own name; Home greets them with it
+                var learnerName by remember(userEmail) { mutableStateOf(com.example.ui.data.LearnerName.load()) }
+                Card(
+                    modifier = Modifier.fillMaxWidth().padding(8.dp),
+                    shape = RoundedCornerShape(20.dp),
+                    colors = CardDefaults.cardColors(containerColor = Color.White),
+                    elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
+                ) {
+                    Column(Modifier.padding(16.dp)) {
+                        Text("Learner Name", fontSize = 17.sp, fontWeight = FontWeight.ExtraBold, color = Color(0xFF1E293B))
+                        Spacer(modifier = Modifier.height(8.dp))
+                        OutlinedTextField(
+                            value = learnerName,
+                            onValueChange = {
+                                val v = it.replace("\n", " ").take(com.example.ui.data.LearnerName.MAX_LENGTH)
+                                learnerName = v
+                                com.example.ui.data.LearnerName.set(v)
+                            },
+                            placeholder = { Text("Type your name") },
+                            leadingIcon = { Text("🧒", fontSize = 20.sp) },
+                            singleLine = true,
+                            textStyle = androidx.compose.ui.text.TextStyle(fontSize = 18.sp, fontWeight = FontWeight.Bold),
+                            keyboardOptions = KeyboardOptions(
+                                capitalization = androidx.compose.ui.text.input.KeyboardCapitalization.Words,
+                                imeAction = androidx.compose.ui.text.input.ImeAction.Done
+                            ),
+                            shape = RoundedCornerShape(14.dp),
+                            modifier = Modifier.fillMaxWidth().testTag("learner_name_field")
+                        )
+                        Spacer(modifier = Modifier.height(4.dp))
+                        Text("This name shows on the home screen.", fontSize = 12.sp, color = Color(0xFF64748B))
+                    }
+                }
+
                 if (authState is AuthState.Authenticated) {
                     val authUser = authState as AuthState.Authenticated
                     Card(
