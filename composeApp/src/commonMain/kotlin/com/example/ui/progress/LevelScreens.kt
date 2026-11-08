@@ -332,10 +332,19 @@ fun LevelCompleteOverlay(
         }
     }
 
+    // A happy face that bounces, and a big cheer that matches the stars
+    val bounce = rememberInfiniteTransition(label = "cheer")
+    val hop by bounce.animateFloat(0f, 1f, infiniteRepeatable(tween(650, easing = FastOutSlowInEasing), RepeatMode.Reverse), label = "hop")
+    val (face, cheer) = when (result.stars) {
+        3 -> "🏆" to "Super star!"
+        2 -> "🥳" to "Hooray!"
+        else -> "👏" to "Yay, you did it!"
+    }
+
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(Color(0xF00B3B66))
+            .background(Color(0xE62EC4B6))
             .clickable(interactionSource = remember { MutableInteractionSource() }, indication = null) { }
             .safeDrawingPadding()
             .padding(20.dp),
@@ -345,20 +354,26 @@ fun LevelCompleteOverlay(
             modifier = Modifier
                 .fillMaxWidth()
                 .widthIn(max = 420.dp)
-                .background(Color.White, RoundedCornerShape(32.dp))
-                .padding(start = 22.dp, end = 22.dp, top = 26.dp, bottom = 22.dp),
+                .background(Color(0xFFFFFBEF), RoundedCornerShape(36.dp))
+                .border(4.dp, Color(0xFFFFC93C), RoundedCornerShape(36.dp))
+                .padding(start = 22.dp, end = 22.dp, top = 18.dp, bottom = 22.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(12.dp)
+            verticalArrangement = Arrangement.spacedBy(10.dp)
         ) {
             Text(
-                "${(game?.name ?: "Game").uppercase()} · LEVEL ${result.level}",
-                fontSize = 13.sp, fontWeight = FontWeight.ExtraBold, color = ProgressInkSoft,
-                letterSpacing = 0.5.sp, textAlign = TextAlign.Center
+                face,
+                fontSize = 64.sp,
+                modifier = Modifier.offset(y = (-10 * hop).dp).scale(1f + 0.06f * hop)
             )
             Text(
-                "Level complete!",
-                fontSize = 36.sp, fontWeight = FontWeight.ExtraBold, color = ProgressInk,
-                lineHeight = 38.sp, textAlign = TextAlign.Center
+                cheer,
+                fontSize = 38.sp, fontWeight = FontWeight.ExtraBold, color = Color(0xFFFF6B6B),
+                lineHeight = 40.sp, textAlign = TextAlign.Center
+            )
+            Text(
+                "${game?.name ?: "Level"} · level ${result.level} done!",
+                modifier = Modifier.background(Color(0xFFE0F7F4), RoundedCornerShape(16.dp)).padding(horizontal = 14.dp, vertical = 5.dp),
+                fontSize = 14.sp, fontWeight = FontWeight.ExtraBold, color = Color(0xFF168F84), textAlign = TextAlign.Center
             )
             Row(verticalAlignment = Alignment.Bottom, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                 for (i in 0 until 3) {
@@ -372,45 +387,35 @@ fun LevelCompleteOverlay(
                     )
                 }
             }
-            Text(result.message, fontSize = 16.sp, fontWeight = FontWeight.Bold, color = ProgressInkSoft, textAlign = TextAlign.Center)
+            Text(result.message, fontSize = 18.sp, fontWeight = FontWeight.ExtraBold, color = ProgressInk, textAlign = TextAlign.Center)
 
-            Column(
+            // One big, simple reward instead of a table of points
+            Row(
                 modifier = Modifier
-                    .fillMaxWidth()
-                    .background(Color(0xFFFFF6E0), RoundedCornerShape(22.dp))
-                    .padding(horizontal = 16.dp, vertical = 14.dp),
-                verticalArrangement = Arrangement.spacedBy(8.dp)
+                    .background(Color(0xFFFFF0C2), RoundedCornerShape(24.dp))
+                    .border(2.dp, Color(0xFFFFC93C), RoundedCornerShape(24.dp))
+                    .padding(horizontal = 18.dp, vertical = 8.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                result.lines.forEach { line ->
-                    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                        Text(line.label, fontSize = 15.sp, fontWeight = FontWeight.Bold, color = ProgressInk)
-                        Text("+${line.points}", fontSize = 15.sp, fontWeight = FontWeight.Bold, color = ProgressInk)
-                    }
-                }
-                Box(Modifier.fillMaxWidth().height(2.dp).background(Color(0xFFF2DFAE)))
-                Row(
-                    Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Text("+${result.pointsEarned} points", fontSize = 28.sp, fontWeight = FontWeight.ExtraBold, color = Color(0xFFB86E00))
-                    Text("Total ${formatPoints(result.totalPoints)}", fontSize = 14.sp, fontWeight = FontWeight.Bold, color = ProgressInkSoft)
-                }
+                StarIcon(26.dp, StarGold)
+                Text("+${result.pointsEarned} points", fontSize = 24.sp, fontWeight = FontWeight.ExtraBold, color = Color(0xFFB86E00))
             }
 
+            Spacer(Modifier.height(2.dp))
             if (onNextLevel != null) {
                 PrimaryPill("Next level", Color(0xFFFF6B6B), Modifier.testTag("next_level"), onNextLevel)
                 Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                    OutlinePill("Play again", Modifier.weight(1f), onPlayAgain)
-                    OutlinePill("Level map", Modifier.weight(1f), onLevelMap)
+                    OutlinePill("🔁 Play again", Modifier.weight(1f), onPlayAgain)
+                    OutlinePill("🗺️ Levels", Modifier.weight(1f), onLevelMap)
                 }
             } else {
                 Text(
                     "You finished every level! 🎉",
-                    fontSize = 15.sp, fontWeight = FontWeight.ExtraBold, color = ProgressInk
+                    fontSize = 17.sp, fontWeight = FontWeight.ExtraBold, color = Color(0xFF168F84)
                 )
-                PrimaryPill("Level map", Color(0xFFFF6B6B), Modifier, onLevelMap)
-                OutlinePill("Play again", Modifier.fillMaxWidth(), onPlayAgain)
+                PrimaryPill("Levels", Color(0xFFFF6B6B), Modifier, onLevelMap)
+                OutlinePill("🔁 Play again", Modifier.fillMaxWidth(), onPlayAgain)
             }
         }
     }

@@ -152,9 +152,9 @@ object GameProgress {
         _version.value += 1
 
         val message = when (earnedStars) {
-            3 -> "No mistakes, super star!"
-            2 -> "Great job! Almost perfect!"
-            else -> "You did it! Play again for more stars."
+            3 -> "No mistakes! Wow! 🌟"
+            2 -> "So close to 3 stars!"
+            else -> "Play again to win more stars!"
         }
         return LevelResult(
             gameId = gameId,
