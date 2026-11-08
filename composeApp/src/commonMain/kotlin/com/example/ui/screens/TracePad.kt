@@ -304,19 +304,9 @@ private fun TracePad(
         val wPx = with(density) { maxWidth.toPx() }
         val hPx = with(density) { maxHeight.toPx() }
 
-        // The letter as big as it fits: sized by its real (ink) shape, ~92% of the width and ~90% of
-        // the height, and centred on that shape (a font's line box has lots of empty space)
-        val fitted = remember(letter, wPx, hPx) {
-            val base = with(density) { 100.dp.toSp() }
-            val style = TextStyle(fontSize = base, fontWeight = FontWeight.Bold)
-            val first = measurer.measure(letter, style)
-            val ink = inkBounds(first)
-            val k = min(wPx * 0.92f / max(1f, ink.width), hPx * 0.90f / max(1f, ink.height))
-            val layout = measurer.measure(letter, style.copy(fontSize = base * k))
-            val box = inkBounds(layout)
-            val topLeft = Offset((wPx - box.width) / 2f - box.left, (hPx - box.height) / 2f - box.top)
-            Triple(layout, topLeft, box)
-        }
+        // The letter as big as it fits: sized by its real (drawn) shape, ~92% of the width and ~90%
+        // of the height, and centred on that shape (a font's line box has lots of empty space)
+        val fitted = remember(letter, wPx, hPx) { fitLetter(measurer, letter, wPx, hPx, density, direction) }
         val layout: TextLayoutResult = fitted.first
         val topLeft = fitted.second
         val inkBox = fitted.third
@@ -391,12 +381,55 @@ private fun TracePad(
     }
 }
 
-/** The letter's ink (drawn shape) inside its text layout; the whole layout box if unknown. */
-private fun inkBounds(layout: TextLayoutResult): androidx.compose.ui.geometry.Rect {
-    val r = runCatching { layout.getPathForRange(0, layout.layoutInput.text.length).getBounds() }.getOrNull()
-    return if (r == null || r.width < 1f || r.height < 1f)
-        androidx.compose.ui.geometry.Rect(0f, 0f, layout.size.width.toFloat(), layout.size.height.toFloat())
-    else r
+/**
+ * The letter measured to fill a [wPx] x [hPx] area: the layout, where to draw it (top-left), and the
+ * box of its drawn pixels inside the layout. Sized by the real drawn shape, so every letter is as big
+ * as fits ([fillW] of the width, [fillH] of the height) and centred on that shape.
+ */
+internal fun fitLetter(
+    measurer: androidx.compose.ui.text.TextMeasurer,
+    letter: String,
+    wPx: Float,
+    hPx: Float,
+    density: Density,
+    direction: LayoutDirection,
+    fillW: Float = 0.92f,
+    fillH: Float = 0.90f
+): Triple<TextLayoutResult, Offset, androidx.compose.ui.geometry.Rect> {
+    val base = with(density) { 100.dp.toSp() }
+    val style = TextStyle(fontSize = base, fontWeight = FontWeight.Bold)
+    val first = measurer.measure(letter, style)
+    val ink = inkBounds(first, density, direction)
+    val k = min(wPx * fillW / max(1f, ink.width), hPx * fillH / max(1f, ink.height))
+    val layout = measurer.measure(letter, style.copy(fontSize = base * k))
+    // Same shape, scaled (no need to scan the big one again)
+    val box = androidx.compose.ui.geometry.Rect(ink.left * k, ink.top * k, ink.right * k, ink.bottom * k)
+    val topLeft = Offset((wPx - box.width) / 2f - box.left, (hPx - box.height) / 2f - box.top)
+    return Triple(layout, topLeft, box)
+}
+
+/** Box of the letter's drawn pixels inside its text layout (the whole layout box if none are found). */
+private fun inkBounds(layout: TextLayoutResult, density: Density, direction: LayoutDirection): androidx.compose.ui.geometry.Rect {
+    val w = max(1, layout.size.width)
+    val h = max(1, layout.size.height)
+    val image = ImageBitmap(w, h)
+    val canvas = androidx.compose.ui.graphics.Canvas(image)
+    CanvasDrawScope().draw(density, direction, canvas, Size(w.toFloat(), h.toFloat())) {
+        drawText(layout, color = Color.Black)
+    }
+    val pixels = IntArray(w * h)
+    image.readPixels(pixels, 0, 0, w, h)
+    var minX = w; var minY = h; var maxX = -1; var maxY = -1
+    for (y in 0 until h) for (x in 0 until w) {
+        if (((pixels[y * w + x] ushr 24) and 0xFF) > 40) {
+            if (x < minX) minX = x
+            if (x > maxX) maxX = x
+            if (y < minY) minY = y
+            if (y > maxY) maxY = y
+        }
+    }
+    return if (maxX < 0) androidx.compose.ui.geometry.Rect(0f, 0f, w.toFloat(), h.toFloat())
+    else androidx.compose.ui.geometry.Rect(minX.toFloat(), minY.toFloat(), maxX + 1f, maxY + 1f)
 }
 
 private fun androidx.compose.ui.graphics.drawscope.DrawScope.drawStroke(stroke: List<Offset>, color: Color, width: Float) {

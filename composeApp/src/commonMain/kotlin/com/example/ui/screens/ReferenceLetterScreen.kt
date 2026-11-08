@@ -38,8 +38,8 @@ import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.text.drawText
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.data.KannadaLetter
@@ -169,35 +169,26 @@ fun ReferenceLetterScreen(tab: Int, startIndex: Int, onBack: () -> Unit) {
                 }
             }
 
-            // Printable worksheet for this letter (Ka-kaa forms share their consonant's family sheets)
+            // Printable worksheet for this letter (Ka-kaa forms share their consonant's family sheets): one slim line
             if (worksheet != null) {
                 val (_, sheet) = worksheet
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .clip(RoundedCornerShape(20.dp))
+                        .clip(RoundedCornerShape(16.dp))
                         .background(Color.White)
                         .clickable { showPrintGate = true }
-                        .padding(horizontal = 14.dp, vertical = 12.dp)
+                        .padding(horizontal = 12.dp, vertical = 6.dp)
                         .testTag("ref_print_worksheet"),
                     verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(12.dp)
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
-                    Box(Modifier.size(44.dp).background(Color(0xFFFFE9D6), CircleShape), contentAlignment = Alignment.Center) {
-                        Text("🖨️", fontSize = 22.sp)
-                    }
-                    Column(Modifier.weight(1f)) {
-                        Text("Practice on paper", fontSize = 16.sp, fontWeight = FontWeight.ExtraBold, color = ScrapbookInk)
-                        Text(
-                            if (refTab == RefTab.KaKaa) "Want more practice? Preview and print the ${sheet.title} family worksheet (${sheet.pages} pages)."
-                            else "Want more practice? Preview and print the ${sheet.title} worksheet (${sheet.pages} pages).",
-                            fontSize = 12.sp, fontWeight = FontWeight.Bold, color = ScrapbookInkSoft
-                        )
-                    }
+                    Text("🖨️", fontSize = 16.sp)
+                    Text("Practice on paper", modifier = Modifier.weight(1f), fontSize = 13.sp, fontWeight = FontWeight.ExtraBold, color = ScrapbookInk, maxLines = 1)
                     if (!com.example.ui.data.Worksheets.isOpen(sheet)) {
-                        AccessBadge(com.example.ui.data.Access.State.NeedsPremium, size = 24.dp)
+                        AccessBadge(com.example.ui.data.Access.State.NeedsPremium, size = 20.dp)
                     }
-                    Text("›", fontSize = 26.sp, fontWeight = FontWeight.ExtraBold, color = ScrapbookInk)
+                    Text("Print ›", fontSize = 13.sp, fontWeight = FontWeight.ExtraBold, color = Color(0xFF2E86DE))
                 }
             }
 
@@ -405,13 +396,18 @@ private fun TracePanel(letter: KannadaLetter, onHear: () -> Unit, onDone: () -> 
                 .testTag("ref_trace_canvas"),
             contentAlignment = Alignment.Center
         ) {
-            Text(
-                letter.character,
-                fontSize = if (letter.character.length > 1) 170.sp else 230.sp,
-                fontWeight = FontWeight.ExtraBold,
-                color = Color(0xFFE3EEF8),
-                textAlign = TextAlign.Center
-            )
+            // The grey letter, as big as fits (sized by its real shape)
+            BoxWithConstraints(Modifier.fillMaxSize()) {
+                val measurer = androidx.compose.ui.text.rememberTextMeasurer()
+                val density = androidx.compose.ui.platform.LocalDensity.current
+                val direction = androidx.compose.ui.platform.LocalLayoutDirection.current
+                val wPx = with(density) { maxWidth.toPx() }
+                val hPx = with(density) { maxHeight.toPx() }
+                val fitted = remember(letter.character, wPx, hPx) { fitLetter(measurer, letter.character, wPx, hPx, density, direction) }
+                Canvas(Modifier.fillMaxSize()) {
+                    drawText(fitted.first, color = Color(0xFFE3EEF8), topLeft = fitted.second)
+                }
+            }
             Canvas(Modifier.fillMaxSize()) {
                 val style = Stroke(width = 22.dp.toPx(), cap = StrokeCap.Round, join = StrokeJoin.Round)
                 (strokes + listOf(current)).forEach { s ->
