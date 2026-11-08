@@ -109,7 +109,10 @@ fun GamesListScreen(
 }
 
 internal fun artFor(game: GameInfo): GameArtKind = when (game.id) {
-    in 1..4 -> GameArtKind.Monster
+    1 -> GameArtKind.MonsterBlob
+    2 -> GameArtKind.MonsterHorns
+    3 -> GameArtKind.MonsterFluffy
+    4 -> GameArtKind.MonsterBox
     21 -> GameArtKind.Train
     22 -> GameArtKind.Paint
     12 -> GameArtKind.Balloons
@@ -124,7 +127,6 @@ internal fun artFor(game: GameInfo): GameArtKind = when (game.id) {
 private fun GamePolaroid(index: Int, game: GameInfo, version: Int, onClick: () -> Unit) {
     val stars = remember(version, game.id) { if (game.hasLevels) GameProgress.totalStars(game) else 0 }
     val done = remember(version, game.id) { if (game.hasLevels) GameProgress.levelsDone(game) else 0 }
-    val isMonster = game.id in 1..4
     PolaroidCard(
         index = index,
         onClick = onClick,
@@ -144,12 +146,9 @@ private fun GamePolaroid(index: Int, game: GameInfo, version: Int, onClick: () -
             Text(
                 game.name,
                 fontWeight = FontWeight.ExtraBold, fontSize = 15.sp, color = ProgressInk,
-                maxLines = 1, overflow = TextOverflow.Ellipsis
+                maxLines = 2, overflow = TextOverflow.Ellipsis, lineHeight = 17.sp
             )
             if (game.hasLevels) {
-                if (isMonster) {
-                    Text(game.subtitle, fontWeight = FontWeight.Bold, fontSize = 12.sp, color = ProgressInkSoft, maxLines = 1)
-                }
                 Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
                     StarIcon(15.dp, StarGold)
                     Text(

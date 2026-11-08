@@ -217,7 +217,7 @@ fun FeedTheMonsterScreen(mode: Int, firstLevel: Int = 1, onBack: () -> Unit) {
             TopAppBar(
                 title = {
                     Column {
-                        Text("Feed the Monster", color = Color.White, fontWeight = FontWeight.ExtraBold, fontSize = 18.sp)
+                        Text(com.example.ui.progress.GameRegistry.byId(mode)?.name ?: "Feed the Monster", color = Color.White, fontWeight = FontWeight.ExtraBold, fontSize = 18.sp)
                         Text(
                             "${style.title} · Level ${level + 1}/$levelCount",
                             color = Color.White.copy(alpha = 0.9f),

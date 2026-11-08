@@ -139,7 +139,7 @@ fun ScrapbookHeader(title: String, onBack: () -> Unit, trailing: @Composable () 
 // Drawn pictures for the games (no image files needed)
 // ---------------------------------------------------------------------------------------------
 
-enum class GameArtKind { Monster, Train, Paint, Balloons, Tiles, Grid, Jars, Runner, Letter }
+enum class GameArtKind { Monster, MonsterBlob, MonsterHorns, MonsterFluffy, MonsterBox, Train, Paint, Balloons, Tiles, Grid, Jars, Runner, Letter }
 
 private val ArtInk = Color(0xFF1E2A47)
 
@@ -162,6 +162,10 @@ fun GameArt(kind: GameArtKind, color: Color, background: Color, glyph: String, m
                         val k = size.width / 100f
                         when (kind) {
                             GameArtKind.Monster -> drawMonsterArt(k, color)
+                            GameArtKind.MonsterBlob -> drawBlobMonster(k, color)
+                            GameArtKind.MonsterHorns -> drawHornMonster(k, color)
+                            GameArtKind.MonsterFluffy -> drawFluffyMonster(k, color)
+                            GameArtKind.MonsterBox -> drawBoxMonster(k, color)
                             GameArtKind.Train -> drawTrainArt(k)
                             GameArtKind.Paint -> drawPaintArt(k)
                             GameArtKind.Balloons -> drawBalloonArt(k)
@@ -174,6 +178,14 @@ fun GameArt(kind: GameArtKind, color: Color, background: Color, glyph: String, m
                     }
                     when (kind) {
                         GameArtKind.Monster -> ArtLetter(glyph, x = 72, y = 68, size = 26, bg = Color(0xFFFFC93C))
+                        GameArtKind.MonsterBlob -> ArtLetter(glyph, x = 69, y = 5, size = 26, bg = Color(0xFFFFC93C))
+                        GameArtKind.MonsterHorns -> ArtLetter(glyph, x = 38, y = 80, size = 24, bg = Color(0xFFC68A3A), ink = Color.White)
+                        GameArtKind.MonsterFluffy -> ArtLetter(glyph, x = 73, y = 71, size = 26, bg = Color(0xFFFFC93C))
+                        GameArtKind.MonsterBox -> {
+                            ArtLetter("೧", x = 4, y = 6, size = 20, bg = Color(0xFFFFC93C))
+                            ArtLetter("೨", x = 78, y = 6, size = 20, bg = Color(0xFF2EC4B6), ink = Color.White)
+                            ArtLetter("೩", x = 3, y = 53, size = 18, bg = Color(0xFF6C63FF), ink = Color.White)
+                        }
                         GameArtKind.Train -> {
                             ArtLetter("ಕ", x = 48, y = 42, size = 0, bg = Color.Transparent)
                             ArtLetter("ಖ", x = 74, y = 42, size = 0, bg = Color.Transparent)
@@ -233,6 +245,106 @@ private fun DrawScope.drawMonsterArt(k: Float, body: Color) {
         moveTo(35 * k, 60 * k); quadraticTo(50 * k, 80 * k, 65 * k, 60 * k); close()
     }
     drawPath(mouth, ArtInk)
+}
+
+private val MonsterTongue = Color(0xFFFF8FA3)
+
+private fun DrawScope.artLine(k: Float, color: Color, width: Float, vararg pts: Pair<Float, Float>, curve: Pair<Float, Float>? = null) {
+    val path = Path().apply {
+        moveTo(pts[0].first * k, pts[0].second * k)
+        if (curve != null && pts.size == 2) quadraticTo(curve.first * k, curve.second * k, pts[1].first * k, pts[1].second * k)
+        else for (i in 1 until pts.size) lineTo(pts[i].first * k, pts[i].second * k)
+    }
+    drawPath(path, color, style = Stroke(width = width * k, cap = androidx.compose.ui.graphics.StrokeCap.Round, join = androidx.compose.ui.graphics.StrokeJoin.Round))
+}
+
+/** Vowels: a one-eyed blob with an antenna and a wide-open mouth. */
+private fun DrawScope.drawBlobMonster(k: Float, body: Color) {
+    artLine(k, ArtInk, 3f, 50f to 22f, 62f to 8f, curve = 54f to 10f)
+    drawCircle(Color(0xFFFFC93C), 5 * k, Offset(63 * k, 8 * k))
+    val blob = Path().apply {
+        moveTo(14 * k, 90 * k)
+        quadraticTo(10 * k, 30 * k, 50 * k, 20 * k)
+        quadraticTo(90 * k, 30 * k, 86 * k, 90 * k)
+        close()
+    }
+    drawPath(blob, body)
+    drawCircle(Color.White, 15 * k, Offset(50 * k, 44 * k))
+    drawCircle(ArtInk, 7 * k, Offset(52 * k, 46 * k))
+    drawCircle(Color.White, 2.5f * k, Offset(55 * k, 43 * k))
+    drawOval(ArtInk, Offset(33 * k, 60 * k), Size(34 * k, 24 * k))
+    drawOval(MonsterTongue, Offset(40 * k, 76 * k), Size(20 * k, 8 * k))
+    drawRect(Color.White, Offset(42 * k, 60 * k), Size(6 * k, 6 * k))
+    drawRect(Color.White, Offset(52 * k, 60 * k), Size(6 * k, 6 * k))
+}
+
+/** Consonants: a square monster with horns, cheeky eyebrows and pointy teeth. */
+private fun DrawScope.drawHornMonster(k: Float, body: Color) {
+    val horn = Color(0xFFFFF4E0)
+    val horns = Path().apply {
+        moveTo(16 * k, 30 * k); quadraticTo(10 * k, 18 * k, 14 * k, 8 * k); quadraticTo(30 * k, 20 * k, 30 * k, 30 * k); close()
+        moveTo(84 * k, 30 * k); quadraticTo(90 * k, 18 * k, 86 * k, 8 * k); quadraticTo(70 * k, 20 * k, 70 * k, 30 * k); close()
+    }
+    drawPath(horns, horn)
+    drawRoundRect(body, Offset(12 * k, 24 * k), Size(76 * k, 66 * k), CornerRadius(22 * k))
+    drawCircle(Color.White, 10 * k, Offset(35 * k, 46 * k))
+    drawCircle(Color.White, 10 * k, Offset(65 * k, 46 * k))
+    drawCircle(ArtInk, 5 * k, Offset(37 * k, 48 * k))
+    drawCircle(ArtInk, 5 * k, Offset(63 * k, 48 * k))
+    artLine(k, darker(body), 3f, 26f to 33f, 42f to 37f)
+    artLine(k, darker(body), 3f, 74f to 33f, 58f to 37f)
+    drawRoundRect(ArtInk, Offset(30 * k, 60 * k), Size(40 * k, 16 * k), CornerRadius(8 * k))
+    listOf(34f, 44f, 54f, 62f).forEach { x ->
+        val tooth = Path().apply { moveTo(x * k, 60 * k); lineTo((x + 4) * k, 67 * k); lineTo((x + 8) * k, 60 * k); close() }
+        drawPath(tooth, Color.White)
+    }
+    drawCircle(darker(body), 7 * k, Offset(20 * k, 88 * k))
+    drawCircle(darker(body), 7 * k, Offset(80 * k, 88 * k))
+}
+
+/** Ka-kaa: a fluffy round monster with three eyes and its tongue out. */
+private fun DrawScope.drawFluffyMonster(k: Float, body: Color) {
+    val fluff = Path().apply {
+        val n = 18
+        for (i in 0..n) {
+            val a = i.toFloat() / n * 2f * kotlin.math.PI.toFloat()
+            val r = if (i % 2 == 1) 34f else 39f
+            val x = (50f + kotlin.math.cos(a) * r) * k
+            val y = (56f + kotlin.math.sin(a) * r * 0.92f) * k
+            if (i == 0) moveTo(x, y) else lineTo(x, y)
+        }
+        close()
+    }
+    drawPath(fluff, body)
+    listOf(Triple(34f, 46f, 8f), Triple(50f, 38f, 9f), Triple(66f, 46f, 8f)).forEach { (x, y, r) ->
+        drawCircle(Color.White, r * k, Offset(x * k, y * k))
+        drawCircle(ArtInk, r * 0.48f * k, Offset((x + 1) * k, (y + 1) * k))
+    }
+    val mouth = Path().apply { moveTo(36 * k, 62 * k); quadraticTo(50 * k, 80 * k, 64 * k, 62 * k); close() }
+    drawPath(mouth, ArtInk)
+    drawOval(MonsterTongue, Offset(45 * k, 68 * k), Size(12 * k, 12 * k))
+    drawOval(lighter(body), Offset(22 * k, 58 * k), Size(10 * k, 6 * k))
+    drawOval(lighter(body), Offset(68 * k, 58 * k), Size(10 * k, 6 * k))
+}
+
+/** Numbers: a spotty box monster waving, with numbers floating around it. */
+private fun DrawScope.drawBoxMonster(k: Float, body: Color) {
+    drawRoundRect(darker(body), Offset(28 * k, 14 * k), Size(10 * k, 12 * k), CornerRadius(4 * k))
+    drawRoundRect(darker(body), Offset(62 * k, 14 * k), Size(10 * k, 12 * k), CornerRadius(4 * k))
+    drawRoundRect(body, Offset(20 * k, 22 * k), Size(60 * k, 66 * k), CornerRadius(10 * k))
+    listOf(Triple(30f, 76f, 5f), Triple(70f, 30f, 4f), Triple(72f, 74f, 6f), Triple(27f, 34f, 3.5f)).forEach { (x, y, r) ->
+        drawCircle(darker(body).copy(alpha = 0.6f), r * k, Offset(x * k, y * k))
+    }
+    drawCircle(Color.White, 8 * k, Offset(40 * k, 44 * k))
+    drawCircle(Color.White, 8 * k, Offset(60 * k, 44 * k))
+    drawCircle(ArtInk, 4 * k, Offset(40 * k, 46 * k))
+    drawCircle(ArtInk, 4 * k, Offset(60 * k, 46 * k))
+    artLine(k, ArtInk, 3.5f, 38f to 62f, 62f to 62f, curve = 50f to 72f)
+    drawRect(Color.White, Offset(47 * k, 64 * k), Size(6 * k, 6 * k))
+    artLine(k, body, 7f, 80f to 60f, 92f to 48f)
+    artLine(k, body, 3f, 92f to 48f, 90f to 38f)
+    artLine(k, body, 3f, 92f to 48f, 95f to 40f)
+    artLine(k, body, 3f, 92f to 48f, 98f to 45f)
 }
 
 private fun DrawScope.drawTrainArt(k: Float) {

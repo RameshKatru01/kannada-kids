@@ -11,13 +11,15 @@ import kotlinx.coroutines.flow.asStateFlow
 data class GameInfo(
     val id: Int,
     val key: String,
-    val name: String,
+    private val nameKn: String,
     private val subtitleKn: String,
     private val glyphKn: String,
     val color: Color,
     val ink: Color,
     val levels: Int = 0
 ) {
+    /** The game's name ("Ka-kaa" becomes "Barakhadi" when learning Hindi). */
+    val name: String get() = nameKn.replace("Ka-kaa", com.example.data.Lang.islandName("guninthakshari"))
     /** Shown in the script being learned (Kannada or Hindi). */
     val subtitle: String get() = com.example.data.Lang.script(subtitleKn).replace("Guninthakshari", com.example.data.Lang.islandName("guninthakshari"))
     val glyph: String get() = com.example.data.Lang.script(glyphKn)
@@ -39,10 +41,10 @@ private val Navy = Color(0xFF0B3B66)
 
 object GameRegistry {
     val games: List<GameInfo> = listOf(
-        GameInfo(1, "monster_vowels", "Feed the Monster", "Vowels", "ಅ", Teal, Navy, LEVELS_PER_GAME),
-        GameInfo(2, "monster_consonants", "Feed the Monster", "Consonants", "ಕ", Violet, Color.White, LEVELS_PER_GAME),
-        GameInfo(3, "monster_guninthakshari", "Feed the Monster", "Guninthakshari", "ಕಾ", Coral, Color.White, LEVELS_PER_GAME),
-        GameInfo(4, "monster_numbers", "Feed the Monster", "Numbers", "೧", Tangerine, Navy, LEVELS_PER_GAME),
+        GameInfo(1, "monster_vowels", "Gobble the Vowels", "Feed the monster", "ಅ", Teal, Navy, LEVELS_PER_GAME),
+        GameInfo(2, "monster_consonants", "Chomp the Consonants", "Feed the monster", "ಕ", Violet, Color.White, LEVELS_PER_GAME),
+        GameInfo(3, "monster_guninthakshari", "Fluffy's Ka-kaa Feast", "Feed the monster", "ಕಾ", Coral, Color.White, LEVELS_PER_GAME),
+        GameInfo(4, "monster_numbers", "Munch the Numbers", "Feed the monster", "೧", Tangerine, Navy, LEVELS_PER_GAME),
         GameInfo(21, "letter_train", "Letter Train", "Put the letters in order", "ರ", Sky, Color.White, LEVELS_PER_GAME),
         GameInfo(22, "paint_monster", "Paint the Monster", "Colours", "ಬ", Berry, Color.White, LEVELS_PER_GAME),
         GameInfo(8, "scrambled_words", "Scrambled Words", "Build the word", "ಪ", Tangerine, Navy, LEVELS_PER_GAME),
