@@ -197,10 +197,21 @@ fun ProfileScreen(
                                 learnerName = v
                                 com.example.ui.data.LearnerName.set(v)
                             },
-                            placeholder = { Text("Type your name") },
+                            placeholder = { Text("Type your name", color = Color(0xFF94A3B8)) },
                             leadingIcon = { Text("🧒", fontSize = 20.sp) },
                             singleLine = true,
-                            textStyle = androidx.compose.ui.text.TextStyle(fontSize = 18.sp, fontWeight = FontWeight.Bold),
+                            // Each letter in a rainbow colour (VIBGYOR); dark cursor so it shows on white
+                            visualTransformation = RainbowText,
+                            textStyle = androidx.compose.ui.text.TextStyle(fontSize = 20.sp, fontWeight = FontWeight.ExtraBold, color = Color(0xFF1E293B)),
+                            colors = OutlinedTextFieldDefaults.colors(
+                                focusedTextColor = Color(0xFF1E293B),
+                                unfocusedTextColor = Color(0xFF1E293B),
+                                focusedContainerColor = Color.White,
+                                unfocusedContainerColor = Color.White,
+                                cursorColor = Color(0xFF1E293B),
+                                focusedBorderColor = Color(0xFF6C63FF),
+                                unfocusedBorderColor = Color(0xFFCBD5E1)
+                            ),
                             keyboardOptions = KeyboardOptions(
                                 capitalization = androidx.compose.ui.text.input.KeyboardCapitalization.Words,
                                 imeAction = androidx.compose.ui.text.input.ImeAction.Done
@@ -412,3 +423,29 @@ fun ProfileScreen(
 }
 
 
+
+
+/** VIBGYOR: violet, indigo, blue, green, yellow (a deeper gold so it reads on white), orange, red. */
+private val Vibgyor = listOf(
+    Color(0xFF8B00FF), Color(0xFF4B0082), Color(0xFF1E6FFF), Color(0xFF1FA23A),
+    Color(0xFFE6A800), Color(0xFFFF7A00), Color(0xFFE53935)
+)
+
+/** Colours each letter of a text field in turn with the VIBGYOR colours (spaces skipped). */
+private object RainbowText : androidx.compose.ui.text.input.VisualTransformation {
+    override fun filter(text: androidx.compose.ui.text.AnnotatedString): androidx.compose.ui.text.input.TransformedText {
+        val out = androidx.compose.ui.text.buildAnnotatedString {
+            var n = 0
+            text.text.forEach { ch ->
+                if (ch.isWhitespace()) append(ch)
+                else {
+                    pushStyle(androidx.compose.ui.text.SpanStyle(color = Vibgyor[n % Vibgyor.size]))
+                    append(ch)
+                    pop()
+                    n++
+                }
+            }
+        }
+        return androidx.compose.ui.text.input.TransformedText(out, androidx.compose.ui.text.input.OffsetMapping.Identity)
+    }
+}
