@@ -88,7 +88,8 @@ internal fun learningProgress(userEmail: String, langCode: String): List<ModuleP
     )
 }
 
-/** The child's dashboard: overall progress, what to do next, sections, game stars and badges. */
+/** The child's dashboard on one screen: overall progress, what to do next, sections, game stars and badges. */
+@OptIn(androidx.compose.foundation.layout.ExperimentalLayoutApi::class)
 @Composable
 fun DashboardScreen(
     authViewModel: AuthViewModel = viewModel { AuthViewModel() },
@@ -144,12 +145,12 @@ fun DashboardScreen(
                 .safeDrawingPadding()
                 .readableWidth(720.dp)
                 .verticalScroll(rememberScrollState())
-                .padding(horizontal = 18.dp, vertical = 12.dp),
-            verticalArrangement = Arrangement.spacedBy(14.dp)
+                .padding(horizontal = 16.dp, vertical = 8.dp),
+            verticalArrangement = Arrangement.spacedBy(10.dp)
         ) {
             // Header
             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                Text("My Dashboard", modifier = Modifier.weight(1f), fontSize = 28.sp, fontWeight = FontWeight.ExtraBold, color = ScrapbookInk)
+                Text("My Dashboard", modifier = Modifier.weight(1f), fontSize = 26.sp, fontWeight = FontWeight.ExtraBold, color = ScrapbookInk)
                 Row(
                     modifier = Modifier
                         .clip(RoundedCornerShape(20.dp))
@@ -165,28 +166,38 @@ fun DashboardScreen(
                 }
             }
 
-            // Big summary card
+            // Summary card: overall progress, greeting, points, streak and game stars
+            val learnerName by com.example.ui.data.LearnerName.name.collectAsState()
+            LaunchedEffect(Unit) { com.example.ui.data.LearnerName.load() }
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .clip(RoundedCornerShape(28.dp))
+                    .clip(RoundedCornerShape(24.dp))
                     .background(ScrapbookInk)
-                    .padding(horizontal = 18.dp, vertical = 16.dp),
+                    .padding(horizontal = 14.dp, vertical = 12.dp),
                 verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(16.dp)
+                horizontalArrangement = Arrangement.spacedBy(14.dp)
             ) {
-                ProgressRing(percent / 100f, 112.dp, 14.dp, DashSun, Color.White.copy(alpha = 0.18f)) {
-                    Text("$percent%", fontSize = 30.sp, fontWeight = FontWeight.ExtraBold, color = Color.White)
-                    Text("of all letters", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = Color.White)
+                ProgressRing(percent / 100f, 84.dp, 10.dp, DashSun, Color.White.copy(alpha = 0.18f)) {
+                    Text("$percent%", fontSize = 22.sp, fontWeight = FontWeight.ExtraBold, color = Color.White, lineHeight = 22.sp)
+                    Text("of all letters", fontSize = 9.sp, fontWeight = FontWeight.Bold, color = Color.White)
                 }
-                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    Text("Hi, little learner!", fontSize = 21.sp, fontWeight = FontWeight.ExtraBold, color = Color.White, lineHeight = 24.sp)
-                    Text("$learned of $total letters learned", fontSize = 14.sp, fontWeight = FontWeight.Bold, color = Color(0xFFCFE3F5))
-                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        DarkChip { StarIcon(15.dp, StarGold); Text(formatPoints(totalPoints), color = Color.White, fontWeight = FontWeight.ExtraBold, fontSize = 13.sp) }
+                Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                    Text(
+                        if (learnerName.isBlank()) "Hi, little learner!" else "Hi, $learnerName!",
+                        fontSize = 19.sp, fontWeight = FontWeight.ExtraBold, color = Color.White, lineHeight = 21.sp,
+                        maxLines = 1, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
+                    )
+                    Text("$learned of $total letters learned", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = Color(0xFFCFE3F5))
+                    FlowRow(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                        DarkChip { StarIcon(13.dp, StarGold); Text(formatPoints(totalPoints), color = Color.White, fontWeight = FontWeight.ExtraBold, fontSize = 12.sp) }
                         DarkChip {
-                            FlameIcon(15.dp)
-                            Text(if (streak == 1) "1 day" else "$streak days", color = Color.White, fontWeight = FontWeight.ExtraBold, fontSize = 13.sp)
+                            FlameIcon(13.dp)
+                            Text(if (streak == 1) "1 day" else "$streak days", color = Color.White, fontWeight = FontWeight.ExtraBold, fontSize = 12.sp)
+                        }
+                        DarkChip(onClick = { onNavigate("games") }) {
+                            Text("🏅", fontSize = 11.sp)
+                            Text("$gameStars/$maxStars stars", color = Color.White, fontWeight = FontWeight.ExtraBold, fontSize = 12.sp)
                         }
                     }
                 }
@@ -198,104 +209,81 @@ fun DashboardScreen(
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .clip(RoundedCornerShape(24.dp))
+                        .clip(RoundedCornerShape(20.dp))
                         .background(Color.White)
                         .clickable { onNavigate(route) }
-                        .padding(horizontal = 14.dp, vertical = 12.dp)
+                        .padding(horizontal = 10.dp, vertical = 8.dp)
                         .testTag("dashboard_keep_going"),
                     verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(14.dp)
+                    horizontalArrangement = Arrangement.spacedBy(10.dp)
                 ) {
                     Box(
-                        Modifier.size(58.dp).clip(RoundedCornerShape(18.dp)).background(m.color)
-                            .padding(bottom = 4.dp).clip(RoundedCornerShape(18.dp)).background(m.tint),
+                        Modifier.size(46.dp).clip(RoundedCornerShape(14.dp)).background(m.color)
+                            .padding(bottom = 4.dp).clip(RoundedCornerShape(14.dp)).background(m.tint),
                         contentAlignment = Alignment.Center
                     ) {
-                        Text(glyph, fontSize = 30.sp, fontWeight = FontWeight.ExtraBold, color = ScrapbookInk)
+                        Text(glyph, fontSize = 24.sp, fontWeight = FontWeight.ExtraBold, color = ScrapbookInk)
                     }
                     Column(Modifier.weight(1f)) {
-                        Text("KEEP GOING", fontSize = 12.sp, fontWeight = FontWeight.ExtraBold, color = ScrapbookInkSoft, letterSpacing = 0.4.sp)
-                        Text("Next letter: $glyph", fontSize = 17.sp, fontWeight = FontWeight.ExtraBold, color = ScrapbookInk)
-                        Text("${m.title} · ${m.learned + 1} of ${m.total}", fontSize = 13.sp, fontWeight = FontWeight.Bold, color = ScrapbookInkSoft)
+                        Text("KEEP GOING", fontSize = 10.sp, fontWeight = FontWeight.ExtraBold, color = ScrapbookInkSoft, letterSpacing = 0.4.sp)
+                        Text("Next letter: $glyph", fontSize = 15.sp, fontWeight = FontWeight.ExtraBold, color = ScrapbookInk, lineHeight = 17.sp)
+                        Text("${m.title} · ${m.learned + 1} of ${m.total}", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = ScrapbookInkSoft)
                     }
-                    Box(Modifier.size(48.dp).background(DashCoral, CircleShape), contentAlignment = Alignment.Center) {
+                    Box(Modifier.size(40.dp).background(DashCoral, CircleShape), contentAlignment = Alignment.Center) {
                         Icon(Icons.Default.PlayArrow, contentDescription = "Start", tint = Color.White)
                     }
                 }
             }
 
-            // Sections
-            Text("My letters", fontSize = 20.sp, fontWeight = FontWeight.ExtraBold, color = ScrapbookInk)
-            modules.chunked(2).forEach { row ->
-                Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                    row.forEach { m ->
-                        Column(
-                            modifier = Modifier
-                                .weight(1f)
-                                .clip(RoundedCornerShape(22.dp))
-                                .background(Color.White)
-                                .clickable { onNavigate(m.route) }
-                                .padding(12.dp),
-                            verticalArrangement = Arrangement.spacedBy(8.dp)
-                        ) {
-                            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                                Box(Modifier.size(44.dp).background(m.tint, RoundedCornerShape(14.dp)), contentAlignment = Alignment.Center) {
-                                    Text(m.glyph, fontSize = 21.sp, fontWeight = FontWeight.ExtraBold, color = ScrapbookInk)
-                                }
-                                Column {
-                                    Text(m.title, fontSize = 15.sp, fontWeight = FontWeight.ExtraBold, color = ScrapbookInk)
-                                    if (m.learned >= m.total) {
-                                        Text("All done!", fontSize = 12.sp, fontWeight = FontWeight.ExtraBold, color = Color(0xFF168F84))
-                                    } else {
-                                        Text("${m.learned} of ${m.total}", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = ScrapbookInkSoft)
-                                    }
-                                }
+            // Sections: all five in one row, each with a small progress ring
+            Text("My letters", fontSize = 17.sp, fontWeight = FontWeight.ExtraBold, color = ScrapbookInk)
+            Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                modules.forEach { m ->
+                    Column(
+                        modifier = Modifier
+                            .weight(1f)
+                            .clip(RoundedCornerShape(16.dp))
+                            .background(Color.White)
+                            .clickable { onNavigate(m.route) }
+                            .padding(top = 7.dp, bottom = 6.dp)
+                            .testTag("dashboard_section_${m.key}"),
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.spacedBy(2.dp)
+                    ) {
+                        val fraction = if (m.total == 0) 0f else m.learned.toFloat() / m.total
+                        ProgressRing(fraction, 42.dp, 4.dp, m.color, Color(0xFFE3EEF8)) {
+                            Box(Modifier.size(32.dp).background(m.tint, CircleShape), contentAlignment = Alignment.Center) {
+                                Text(m.glyph, fontSize = 16.sp, fontWeight = FontWeight.ExtraBold, color = ScrapbookInk, maxLines = 1)
                             }
-                            ProgressBar(if (m.total == 0) 0f else m.learned.toFloat() / m.total, m.color)
+                        }
+                        Text(
+                            m.title, fontSize = 10.sp, fontWeight = FontWeight.ExtraBold, color = ScrapbookInk, lineHeight = 11.sp,
+                            maxLines = 1, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
+                        )
+                        if (m.learned >= m.total) {
+                            Text("All done!", fontSize = 10.sp, fontWeight = FontWeight.ExtraBold, color = Color(0xFF168F84), lineHeight = 11.sp)
+                        } else {
+                            Text("${m.learned}/${m.total}", fontSize = 10.sp, fontWeight = FontWeight.Bold, color = ScrapbookInkSoft, lineHeight = 11.sp)
                         }
                     }
-                    if (row.size == 1) Spacer(Modifier.weight(1f))
-                }
-            }
-
-            // Game stars
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .clip(RoundedCornerShape(22.dp))
-                    .background(Color.White)
-                    .clickable { onNavigate("games") }
-                    .padding(horizontal = 14.dp, vertical = 12.dp),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(12.dp)
-            ) {
-                Box(Modifier.size(44.dp).background(Color(0xFFFDEEF6), RoundedCornerShape(14.dp)), contentAlignment = Alignment.Center) {
-                    StarIcon(26.dp, StarGold)
-                }
-                Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                    Row {
-                        Text("Game stars", modifier = Modifier.weight(1f), fontSize = 15.sp, fontWeight = FontWeight.ExtraBold, color = ScrapbookInk)
-                        Text("$gameStars / $maxStars", fontSize = 14.sp, fontWeight = FontWeight.ExtraBold, color = ScrapbookInk)
-                    }
-                    ProgressBar(if (maxStars == 0) 0f else gameStars.toFloat() / maxStars, DashBerry)
                 }
             }
 
             // Badges preview
             Row(verticalAlignment = Alignment.CenterVertically) {
-                Text("Badges", modifier = Modifier.weight(1f), fontSize = 20.sp, fontWeight = FontWeight.ExtraBold, color = ScrapbookInk)
+                Text("Badges", modifier = Modifier.weight(1f), fontSize = 17.sp, fontWeight = FontWeight.ExtraBold, color = ScrapbookInk)
                 Text(
-                    "See all",
-                    modifier = Modifier.clip(RoundedCornerShape(12.dp)).clickable { onNavigate("rewards") }.padding(8.dp),
-                    fontSize = 14.sp, fontWeight = FontWeight.ExtraBold, color = ScrapbookInk
+                    "See all ›",
+                    modifier = Modifier.clip(RoundedCornerShape(12.dp)).clickable { onNavigate("rewards") }.padding(horizontal = 6.dp, vertical = 2.dp),
+                    fontSize = 13.sp, fontWeight = FontWeight.ExtraBold, color = DashViolet
                 )
             }
             Row(horizontalArrangement = Arrangement.SpaceBetween, modifier = Modifier.fillMaxWidth()) {
                 badges.take(5).forEachIndexed { i, (badge, got) ->
-                    BadgeCircle(badge.icon, badge.title, got, listOf(DashSun, DashTeal, DashViolet, DashCoral, DashBerry)[i % 5], 54.dp, Modifier.width(62.dp))
+                    BadgeCircle(badge.icon, badge.title, got, listOf(DashSun, DashTeal, DashViolet, DashCoral, DashBerry)[i % 5], 44.dp, Modifier.width(60.dp))
                 }
             }
-            Spacer(Modifier.height(8.dp))
+            Spacer(Modifier.height(4.dp))
         }
 
         if (showGate) {
@@ -308,9 +296,13 @@ fun DashboardScreen(
 }
 
 @Composable
-private fun DarkChip(content: @Composable RowScope.() -> Unit) {
+private fun DarkChip(onClick: (() -> Unit)? = null, content: @Composable RowScope.() -> Unit) {
     Row(
-        modifier = Modifier.background(Color.White.copy(alpha = 0.14f), RoundedCornerShape(14.dp)).padding(horizontal = 10.dp, vertical = 4.dp),
+        modifier = Modifier
+            .clip(RoundedCornerShape(14.dp))
+            .background(Color.White.copy(alpha = 0.14f))
+            .then(if (onClick != null) Modifier.clickable { onClick() } else Modifier)
+            .padding(horizontal = 8.dp, vertical = 3.dp),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(4.dp),
         content = content
