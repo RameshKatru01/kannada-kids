@@ -14,6 +14,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.geometry.CornerRadius
@@ -358,6 +359,46 @@ private fun DrawScope.drawJarsArt(k: Float) {
         drawRoundRect(ArtInk.copy(alpha = 0.25f), Offset(x, 14 * k), Size(24 * k, 78 * k), CornerRadius(10 * k), style = Stroke(3 * k))
         stack.forEachIndexed { i, c ->
             drawRoundRect(c, Offset(x + 3 * k, (68 - i * 24) * k), Size(18 * k, 21 * k), CornerRadius(5 * k))
+        }
+    }
+}
+
+/** "More coming soon" note at the end of the Games and Fun Videos lists (dashed yellow box). */
+@Composable
+fun MoreComingSoon(emoji: String, title: String, body: String, modifier: Modifier = Modifier) {
+    val dash = Color(0xFFF4B740)
+    androidx.compose.foundation.layout.Column(
+        modifier = modifier
+            .fillMaxWidth()
+            .padding(top = 8.dp)
+            .background(Color(0xFFFFFBEF), RoundedCornerShape(22.dp))
+            .drawBehind {
+                drawRoundRect(
+                    color = dash,
+                    cornerRadius = CornerRadius(22.dp.toPx()),
+                    style = Stroke(
+                        width = 3.dp.toPx(),
+                        pathEffect = androidx.compose.ui.graphics.PathEffect.dashPathEffect(floatArrayOf(9.dp.toPx(), 6.dp.toPx()))
+                    )
+                )
+            }
+            .padding(horizontal = 14.dp, vertical = 16.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.spacedBy(4.dp)
+    ) {
+        Text(emoji, fontSize = 30.sp)
+        Text(
+            title, fontSize = 22.sp, fontWeight = FontWeight.ExtraBold, color = Color(0xFFFF6B6B),
+            textAlign = androidx.compose.ui.text.style.TextAlign.Center, lineHeight = 24.sp
+        )
+        Text(
+            body, fontSize = 14.sp, fontWeight = FontWeight.Bold, color = Color(0xFF3A5F82),
+            textAlign = androidx.compose.ui.text.style.TextAlign.Center
+        )
+        Row(Modifier.padding(top = 6.dp), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+            listOf(Color(0xFFF4B740), Color(0xFF2EC4B6), Color(0xFF6C63FF)).forEach {
+                Box(Modifier.size(8.dp).background(it, CircleShape))
+            }
         }
     }
 }

@@ -96,6 +96,14 @@ fun GamesListScreen(
                     onClick = { if (game.hasLevels) onOpenLevels(game.id) else onNavigateToGame(game.id) }
                 )
             }
+            item(span = { androidx.compose.foundation.lazy.grid.GridItemSpan(maxLineSpan) }) {
+                com.example.ui.components.MoreComingSoon(
+                    emoji = "🎮✨",
+                    title = "More games coming soon!",
+                    body = "We're making new games for you.\nKeep playing and check back!",
+                    modifier = Modifier.testTag("games_more_soon")
+                )
+            }
         }
     }
 }

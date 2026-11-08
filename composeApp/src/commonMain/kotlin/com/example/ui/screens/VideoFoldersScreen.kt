@@ -133,6 +133,14 @@ fun VideoFoldersScreen(
                     onFolderClick(folder)
                 }
             }
+            item(span = { androidx.compose.foundation.lazy.grid.GridItemSpan(maxLineSpan) }) {
+                com.example.ui.components.MoreComingSoon(
+                    emoji = "🎬🍿",
+                    title = "More videos coming soon!",
+                    body = "New songs and word videos are on the way.\nKeep watching and check back!",
+                    modifier = Modifier.testTag("videos_more_soon")
+                )
+            }
         }
     }
 }
