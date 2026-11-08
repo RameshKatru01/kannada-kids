@@ -66,7 +66,7 @@ fun ProfileScreen(
     val vowelsUnlocked = prefs.getInt("${userEmail}_${langCode}_vowels_unlocked", 0)
     val consonantsUnlocked = prefs.getInt("${userEmail}_${langCode}_consonants_unlocked", 0)
     val numbersUnlocked = prefs.getInt("${userEmail}_${langCode}_numbers_unlocked", 0)
-    val highScore = gamePrefs.getInt("${userEmail}_${langCode}_runner_high_score", 0)
+    val highScore = gamePrefs.getInt("${userEmail}_runner_high_score", 0)
     
     val vowelsCount = (vowelsUnlocked + 1).coerceAtMost(15)
     val consonantsCount = (consonantsUnlocked + 1).coerceAtMost(34)

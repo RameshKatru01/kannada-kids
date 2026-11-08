@@ -154,6 +154,8 @@ fun LetterRunnerScreen(onBack: () -> Unit, authViewModel: AuthViewModel = viewMo
     val isGuest = com.example.ui.data.UserManager.isGuest(userEmail)
     val prefs = remember { getSharedPreferences("GamePrefs") }
     var highScore by remember { mutableIntStateOf(prefs.getInt("${userEmail}_runner_high_score", 0)) }
+    // True once this run has beaten the best score from before
+    var newBest by remember { mutableStateOf(false) }
 
     val runnerLevels = remember {
         listOf(
@@ -394,6 +396,8 @@ fun LetterRunnerScreen(onBack: () -> Unit, authViewModel: AuthViewModel = viewMo
             floaters = floaters.map { it.copy(age = it.age + dt) }.filter { it.age < 0.9f }
 
             if (score > highScore) {
+                if (highScore > 0 && !newBest) SoundEffectsHelper.playSparkle()
+                newBest = true
                 highScore = score
                 prefs.edit().putInt("${userEmail}_runner_high_score", highScore).apply()
             }
@@ -650,6 +654,7 @@ fun LetterRunnerScreen(onBack: () -> Unit, authViewModel: AuthViewModel = viewMo
                     horizontalAlignment = Alignment.End
                 ) {
                     Text("⭐ $score", fontSize = 18.sp, fontWeight = FontWeight.ExtraBold, color = RunnerNavy)
+                    Text(if (newBest) "🏆 New best!" else "🏆 Best $highScore", fontSize = 12.sp, fontWeight = FontWeight.ExtraBold, color = if (newBest) Color(0xFFE8590C) else RunnerNavy.copy(alpha = 0.7f))
                     Text("❤️".repeat(lives.coerceAtLeast(0)) + "🤍".repeat((3 - lives).coerceIn(0, 3)), fontSize = 13.sp)
                     if (combo >= 2) {
                         Text("🔥 x$combo", fontSize = 13.sp, fontWeight = FontWeight.ExtraBold, color = Color(0xFFE8590C))
@@ -708,11 +713,12 @@ fun LetterRunnerScreen(onBack: () -> Unit, authViewModel: AuthViewModel = viewMo
 
             if (phase == RunnerPhase.GAME_OVER) {
                 RunnerOverlay(
-                    title = "Oh no! 🙈",
-                    subtitle = "You found ${targetIndex} of ${sequence.size} · ⭐ $score · Best $highScore",
+                    title = if (newBest) "New best score! 🏆" else "Oh no! 🙈",
+                    subtitle = "You found ${targetIndex} of ${sequence.size} · ⭐ $score · 🏆 Best $highScore" + (if (newBest) "" else "\nCan you beat it next time?"),
                     button = "Try again",
                     onClick = {
                         score = 0
+                        newBest = false
                         lives = 3
                         resetRun()
                     }
@@ -722,7 +728,7 @@ fun LetterRunnerScreen(onBack: () -> Unit, authViewModel: AuthViewModel = viewMo
             if (phase == RunnerPhase.LEVEL_DONE && !showSurpriseSticker) {
                 RunnerOverlay(
                     title = "Level complete! 🎉",
-                    subtitle = "All the ${levelNames[levelIndex].lowercase()} found · ⭐ $score",
+                    subtitle = "All the ${levelNames[levelIndex].lowercase()} found · ⭐ $score · 🏆 Best $highScore",
                     button = if (isGuest) "Finish (Guest Preview)" else "Next level",
                     onClick = { nextLevel() }
                 )
@@ -731,7 +737,7 @@ fun LetterRunnerScreen(onBack: () -> Unit, authViewModel: AuthViewModel = viewMo
             if (phase == RunnerPhase.WON && !showSurpriseSticker) {
                 RunnerOverlay(
                     title = "You won! 🏆",
-                    subtitle = "Every level done · ⭐ $score · Best $highScore",
+                    subtitle = "Every level done · ⭐ $score · 🏆 Best $highScore",
                     button = "Awesome!",
                     onClick = onBack
                 )

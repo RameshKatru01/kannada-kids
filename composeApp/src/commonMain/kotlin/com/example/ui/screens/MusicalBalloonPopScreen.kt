@@ -110,6 +110,15 @@ fun MusicalBalloonPopScreen(onBack: () -> Unit) {
     var best by remember { mutableIntStateOf(prefs.getInt(bestKey, 0)) }
     var newBest by remember { mutableStateOf(false) }
     var banner by remember { mutableStateOf<String?>("Pop the balloon the bird asks for!") }
+    // The best score is saved the moment it is beaten (so it is kept even if the child stops early)
+    LaunchedEffect(score) {
+        if (score > best) {
+            if (best > 0 && !newBest) { banner = "New best score! 🏆"; SoundEffectsHelper.playSparkle() }
+            best = score
+            newBest = true
+            prefs.edit().putInt(bestKey, score).apply()
+        }
+    }
     var musicOn by remember { mutableStateOf(prefs.getBoolean("${user}_balloon_music", true)) }
     var hurt by remember { mutableIntStateOf(0) }
     var birdHappy by remember { mutableStateOf(false) }
@@ -329,6 +338,7 @@ fun MusicalBalloonPopScreen(onBack: () -> Unit) {
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
                     Text("⭐ $score", fontSize = 15.sp, fontWeight = FontWeight.ExtraBold, color = Color.White)
+                    Text("🏆 $best", fontSize = 11.sp, fontWeight = FontWeight.ExtraBold, color = if (newBest) Color(0xFFFFC93C) else Color(0xFFCFE3F5))
                     Text("❤️".repeat(lives.coerceAtLeast(0)), fontSize = 12.sp)
                 }
             }
@@ -379,7 +389,7 @@ fun MusicalBalloonPopScreen(onBack: () -> Unit) {
             ) {
                 PopCard(
                     title = if (newBest) "New best score! 🏆" else "Great popping!",
-                    body = "⭐ $score points\n🎈 $popped balloons popped\n⏱️ ${elapsed.toInt() / 60}:${(elapsed.toInt() % 60).toString().padStart(2, '0')} · stage ${level + 1}\n\nBest: $best",
+                    body = "⭐ $score points\n🎈 $popped balloons popped\n⏱️ ${elapsed.toInt() / 60}:${(elapsed.toInt() % 60).toString().padStart(2, '0')} · stage ${level + 1}\n\n🏆 Best: $best" + (if (newBest) "\nYou beat your best!" else "\nCan you beat it next time?"),
                     primary = "Play again",
                     onPrimary = { restart() },
                     secondary = "Back to games",
