@@ -212,7 +212,7 @@ fun ReferenceScreen(
                             letter = letter,
                             sound = ReferenceInfo.sound(letter),
                             tint = RefTints[g % RefTints.size],
-                            height = 60.dp,
+                            height = 64.dp,
                             letterSize = 26,
                             hasVideo = true,
                             practised = remember(version, letter.id) { ReferenceProgress.isPractised(letter) },
@@ -340,8 +340,20 @@ private fun LetterTile(
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center
         ) {
-            Text(letter.character, fontSize = letterSize.sp, fontWeight = FontWeight.ExtraBold, color = ScrapbookInk, textAlign = TextAlign.Center, lineHeight = (letterSize + 6).sp)
-            Text(sound, fontSize = 11.sp, fontWeight = FontWeight.Bold, color = ScrapbookInkSoft, maxLines = 1)
+            // Tight line box for the letter so the English sound below has room (it was cut off in the
+            // small Consonants tiles)
+            Text(
+                letter.character, fontSize = letterSize.sp, fontWeight = FontWeight.ExtraBold, color = ScrapbookInk,
+                textAlign = TextAlign.Center,
+                style = androidx.compose.ui.text.TextStyle(
+                    lineHeight = (letterSize + 4).sp,
+                    lineHeightStyle = androidx.compose.ui.text.style.LineHeightStyle(
+                        alignment = androidx.compose.ui.text.style.LineHeightStyle.Alignment.Center,
+                        trim = androidx.compose.ui.text.style.LineHeightStyle.Trim.Both
+                    )
+                )
+            )
+            Text(sound, fontSize = 11.sp, fontWeight = FontWeight.Bold, color = ScrapbookInkSoft, maxLines = 1, lineHeight = 13.sp)
         }
         if (hasVideo) {
             Box(
