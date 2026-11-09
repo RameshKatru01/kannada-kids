@@ -61,7 +61,7 @@ internal const val PRIVACY_POLICY_URL = "https://rameshkatru01.github.io/kannada
 internal const val HELP_URL = "https://rameshkatru01.github.io/kannada-kids/help.html"
 
 /** The app's Play Store page (change the id here if the app id changes before publishing). */
-internal const val STORE_URL = "https://play.google.com/store/apps/details?id=com.aistudio.kannadakids.ycpceg"
+internal const val STORE_URL = "https://play.google.com/store/apps/details?id=com.funlearn.studio"
 
 /** The ready-made message parents can send to friends on WhatsApp. */
 internal fun shareMessageUri(): String {

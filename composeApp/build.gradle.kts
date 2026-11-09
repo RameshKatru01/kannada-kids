@@ -92,7 +92,7 @@ android {
 
     defaultConfig {
         // Same application id as the original Android app so Play Store updates keep working.
-        applicationId = "com.aistudio.kannadakids.ycpceg"
+        applicationId = "com.funlearn.studio"
         minSdk = 24
         targetSdk = 36
         versionCode = 2

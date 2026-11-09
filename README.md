@@ -25,7 +25,7 @@ KannadaKids/
 3. (Optional) Copy `.env.example` to `.env` and set `WEB_CLIENT_ID` for Google sign-in, same as before.
 4. Pick the **composeApp** run configuration and press ▶.
 
-The Android app keeps the same application id (`com.aistudio.kannadakids.ycpceg`), Firebase setup,
+The Android app id is `com.funlearn.studio` (was `com.aistudio.kannadakids.ycpceg` before Play publishing), Firebase setup,
 Google sign-in and saved progress as before, so it updates over the existing Play Store app.
 For a signed release, set `KEYSTORE_PATH`, `STORE_PASSWORD` and `KEY_PASSWORD` like before.
 
