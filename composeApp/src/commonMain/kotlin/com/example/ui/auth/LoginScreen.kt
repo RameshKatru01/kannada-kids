@@ -341,7 +341,7 @@ fun LoginScreen(
 }
 
 /**
- * Hidden admin sign-in, opened by long-pressing the "Letter Pop" title.
+ * Hidden admin sign-in, opened by long-pressing the "Fun Learn" title.
  * Only e-mail addresses that are admins in the user directory are accepted.
  */
 
