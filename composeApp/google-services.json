@@ -41,6 +41,35 @@
           ]
         }
       }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:17747908903:android:9e3090285e4e8f2238f102",
+        "android_client_info": {
+          "package_name": "com.funlearn.studio"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "17747908903-8babsr3j3bk126kiivdfdl7jlehojfap.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAqULn8CPJFKXaGCxFv-N3O7DXZwCPtvyw"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "17747908903-8babsr3j3bk126kiivdfdl7jlehojfap.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
     }
   ],
   "configuration_version": "1"
