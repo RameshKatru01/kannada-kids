@@ -39,7 +39,8 @@ jobs:
             echo "::error::Secret RELEASE_KEYSTORE_BASE64 is missing (see the top of this file)."
             exit 1
           fi
-          CLEAN=$(printf '%s' "$RELEASE_KEYSTORE_BASE64" | tr -d ' \n\r\t')
+          # Take the long base64 line only, in case a label or note was copied along with it
+          CLEAN=$(printf '%s' "$RELEASE_KEYSTORE_BASE64" | tr '\r\t' '  ' | grep -oE '[A-Za-z0-9+/=]{1000,}' | head -1)
           echo "Key text length: ${#CLEAN} characters (the right one is 5816)"
           if ! printf '%s' "$CLEAN" | base64 -d > "$RUNNER_TEMP/upload-key.jks" 2>/dev/null; then
             echo "::error::RELEASE_KEYSTORE_BASE64 isn't valid. Paste only the one long line from the key details file (nothing before or after it)."
