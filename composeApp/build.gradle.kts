@@ -95,8 +95,10 @@ android {
         applicationId = "com.funlearn.studio"
         minSdk = 24
         targetSdk = 36
-        versionCode = 2
-        versionName = "1.1"
+        // Release builds (GitHub "Build release" workflow) pass a higher number each time;
+        // Google Play needs versionCode to go up with every upload.
+        versionCode = System.getenv("VERSION_CODE")?.toIntOrNull() ?: 2
+        versionName = System.getenv("VERSION_NAME")?.takeIf { it.isNotBlank() } ?: "1.1"
     }
 
     signingConfigs {
@@ -113,7 +115,7 @@ android {
             storeFile = file(keystorePath)
             storePassword = System.getenv("STORE_PASSWORD")
             keyAlias = "upload"
-            keyPassword = System.getenv("KEY_PASSWORD")
+            keyPassword = System.getenv("KEY_PASSWORD") ?: System.getenv("STORE_PASSWORD")
         }
     }
 
