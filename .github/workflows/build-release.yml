@@ -55,9 +55,9 @@ jobs:
         shell: bash
         env:
           STORE_PASSWORD: ${{ secrets.RELEASE_STORE_PASSWORD }}
-          VERSION_CODE: ${{ 100 + github.run_number }}
           VERSION_NAME: ${{ inputs.version_name }}
         run: |
+          export VERSION_CODE=$((100 + GITHUB_RUN_NUMBER))
           chmod +x ./gradlew
           echo "Building version $VERSION_NAME (code $VERSION_CODE)"
           ./gradlew :composeApp:bundleRelease --stacktrace --console=plain
