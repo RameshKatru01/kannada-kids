@@ -40,7 +40,7 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import org.jetbrains.compose.resources.painterResource
 
-// "Letter Pop" landing screen: minimal, colourful, ready for Kannada, Hindi and English.
+// "Fun Learn" landing screen: minimal and colourful. Other languages appear when they are switched on.
 private val SkyBackground = Color(0xFFEAF6FF)
 private val Ink = Color(0xFF0B3B66)
 
@@ -85,11 +85,11 @@ private data class LetterBubble(
 
 private val bubbles = listOf(
     LetterBubble("ಅ", Color(0xFFFF6B6B), Color.White, 30f, 86f, 120f, 4000),
-    LetterBubble("अ", Color(0xFFFFC93C), Ink, 190f, 54f, 96f, 4600),
-    LetterBubble("A", Color(0xFF6C63FF), Color.White, 290f, 166f, 70f, 3800),
-    LetterBubble("क", Color(0xFF2EC4B6), Ink, 168f, 188f, 104f, 5000),
-    LetterBubble("b", Color(0xFFFF9F1C), Ink, 66f, 252f, 60f, 4300),
-    LetterBubble("ಕ", Color(0xFFE84393), Color.White, 300f, 280f, 50f, 4800),
+    LetterBubble("ಆ", Color(0xFFFFC93C), Ink, 190f, 54f, 96f, 4600),
+    LetterBubble("ಮ", Color(0xFF6C63FF), Color.White, 290f, 166f, 70f, 3800),
+    LetterBubble("ಕ", Color(0xFF2EC4B6), Ink, 168f, 188f, 104f, 5000),
+    LetterBubble("೧", Color(0xFFFF9F1C), Ink, 66f, 252f, 60f, 4300),
+    LetterBubble("ಗ", Color(0xFFE84393), Color.White, 300f, 280f, 50f, 4800),
     LetterBubble("", Color(0xFF6C63FF), Color.White, 20f, 40f, 16f, 3500),
     LetterBubble("", Color(0xFF2EC4B6), Color.White, 330f, 80f, 14f, 3900)
 )
@@ -148,7 +148,7 @@ fun LoginScreen(
         ) {
             // Long-press the title for the hidden admin sign-in.
             Text(
-                text = rainbowText("Letter Pop", TitleRainbow, perWord = false),
+                text = rainbowText("Fun Learn", TitleRainbow, perWord = false),
                 fontSize = 46.sp,
                 fontWeight = FontWeight.ExtraBold,
                 textAlign = TextAlign.Center,
@@ -165,6 +165,13 @@ fun LoginScreen(
                         )
                     }
             )
+            Text(
+                "ಕನ್ನಡ",
+                fontSize = 30.sp,
+                fontWeight = FontWeight.ExtraBold,
+                color = Color(0xFF14A098),
+                textAlign = TextAlign.Center
+            )
             Spacer(modifier = Modifier.height(4.dp))
             Text(
                 text = rainbowText("Pop a bubble, learn a letter.", TaglineRainbow, perWord = true),
@@ -175,17 +182,20 @@ fun LoginScreen(
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            LanguageSwitch(
-                selectedCode = currentLanguage.code,
-                onSelect = { language ->
-                    if (!language.available) {
-                        Toast.makeText(context, "${language.label} is coming soon!", Toast.LENGTH_SHORT).show()
-                    } else {
-                        com.example.ui.data.AppLanguage.entries.firstOrNull { it.code == language.code }
-                            ?.let { com.example.ui.data.LanguageManager.setLanguage(context, it) }
+            // Only show the language switch once more than one language is ready
+            if (learningLanguages.count { it.available } > 1) {
+                LanguageSwitch(
+                    selectedCode = currentLanguage.code,
+                    onSelect = { language ->
+                        if (!language.available) {
+                            Toast.makeText(context, "${language.label} is coming soon!", Toast.LENGTH_SHORT).show()
+                        } else {
+                            com.example.ui.data.AppLanguage.entries.firstOrNull { it.code == language.code }
+                                ?.let { com.example.ui.data.LanguageManager.setLanguage(context, it) }
+                        }
                     }
-                }
-            )
+                )
+            }
 
             Spacer(modifier = Modifier.height(28.dp))
 
