@@ -39,7 +39,12 @@ jobs:
             echo "::error::Secret RELEASE_KEYSTORE_BASE64 is missing (see the top of this file)."
             exit 1
           fi
-          printf '%s' "$RELEASE_KEYSTORE_BASE64" | tr -d ' \n\r' | base64 -d > "$RUNNER_TEMP/upload-key.jks"
+          CLEAN=$(printf '%s' "$RELEASE_KEYSTORE_BASE64" | tr -d ' \n\r\t')
+          echo "Key text length: ${#CLEAN} characters (the right one is 5816)"
+          if ! printf '%s' "$CLEAN" | base64 -d > "$RUNNER_TEMP/upload-key.jks" 2>/dev/null; then
+            echo "::error::RELEASE_KEYSTORE_BASE64 isn't valid. Paste only the one long line from the key details file (nothing before or after it)."
+            exit 1
+          fi
           echo "KEYSTORE_PATH=$RUNNER_TEMP/upload-key.jks" >> "$GITHUB_ENV"
 
       - name: Use Firebase settings from repository secrets (if set)
