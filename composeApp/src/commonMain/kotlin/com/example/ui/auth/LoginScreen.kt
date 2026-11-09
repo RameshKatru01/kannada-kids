@@ -98,7 +98,7 @@ private data class LearningLanguage(val code: String, val label: String, val ava
 
 private val learningLanguages = listOf(
     LearningLanguage("kn", "ಕನ್ನಡ", available = true),
-    LearningLanguage("hi", "हिन्दी", available = true),
+    LearningLanguage("hi", "हिन्दी", available = com.example.ui.data.AppLanguage.HINDI.available),
     LearningLanguage("en", "English", available = false)
 )
 

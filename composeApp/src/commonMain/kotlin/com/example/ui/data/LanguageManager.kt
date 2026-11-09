@@ -6,9 +6,13 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 
-enum class AppLanguage(val code: String, val displayName: String) {
+/**
+ * The languages the app can teach. [available] = false hides a language that isn't ready yet
+ * (shown as "Coming soon"); set it to true to switch it on.
+ */
+enum class AppLanguage(val code: String, val displayName: String, val available: Boolean = true) {
     KANNADA("kn", "Kannada"),
-    HINDI("hi", "Hindi")
+    HINDI("hi", "Hindi", available = false)
 }
 
 object LanguageManager {
@@ -18,11 +22,13 @@ object LanguageManager {
     fun init(context: Context) {
         val prefs = getSharedPreferences("AppProgress")
         val savedLangCode = prefs.getString("selected_language", "kn") ?: "kn"
-        val lang = AppLanguage.values().find { it.code == savedLangCode } ?: AppLanguage.KANNADA
+        // A language that has been switched off falls back to Kannada (progress in it is kept)
+        val lang = AppLanguage.values().find { it.code == savedLangCode && it.available } ?: AppLanguage.KANNADA
         _currentLanguage.value = lang
     }
 
     fun setLanguage(context: Context, language: AppLanguage) {
+        if (!language.available) return
         _currentLanguage.value = language
         val prefs = getSharedPreferences("AppProgress")
         prefs.edit().putString("selected_language", language.code).apply()

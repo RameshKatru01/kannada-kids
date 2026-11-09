@@ -391,17 +391,26 @@ fun ParentCornerScreen(
             Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                 listOf(com.example.ui.data.AppLanguage.KANNADA to "ಕನ್ನಡ Kannada", com.example.ui.data.AppLanguage.HINDI to "हिन्दी Hindi").forEach { (lang, label) ->
                     val on = learning == lang
+                    val ready = lang.available
                     Box(
                         Modifier.weight(1f).height(48.dp).clip(RoundedCornerShape(24.dp))
                             .background(if (on) ScrapbookInk else Color.White)
-                            .border(2.dp, ScrapbookInk, RoundedCornerShape(24.dp))
-                            .clickable { com.example.ui.data.LanguageManager.setLanguage(context, lang) }
+                            .border(2.dp, if (ready) ScrapbookInk else Color(0xFFCBD5E1), RoundedCornerShape(24.dp))
+                            .clickable {
+                                if (ready) com.example.ui.data.LanguageManager.setLanguage(context, lang)
+                                else Toast.makeText(context, "${lang.displayName} is coming soon!", Toast.LENGTH_SHORT).show()
+                            }
                             .testTag("language_${lang.code}"),
                         contentAlignment = Alignment.Center
-                    ) { Text(label, fontSize = 15.sp, fontWeight = FontWeight.ExtraBold, color = if (on) Color.White else ScrapbookInk) }
+                    ) {
+                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                            Text(label, fontSize = 15.sp, fontWeight = FontWeight.ExtraBold, color = if (on) Color.White else if (ready) ScrapbookInk else Color(0xFF94A3B8), lineHeight = 16.sp)
+                            if (!ready) Text("Coming soon", fontSize = 10.sp, fontWeight = FontWeight.Bold, color = Color(0xFF94A3B8), lineHeight = 11.sp)
+                        }
+                    }
                 }
             }
-            Text("Each language keeps its own progress. Gold covers both.", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = ScrapbookInkSoft)
+            Text(if (com.example.ui.data.AppLanguage.HINDI.available) "Each language keeps its own progress. Gold covers both." else "More languages are coming soon.", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = ScrapbookInkSoft)
         }
 
         // Plan
