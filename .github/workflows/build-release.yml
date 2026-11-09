@@ -68,7 +68,9 @@ jobs:
           echo "Building version $VERSION_NAME (code $VERSION_CODE)"
           ./gradlew :composeApp:bundleRelease --stacktrace --console=plain
           # Make sure the bundle really is signed with the upload key
-          jarsigner -verify -certs composeApp/build/outputs/bundle/release/*.aab | grep -E "jar verified|CN=" | head -3
+          jarsigner -verify composeApp/build/outputs/bundle/release/*.aab | grep -E "jar verified"
+          echo "Signed with:"
+          keytool -printcert -jarfile composeApp/build/outputs/bundle/release/*.aab | grep -E "Owner:|SHA1:"
           mkdir -p out
           cp composeApp/build/outputs/bundle/release/*.aab "out/FunLearn-$VERSION_NAME-$VERSION_CODE.aab"
 
