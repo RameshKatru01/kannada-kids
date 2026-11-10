@@ -12,6 +12,9 @@ struct iOSApp: App {
         try? AVAudioSession.sharedInstance().setCategory(.playback, mode: .default, options: [.mixWithOthers])
         try? AVAudioSession.sharedInstance().setActive(true)
 
+        // Sign-in tokens in the Keychain (set first: the app reads them as soon as it starts)
+        IosPlatformBridge.shared.secureStore = KeychainStore()
+
         // Subscriptions (StoreKit)
         IosPlatformBridge.shared.billing = StoreKitBridge()
 

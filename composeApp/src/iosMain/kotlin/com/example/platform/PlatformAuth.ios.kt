@@ -54,13 +54,42 @@ actual object PlatformAuth {
     private const val REFRESH_KEY = "kk_auth_refresh_token"
     private const val EXPIRES_KEY = "kk_auth_token_expires"
 
+    // ---- Token storage ----
+    // The Firebase tokens live in the Keychain (IosPlatformBridge.secureStore), not in NSUserDefaults,
+    // which is a plain file that is also copied into device backups. Tokens saved by older versions
+    // in NSUserDefaults are moved over the first time they are read.
+
+    private fun readSecret(key: String): String? {
+        val d = NSUserDefaults.standardUserDefaults
+        val store = IosPlatformBridge.secureStore ?: return d.stringForKey(key)
+        store.read(key)?.let { return it }
+        val old = d.stringForKey(key) ?: return null
+        store.write(key, old)
+        d.removeObjectForKey(key)
+        return old
+    }
+
+    private fun writeSecret(key: String, value: String) {
+        val store = IosPlatformBridge.secureStore
+        if (store == null) {
+            NSUserDefaults.standardUserDefaults.setObject(value, forKey = key)
+        } else {
+            store.write(key, value)
+            NSUserDefaults.standardUserDefaults.removeObjectForKey(key)
+        }
+    }
+
+    private fun removeSecret(key: String) {
+        IosPlatformBridge.secureStore?.remove(key)
+        NSUserDefaults.standardUserDefaults.removeObjectForKey(key)
+    }
+
     /** Keeps the Firebase tokens from a sign-in / refresh response. */
     private fun saveTokens(idToken: String?, refreshToken: String?, expiresInSeconds: Long?) {
-        val d = NSUserDefaults.standardUserDefaults
-        if (idToken != null) d.setObject(idToken, forKey = TOKEN_KEY)
-        if (refreshToken != null) d.setObject(refreshToken, forKey = REFRESH_KEY)
+        if (idToken != null) writeSecret(TOKEN_KEY, idToken)
+        if (refreshToken != null) writeSecret(REFRESH_KEY, refreshToken)
         val expires = currentTimeMillis() + ((expiresInSeconds ?: 3600L) - 120L) * 1000L
-        d.setObject(expires.toString(), forKey = EXPIRES_KEY)
+        writeSecret(EXPIRES_KEY, expires.toString())
     }
 
     private fun JsonObject.saveTokensFromSignIn() = saveTokens(
@@ -70,11 +99,12 @@ actual object PlatformAuth {
     )
 
     actual suspend fun idToken(): String? {
-        val d = NSUserDefaults.standardUserDefaults
-        val token = d.stringForKey(TOKEN_KEY)
-        val expires = d.stringForKey(EXPIRES_KEY)?.toLongOrNull() ?: 0L
+        // Keychain items outlive an uninstall, so a reinstalled app (signed out) must not reuse them
+        if (currentUser() == null) return null
+        val token = readSecret(TOKEN_KEY)
+        val expires = readSecret(EXPIRES_KEY)?.toLongOrNull() ?: 0L
         if (token != null && currentTimeMillis() < expires) return token
-        val refresh = d.stringForKey(REFRESH_KEY) ?: return null
+        val refresh = readSecret(REFRESH_KEY) ?: return null
         val key = apiKey ?: return null
         return try {
             val response = httpClient.post("https://securetoken.googleapis.com/v1/token?key=$key") {
@@ -307,9 +337,9 @@ actual object PlatformAuth {
     actual fun signOut() {
         NSUserDefaults.standardUserDefaults.removeObjectForKey(PROVIDER_KEY)
         NSUserDefaults.standardUserDefaults.removeObjectForKey(USER_KEY)
-        NSUserDefaults.standardUserDefaults.removeObjectForKey(TOKEN_KEY)
-        NSUserDefaults.standardUserDefaults.removeObjectForKey(REFRESH_KEY)
-        NSUserDefaults.standardUserDefaults.removeObjectForKey(EXPIRES_KEY)
+        removeSecret(TOKEN_KEY)
+        removeSecret(REFRESH_KEY)
+        removeSecret(EXPIRES_KEY)
         try {
             IosPlatformBridge.googleSignIn?.signOut()
         } catch (_: Throwable) {

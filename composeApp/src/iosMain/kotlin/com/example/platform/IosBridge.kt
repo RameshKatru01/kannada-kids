@@ -12,6 +12,19 @@ object IosPlatformBridge {
 
     /** Set from Swift (StoreKit) for subscriptions. */
     var billing: IosBillingHandler? = null
+
+    /** Set from Swift (Keychain) for the sign-in tokens. */
+    var secureStore: IosSecureStore? = null
+}
+
+/**
+ * Small secret store, implemented in Swift with the Keychain (see iosApp/iosApp/KeychainStore.swift).
+ * Kept on this device only: not in backups and not moved to a new phone.
+ */
+interface IosSecureStore {
+    fun read(key: String): String?
+    fun write(key: String, value: String)
+    fun remove(key: String)
 }
 
 /** Implemented in Swift with AuthenticationServices (see iosApp/iosApp/AppleSignInBridge.swift). */

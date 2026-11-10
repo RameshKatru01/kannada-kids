@@ -45,11 +45,17 @@ jobs:
       - name: Make the voice clips
         env:
           GOOGLE_TTS_API_KEY: ${{ secrets.GOOGLE_TTS_API_KEY }}
+          # Inputs go through env (not pasted into the script) so typed text can't run as commands
+          VOICE: ${{ inputs.voice }}
+          RATE: ${{ inputs.rate }}
+          FORCE: ${{ inputs.force }}
         run: |
-          args="--voice ${{ inputs.voice }} --rate ${{ inputs.rate }} --prune"
-          if [ "${{ inputs.force }}" = "true" ]; then args="$args --force"; fi
+          [[ "$VOICE" =~ ^[A-Za-z0-9-]+$ ]] || { echo "Voice must be a name like kn-IN-Wavenet-A or auto"; exit 1; }
+          [[ "$RATE" =~ ^[0-9]+(\.[0-9]+)?$ ]] || { echo "Speed must be a number like 0.85"; exit 1; }
+          args=(--voice "$VOICE" --rate "$RATE" --prune)
+          if [ "$FORCE" = "true" ]; then args+=(--force); fi
           set -o pipefail
-          python3 tools/generate_voice.py $args 2>&1 | tee -a voice.log
+          python3 tools/generate_voice.py "${args[@]}" 2>&1 | tee -a voice.log
       - name: Commit the clips and build a new APK
         env:
           GH_TOKEN: ${{ github.token }}

@@ -21,7 +21,14 @@ permissions:
 jobs:
   upload:
     runs-on: ubuntu-latest
+    env:
+      # The bucket input goes through env (not pasted into the scripts) so typed text can't run as commands
+      BUCKET: ${{ inputs.bucket }}
     steps:
+      - name: Check the bucket name
+        shell: bash
+        run: |
+          [[ "$BUCKET" =~ ^[a-z0-9][a-z0-9._-]*[a-z0-9]$ ]] || { echo "Not a valid bucket name: $BUCKET"; exit 1; }
       - uses: actions/checkout@v5
       - uses: google-github-actions/auth@v2
         with:
@@ -32,13 +39,13 @@ jobs:
         run: |
           set -eo pipefail
           python3 tools/collect_video_urls.py > videos.tsv
-          gcloud storage ls -r "gs://${{ inputs.bucket }}/videos/**" 2>/dev/null | sed "s#gs://${{ inputs.bucket }}/##" | sort > existing.txt || true
+          gcloud storage ls -r "gs://$BUCKET/videos/**" 2>/dev/null | sed "s#gs://$BUCKET/##" | sort > existing.txt || true
           mkdir -p dl
           new=0; kept=0
           while IFS=$'\t' read -r url object; do
             if grep -qxF "$object" existing.txt; then kept=$((kept+1)); continue; fi
             curl -sfL --retry 3 -o dl/v.mp4 "$url" || { echo "Could not download $url"; exit 1; }
-            gcloud storage cp dl/v.mp4 "gs://${{ inputs.bucket }}/$object" \
+            gcloud storage cp dl/v.mp4 "gs://$BUCKET/$object" \
               --content-type=video/mp4 --cache-control="public, max-age=31536000" --quiet
             new=$((new+1))
           done < videos.tsv
@@ -47,7 +54,7 @@ jobs:
         shell: bash
         run: |
           set -eo pipefail
-          gcloud storage cp tools/worksheets/pdf/*.pdf "gs://${{ inputs.bucket }}/worksheets/" \
+          gcloud storage cp tools/worksheets/pdf/*.pdf "gs://$BUCKET/worksheets/" \
             --content-type=application/pdf --cache-control="public, max-age=86400" --quiet
           echo "Worksheets in Firebase: $(ls tools/worksheets/pdf | wc -l)"
       - name: Switch the app to Firebase
@@ -55,7 +62,7 @@ jobs:
         shell: bash
         run: |
           set -eo pipefail
-          base="https://firebasestorage.googleapis.com/v0/b/${{ inputs.bucket }}/o/{object}?alt=media"
+          base="https://firebasestorage.googleapis.com/v0/b/$BUCKET/o/{object}?alt=media"
           # Check one video plays from Firebase before switching
           first=$(head -1 <(python3 tools/collect_video_urls.py) | cut -f2)
           enc=$(python3 -c "import sys,urllib.parse;print(urllib.parse.quote(sys.argv[1], safe=''))" "$first")
