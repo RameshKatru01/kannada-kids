@@ -52,6 +52,16 @@ service cloud.firestore {
       allow delete: if isAdmin() || isOwner(uid);
     }
 
+    // Learning progress and settings, synced between a family's devices (ProgressSync.kt).
+    // Only the family itself can read or write it. Gold / plan settings are never in here.
+    match /progress/{uid} {
+      allow read, delete: if isOwner(uid);
+      allow create, update: if isOwner(uid)
+        && request.resource.data.keys().hasOnly(['json', 'updatedAt', 'platform'])
+        && request.resource.data.json is string
+        && request.resource.data.json.size() < 900000;
+    }
+
     // Purchase proofs and "which account owns this App Store subscription": server only.
     match /purchaseRecords/{uid} {
       allow read, write: if false;

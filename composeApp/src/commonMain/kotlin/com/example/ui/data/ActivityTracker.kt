@@ -22,6 +22,9 @@ object ActivityTracker {
     private val _version = MutableStateFlow(0)
     val version: StateFlow<Int> = _version.asStateFlow()
 
+    /** Screens redraw (after ProgressSync brought in progress from another device). */
+    fun notifyChanged() { _version.value += 1 }
+
     private fun prefs() = getSharedPreferences(PREFS)
     private fun user() = getSharedPreferences("AppProgress").getString("last_active_user", "guest") ?: "guest"
     private fun dayKey(millis: Long) = formatDate(millis, "yyyyMMdd")

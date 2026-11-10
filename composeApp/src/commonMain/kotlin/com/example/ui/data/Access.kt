@@ -63,6 +63,9 @@ object Access {
     /** Bumps when a parent setting changes, so screens redraw. */
     val version: StateFlow<Int> = _version.asStateFlow()
 
+    /** Screens redraw (after ProgressSync brought in progress from another device). */
+    fun notifyChanged() { _version.value += 1 }
+
     /** "Everything open": no progress locks at all (plan locks still apply). */
     var everythingOpen: Boolean
         get() = prefs().getBoolean("${user()}_path_open", false)

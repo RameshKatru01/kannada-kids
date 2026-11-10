@@ -46,6 +46,15 @@ class AuthViewModel : ViewModel() {
         com.example.ui.data.UserManager.onUserLoggedIn(context, email, displayName)
     }
 
+    /** Brings in this account's progress from the cloud (waits a few seconds at most). */
+    private suspend fun restoreProgress() {
+        try {
+            kotlinx.coroutines.withTimeoutOrNull(8_000L) { com.example.ui.data.ProgressSync.sync() }
+        } catch (e: Exception) {
+            Log.w("AuthViewModel", "Progress sync at sign-in failed", e)
+        }
+    }
+
     /**
      * Primary Google / Gmail Sign-In (Credential Manager + Firebase on Android, GoogleSignIn on iOS).
      */
@@ -56,6 +65,7 @@ class AuthViewModel : ViewModel() {
                 val user = PlatformAuth.signInWithGoogle(context)
                 val email = user.email ?: "user@gmail.com"
                 rememberLogin(context, email, user.displayName)
+                restoreProgress()
                 _authState.value = AuthState.Authenticated(user.uid, user.displayName, email)
             } catch (e: AuthException) {
                 Log.e("AuthViewModel", "Google Sign in failed", e)
@@ -80,6 +90,7 @@ class AuthViewModel : ViewModel() {
                 // Apple may hide the e-mail; the Firebase user id keeps progress separate per account
                 val email = user.email ?: "apple_${user.uid}@privaterelay.appleid.com"
                 rememberLogin(context, email, user.displayName)
+                restoreProgress()
                 _authState.value = AuthState.Authenticated(user.uid, user.displayName, email)
             } catch (e: Exception) {
                 Log.e("AuthViewModel", "Apple sign in failed", e)
@@ -94,7 +105,7 @@ class AuthViewModel : ViewModel() {
     }
 
     /**
-     * Permanently deletes the account: the online subscription record, the sign-in account and
+     * Permanently deletes the account: the online subscription record and progress, the sign-in account and
      * everything this app saved on this device for it. Store subscriptions are not cancelled by
      * this (the parent does that in Google Play / the App Store).
      */
@@ -107,6 +118,12 @@ class AuthViewModel : ViewModel() {
         } catch (e: Exception) {
             Log.e("AuthViewModel", "Could not delete subscription record", e)
         }
+        try {
+            com.example.ui.data.CloudStore.delete("progress/${user.uid}")
+        } catch (e: Exception) {
+            Log.e("AuthViewModel", "Could not delete online progress", e)
+        }
+        com.example.ui.data.ProgressSync.forget(user.uid)
         // 2. The sign-in account
         try {
             PlatformAuth.deleteAccount(context)

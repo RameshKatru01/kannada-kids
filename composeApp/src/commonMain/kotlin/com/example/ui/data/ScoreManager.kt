@@ -18,6 +18,11 @@ object ScoreManager {
         _totalCoins.value = prefs.getInt(TOTAL_COINS_KEY, 0)
     }
 
+    /** Re-reads the points total (after ProgressSync brought in points from another device). */
+    fun reload() {
+        _totalCoins.value = getSharedPreferences(PREFS_NAME).getInt(TOTAL_COINS_KEY, 0)
+    }
+
     fun addCoins(context: Context, gameId: String, amount: Int = 1) {
         val prefs = getSharedPreferences(PREFS_NAME)
         val currentTotal = prefs.getInt(TOTAL_COINS_KEY, 0)

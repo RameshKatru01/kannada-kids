@@ -41,6 +41,7 @@ fun App() {
     MyApplicationTheme(appTheme = currentTheme) {
         Box(modifier = Modifier.fillMaxSize()) {
             com.example.ui.data.TrackActiveTime()
+            com.example.ui.data.SyncProgress()
             LaunchedEffect(Unit) {
                 // Where the videos are served from (can be changed without an app update)
                 try {

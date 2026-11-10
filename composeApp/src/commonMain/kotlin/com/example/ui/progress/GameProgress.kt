@@ -91,6 +91,9 @@ object GameProgress {
     /** Changes whenever progress is saved, so screens can refresh. */
     val version: StateFlow<Int> = _version.asStateFlow()
 
+    /** Screens redraw (after ProgressSync brought in progress from another device). */
+    fun notifyChanged() { _version.value += 1 }
+
     fun currentUser(): String =
         getSharedPreferences("AppProgress").getString("last_active_user", "guest") ?: "guest"
 
