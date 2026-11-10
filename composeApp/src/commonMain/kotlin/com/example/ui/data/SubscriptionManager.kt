@@ -70,21 +70,16 @@ object SubscriptionManager {
         } catch (e: Exception) {
             null
         }
-        val bonusUntil = remote?.long("bonusUntil") ?: 0L
+        // Only bonusUntil can be trusted from the online record: the rules let just admins write it.
+        // status / plan / renewsAt are written by the family's own app, so anyone signed in could
+        // set them by hand; they are kept for the admin screens but never switch Premium on.
+        val bonusUntil = remote?.long("bonusUntil") ?: _state.value.bonusUntil
 
         if (purchases == null) {
-            // Offline: trust the last known online record
-            if (remote != null) {
-                _state.value = SubscriptionState(
-                    plan = PlanPeriod.byKey(remote.str("plan")),
-                    status = remote.str("status") ?: "none",
-                    autoRenew = remote.bool("autoRenew"),
-                    renewsAt = remote.long("renewsAt"),
-                    bonusUntil = bonusUntil,
-                    platform = remote.str("platform") ?: ""
-                )
-            }
-            applyEntitlement(user.email, _state.value.hasPremium)
+            // Store not reachable: keep what the store said last time (plus any admin free time).
+            // Premium is never switched off here, so a paying family isn't locked out offline.
+            _state.value = _state.value.copy(bonusUntil = bonusUntil)
+            if (_state.value.hasPremium) applyEntitlement(user.email, true)
             return@withLock
         }
 
@@ -100,32 +95,25 @@ object SubscriptionManager {
                 platform = best.platform
             )
         } else {
+            // No purchase in this device's store. A subscription bought on the other platform is
+            // not trusted from the online record (see above) until a server checks receipts.
             val wasPaid = remote?.str("status").let { it == "active" || it == "autorenew_off" }
-            // The other platform may hold the subscription (same account signed in on iPhone and Android)
-            val otherPlatform = remote?.str("platform")?.let { it != platformName() } == true &&
-                remote.long("renewsAt") > now
-            if (otherPlatform && wasPaid) {
-                SubscriptionState(
-                    plan = PlanPeriod.byKey(remote?.str("plan")),
-                    status = remote?.str("status") ?: "none",
-                    autoRenew = remote?.bool("autoRenew") ?: false,
-                    renewsAt = remote?.long("renewsAt") ?: 0L,
-                    bonusUntil = bonusUntil,
-                    platform = remote?.str("platform") ?: ""
-                )
-            } else {
-                SubscriptionState(
-                    plan = PlanPeriod.byKey(remote?.str("plan")),
-                    status = if (wasPaid) "expired" else (remote?.str("status") ?: "none"),
-                    autoRenew = false,
-                    renewsAt = remote?.long("renewsAt") ?: 0L,
-                    bonusUntil = bonusUntil,
-                    platform = remote?.str("platform") ?: ""
-                )
-            }
+            SubscriptionState(
+                plan = PlanPeriod.byKey(remote?.str("plan")),
+                status = if (wasPaid) "expired" else "none",
+                autoRenew = false,
+                renewsAt = remote?.long("renewsAt") ?: 0L,
+                bonusUntil = bonusUntil,
+                platform = remote?.str("platform") ?: ""
+            )
         }
         _state.value = newState
         applyEntitlement(user.email, newState.hasPremium)
+
+        // A record owned by the other platform's store is left for that device to keep up to date,
+        // so the admin screens don't flip between "active" and "expired".
+        val remotePlatform = remote?.str("platform").orEmpty()
+        if (best == null && remotePlatform.isNotEmpty() && remotePlatform != platformName()) return@withLock
 
         // Save to the online record (admin screens read it)
         try {
