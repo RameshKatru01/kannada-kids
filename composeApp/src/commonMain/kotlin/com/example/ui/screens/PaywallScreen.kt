@@ -203,6 +203,26 @@ fun PaywallScreen(onBack: () -> Unit) {
                 "until you cancel. Cancel any time in ${PlatformBilling.storeName()} at least 24 hours before the renewal date.",
             fontSize = 12.sp, fontWeight = FontWeight.Bold, color = ScrapbookInkSoft, textAlign = TextAlign.Center
         )
+        // Terms of use and privacy policy, which App Store and Google Play ask for next to subscriptions
+        Row(
+            Modifier.align(Alignment.CenterHorizontally),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(6.dp)
+        ) {
+            Text(
+                "Terms of use",
+                modifier = Modifier.clip(RoundedCornerShape(12.dp)).clickable { uriHandler.openUri(TERMS_OF_USE_URL) }
+                    .padding(8.dp).testTag("paywall_terms"),
+                fontSize = 13.sp, fontWeight = FontWeight.ExtraBold, color = ScrapbookInk
+            )
+            Text("·", fontSize = 13.sp, fontWeight = FontWeight.ExtraBold, color = ScrapbookInkSoft)
+            Text(
+                "Privacy policy",
+                modifier = Modifier.clip(RoundedCornerShape(12.dp)).clickable { uriHandler.openUri(PRIVACY_POLICY_URL) }
+                    .padding(8.dp).testTag("paywall_privacy"),
+                fontSize = 13.sp, fontWeight = FontWeight.ExtraBold, color = ScrapbookInk
+            )
+        }
         Spacer(Modifier.height(8.dp))
     }
 }

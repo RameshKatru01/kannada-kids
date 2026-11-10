@@ -15,6 +15,7 @@
 		73EC906678F06B0611143396 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = D40126822D0756BB2C22C0E3 /* Assets.xcassets */; };
 		5A1C0E2B9F3D4A6B8C7E0F11 /* GoogleSignIn in Frameworks */ = {isa = PBXBuildFile; productRef = 5A1C0E2B9F3D4A6B8C7E0F13 /* GoogleSignIn */; };
 		5A1C0E2B9F3D4A6B8C7E0F14 /* GoogleService-Info.plist in Resources */ = {isa = PBXBuildFile; fileRef = 5A1C0E2B9F3D4A6B8C7E0F15 /* GoogleService-Info.plist */; };
+		7B2D4E6F8A0C1E3F5A7B9C1D /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = 7B2D4E6F8A0C1E3F5A7B9C1E /* PrivacyInfo.xcprivacy */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -25,6 +26,7 @@
 		7C3E2A4D1B5F6C8D0E9A2B33 /* iosApp.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = iosApp.entitlements; sourceTree = "<group>"; };
 		A8B860EA8831F5D537BB11DD /* GoogleSignInBridge.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GoogleSignInBridge.swift; sourceTree = "<group>"; };
 		D40126822D0756BB2C22C0E3 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+		7B2D4E6F8A0C1E3F5A7B9C1E /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; lastKnownFileType = text.xml; path = PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
 		5A1C0E2B9F3D4A6B8C7E0F15 /* GoogleService-Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = "GoogleService-Info.plist"; sourceTree = "<group>"; };
 		E34671B84360ABBFBBB0C5D2 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		FEAFD4786753A07839E3E9AE /* Config.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Config.xcconfig; sourceTree = "<group>"; };
@@ -72,6 +74,7 @@
 				D40126822D0756BB2C22C0E3 /* Assets.xcassets */,
 				E34671B84360ABBFBBB0C5D2 /* Info.plist */,
 				5A1C0E2B9F3D4A6B8C7E0F15 /* GoogleService-Info.plist */,
+				7B2D4E6F8A0C1E3F5A7B9C1E /* PrivacyInfo.xcprivacy */,
 			);
 			path = iosApp;
 			sourceTree = "<group>";
@@ -151,6 +154,7 @@
 			files = (
 				73EC906678F06B0611143396 /* Assets.xcassets in Resources */,
 				5A1C0E2B9F3D4A6B8C7E0F14 /* GoogleService-Info.plist in Resources */,
+				7B2D4E6F8A0C1E3F5A7B9C1D /* PrivacyInfo.xcprivacy in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

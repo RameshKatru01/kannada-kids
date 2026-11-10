@@ -57,6 +57,9 @@ import kotlinx.coroutines.launch
 /** The public privacy policy page (also given to Google Play and the App Store). */
 internal const val PRIVACY_POLICY_URL = "https://rameshkatru01.github.io/kannada-kids/privacy.html"
 
+/** The public terms of use page, linked from the plans screen next to the subscriptions. */
+internal const val TERMS_OF_USE_URL = "https://rameshkatru01.github.io/kannada-kids/terms.html"
+
 /** Common questions for parents (GitHub Pages). */
 internal const val HELP_URL = "https://rameshkatru01.github.io/kannada-kids/help.html"
 
@@ -384,9 +387,10 @@ fun ParentCornerScreen(
     ) {
         BackHeader("Parent corner", "How your child is doing", onBack)
 
-        // Which language the child is learning (each has its own letters, progress and voice)
+        // Which language the child is learning (each has its own letters, progress and voice).
+        // Only shown once more than one language is ready, like the switch on the start screen.
         val learning by com.example.ui.data.LanguageManager.currentLanguage.collectAsState()
-        WhiteCard {
+        if (com.example.ui.data.AppLanguage.entries.count { it.available } > 1) WhiteCard {
             Text("Learning language", fontSize = 16.sp, fontWeight = FontWeight.ExtraBold, color = ScrapbookInk)
             Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                 listOf(com.example.ui.data.AppLanguage.KANNADA to "ಕನ್ನಡ Kannada", com.example.ui.data.AppLanguage.HINDI to "हिन्दी Hindi").forEach { (lang, label) ->

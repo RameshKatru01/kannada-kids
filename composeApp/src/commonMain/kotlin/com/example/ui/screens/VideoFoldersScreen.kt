@@ -114,7 +114,7 @@ fun VideoFoldersScreen(
         ScrapbookHeader(title = title, onBack = onBack)
         if (folders.isEmpty()) {
             Text(
-                "Hindi videos are coming soon! Switch to Kannada in Parent corner to watch the Kannada videos.",
+                "There are no videos for this language. Switch to Kannada in Parent corner to watch the Kannada videos.",
                 modifier = Modifier.padding(24.dp),
                 fontSize = 16.sp, fontWeight = FontWeight.Bold, color = ScrapbookInk
             )
@@ -132,14 +132,6 @@ fun VideoFoldersScreen(
                     com.example.ui.audio.SoundEffectsHelper.playButtonTap()
                     onFolderClick(folder)
                 }
-            }
-            item(span = { androidx.compose.foundation.lazy.grid.GridItemSpan(maxLineSpan) }) {
-                com.example.ui.components.MoreComingSoon(
-                    emoji = "🎬🍿",
-                    title = "More videos coming soon!",
-                    body = "New songs and word videos are on the way.\nKeep watching and check back!",
-                    modifier = Modifier.testTag("videos_more_soon")
-                )
             }
         }
     }
