@@ -19,12 +19,16 @@ data class SubscriptionState(
     val bonusUntil: Long = 0L,
     val platform: String = ""
 ) {
-    val hasPremium: Boolean get() = status == "active" || status == "autorenew_off" || bonusUntil > currentTimeMillis()
+    val hasPremium: Boolean get() {
+        val now = currentTimeMillis()
+        return ((status == "active" || status == "autorenew_off") && renewsAt > now) || bonusUntil > now
+    }
 }
 
 /**
  * Keeps the subscription in sync between the store (Google Play / App Store), the online database
- * (subscriptions/{uid}, read by the admin screens) and the app's "premium" switch.
+ * (subscriptions/{uid}, written only by the verifyPurchases Cloud Function and read by the admin
+ * screens) and the app's "premium" switch.
  */
 object SubscriptionManager {
     private val _state = MutableStateFlow(SubscriptionState())
@@ -57,109 +61,77 @@ object SubscriptionManager {
         return t
     }
 
-    /** Reads the store + online record and updates everything. Safe to call often. */
+    /** A paid plan that hasn't run out yet. */
+    private fun SubscriptionState.paidNow(): Boolean =
+        (status == "active" || status == "autorenew_off") && renewsAt > currentTimeMillis()
+
+    private fun Map<String, Any?>.toState() = SubscriptionState(
+        plan = PlanPeriod.byKey(str("plan")),
+        status = str("status") ?: "none",
+        autoRenew = bool("autoRenew"),
+        renewsAt = long("renewsAt"),
+        bonusUntil = long("bonusUntil"),
+        platform = str("platform") ?: ""
+    )
+
+    /**
+     * Works out whether this family has Gold. Safe to call often.
+     *
+     * The store's purchase proofs go to the verifyPurchases Cloud Function, which checks them with
+     * Google Play / the App Store and is the only thing allowed to write subscriptions/{uid}
+     * (see firestore.rules). The app never writes its own subscription status.
+     */
     suspend fun refresh() = lock.withLock {
         val user = PlatformAuth.currentUser() ?: return@withLock
         val purchases = try {
             if (PlatformBilling.isSupported()) PlatformBilling.activePurchases() else emptyList()
         } catch (e: Exception) {
-            null // store not reachable: keep what we have
+            null // store not reachable
         }
-        val remote = try {
+
+        // 1. Ask the server to check the purchases and update the family's record.
+        val verified = try {
+            CloudStore.callFunction(
+                "verifyPurchases",
+                mapOf("purchases" to purchases.orEmpty().filter { it.proof.isNotEmpty() }.map {
+                    mapOf("platform" to it.platform, "proof" to it.proof, "autoRenew" to it.autoRenewing)
+                })
+            )
+        } catch (e: Exception) {
+            Log.w("SubscriptionManager", "Couldn't check the subscription online", e)
+            null
+        }
+        // 2. Server not reachable: read the record it wrote last time.
+        val remote = verified ?: try {
             CloudStore.get("subscriptions/${user.uid}")
         } catch (e: Exception) {
             null
         }
-        val bonusUntil = remote?.long("bonusUntil") ?: 0L
 
-        if (purchases == null) {
-            // Offline: trust the last known online record
-            if (remote != null) {
-                _state.value = SubscriptionState(
-                    plan = PlanPeriod.byKey(remote.str("plan")),
-                    status = remote.str("status") ?: "none",
-                    autoRenew = remote.bool("autoRenew"),
-                    renewsAt = remote.long("renewsAt"),
-                    bonusUntil = bonusUntil,
-                    platform = remote.str("platform") ?: ""
-                )
-            }
+        if (remote == null && purchases == null) {
+            // Fully offline: keep what we had.
             applyEntitlement(user.email, _state.value.hasPremium)
             return@withLock
         }
 
-        val best = purchases.maxByOrNull { nextRenewal(it) }
-        val now = currentTimeMillis()
-        val newState = if (best != null) {
+        val fromServer = remote?.toState() ?: SubscriptionState()
+        // 3. A subscription the store itself reports on this phone counts straight away
+        //    (e.g. just bought, before the server has caught up).
+        val best = purchases?.maxByOrNull { nextRenewal(it) }
+        val newState = if (best != null && !fromServer.paidNow()) {
             SubscriptionState(
                 plan = best.period,
                 status = if (best.autoRenewing) "active" else "autorenew_off",
                 autoRenew = best.autoRenewing,
                 renewsAt = nextRenewal(best),
-                bonusUntil = bonusUntil,
+                bonusUntil = fromServer.bonusUntil,
                 platform = best.platform
             )
         } else {
-            val wasPaid = remote?.str("status").let { it == "active" || it == "autorenew_off" }
-            // The other platform may hold the subscription (same account signed in on iPhone and Android)
-            val otherPlatform = remote?.str("platform")?.let { it != platformName() } == true &&
-                remote.long("renewsAt") > now
-            if (otherPlatform && wasPaid) {
-                SubscriptionState(
-                    plan = PlanPeriod.byKey(remote?.str("plan")),
-                    status = remote?.str("status") ?: "none",
-                    autoRenew = remote?.bool("autoRenew") ?: false,
-                    renewsAt = remote?.long("renewsAt") ?: 0L,
-                    bonusUntil = bonusUntil,
-                    platform = remote?.str("platform") ?: ""
-                )
-            } else {
-                SubscriptionState(
-                    plan = PlanPeriod.byKey(remote?.str("plan")),
-                    status = if (wasPaid) "expired" else (remote?.str("status") ?: "none"),
-                    autoRenew = false,
-                    renewsAt = remote?.long("renewsAt") ?: 0L,
-                    bonusUntil = bonusUntil,
-                    platform = remote?.str("platform") ?: ""
-                )
-            }
+            fromServer
         }
         _state.value = newState
         applyEntitlement(user.email, newState.hasPremium)
-
-        // Save to the online record (admin screens read it)
-        try {
-            @Suppress("UNCHECKED_CAST")
-            val payments = (remote?.get("payments") as? List<Map<String, Any?>>).orEmpty().toMutableList()
-            if (best != null && payments.none { it.str("orderId") == best.orderId }) {
-                payments += mapOf(
-                    "orderId" to best.orderId,
-                    "date" to now,
-                    "plan" to best.period.name,
-                    "amount" to priceOf(best.period)
-                )
-            }
-            val fields = mutableMapOf<String, Any?>(
-                "uid" to user.uid,
-                "email" to (user.email ?: ""),
-                "name" to (user.displayName ?: user.email?.substringBefore("@") ?: ""),
-                "plan" to (newState.plan?.name ?: ""),
-                "status" to newState.status,
-                "autoRenew" to newState.autoRenew,
-                "renewsAt" to newState.renewsAt,
-                "platform" to newState.platform,
-                "updatedAt" to now,
-                "payments" to payments.takeLast(60)
-            )
-            if (remote == null) fields["joinedAt"] = now
-            if (best != null && (remote == null || remote.long("startedAt") == 0L)) {
-                fields["startedAt"] = best.purchaseTimeMillis
-            }
-            val changed = remote == null || fields.any { (k, v) -> k != "updatedAt" && remote[k] != v }
-            if (changed) CloudStore.update("subscriptions/${user.uid}", fields)
-        } catch (e: Exception) {
-            Log.w("SubscriptionManager", "Couldn't save subscription online", e)
-        }
     }
 
     /** Buy a plan. Returns a message for the parent. */
@@ -184,8 +156,6 @@ object SubscriptionManager {
         return if (_state.value.hasPremium) "Your subscription is restored." else
             "No active subscription found for this ${PlatformBilling.storeName()} account."
     }
-
-    private fun platformName() = if (PlatformBilling.storeName() == "App Store") "ios" else "android"
 
     /** Switches the app's premium content on or off for this player. */
     private fun applyEntitlement(email: String?, premium: Boolean) {

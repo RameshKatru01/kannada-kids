@@ -4,6 +4,7 @@
 
 import Foundation
 import StoreKit
+import CryptoKit
 import ComposeApp
 
 final class StoreKitBridge: NSObject, IosBillingHandler {
@@ -36,14 +37,14 @@ final class StoreKitBridge: NSObject, IosBillingHandler {
         }
     }
 
-    func purchase(productId: String, callback: IosJsonCallback) {
+    func purchase(productId: String, accountId: String, callback: IosJsonCallback) {
         Task {
             do {
                 guard let product = try await Product.products(for: [productId]).first else {
                     callback.onResult(json: nil, errorMessage: "This plan isn't available in the App Store yet.")
                     return
                 }
-                let result = try await product.purchase()
+                let result = try await product.purchase(options: [.appAccountToken(Self.accountToken(accountId))])
                 switch result {
                 case .success(let verification):
                     guard case .verified(let transaction) = verification else {
@@ -51,7 +52,7 @@ final class StoreKitBridge: NSObject, IosBillingHandler {
                         return
                     }
                     await transaction.finish()
-                    let info = await Self.describe(transaction, product: product)
+                    let info = await Self.describe(transaction, product: product, jws: verification.jwsRepresentation)
                     callback.onResult(json: Self.json(info), errorMessage: nil)
                 case .pending:
                     callback.onResult(json: nil, errorMessage: "Waiting for approval (for example Ask to Buy). Premium starts once it's approved.")
@@ -74,7 +75,7 @@ final class StoreKitBridge: NSObject, IosBillingHandler {
                       transaction.productType == .autoRenewable,
                       transaction.revocationDate == nil else { continue }
                 let product = try? await Product.products(for: [transaction.productID]).first
-                list.append(await Self.describe(transaction, product: product))
+                list.append(await Self.describe(transaction, product: product, jws: entitlement.jwsRepresentation))
             }
             callback.onResult(json: Self.json(list), errorMessage: nil)
         }
@@ -82,7 +83,15 @@ final class StoreKitBridge: NSObject, IosBillingHandler {
 
     // MARK: - Helpers
 
-    private static func describe(_ t: Transaction, product: Product?) async -> [String: Any] {
+    /** Same as accountUuid() in functions/index.js: the first 16 bytes of SHA-256(user id). */
+    private static func accountToken(_ accountId: String) -> UUID {
+        let d = Array(SHA256.hash(data: Data(accountId.utf8)))
+        return UUID(uuid: (d[0], d[1], d[2], d[3], d[4], d[5], d[6], d[7],
+                           d[8], d[9], d[10], d[11], d[12], d[13], d[14], d[15]))
+    }
+
+    /** jws: the signed transaction, which the server checks with Apple's certificates. */
+    private static func describe(_ t: Transaction, product: Product?, jws: String) async -> [String: Any] {
         var autoRenew = true
         if let statuses = try? await product?.subscription?.status {
             for status in statuses {
@@ -97,7 +106,8 @@ final class StoreKitBridge: NSObject, IosBillingHandler {
             "id": t.productID,
             "orderId": String(t.id),
             "purchased": Int64(t.purchaseDate.timeIntervalSince1970 * 1000),
-            "autoRenew": autoRenew
+            "autoRenew": autoRenew,
+            "jws": jws
         ]
         if let exp = t.expirationDate {
             info["expires"] = Int64(exp.timeIntervalSince1970 * 1000)

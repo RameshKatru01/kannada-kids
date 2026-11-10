@@ -5,6 +5,7 @@ import io.ktor.client.request.delete
 import io.ktor.client.request.get
 import io.ktor.client.request.header
 import io.ktor.client.request.patch
+import io.ktor.client.request.post
 import io.ktor.client.request.setBody
 import io.ktor.client.statement.bodyAsText
 import io.ktor.http.ContentType
@@ -21,6 +22,7 @@ import kotlinx.serialization.json.*
 object CloudStore {
     const val PROJECT_ID = "kannadakids-fd92d"
     private const val BASE = "https://firestore.googleapis.com/v1/projects/$PROJECT_ID/databases/(default)/documents"
+    private const val FUNCTIONS_BASE = "https://us-central1-$PROJECT_ID.cloudfunctions.net"
     private val http by lazy { createHttpClient() }
 
     class CloudException(message: String, val code: Int = 0) : Exception(message)
@@ -77,6 +79,49 @@ object CloudStore {
         }
         if (!response.status.isSuccess()) {
             throw CloudException(errorMessage(response.bodyAsText(), response.status.value), response.status.value)
+        }
+    }
+
+    /**
+     * Calls one of the app's Cloud Functions (functions/index.js) with the signed-in user's token.
+     * Returns the function's result as a map.
+     */
+    suspend fun callFunction(name: String, data: Map<String, Any?>): Map<String, Any?> {
+        val body = buildJsonObject { put("data", plainJson(data)) }
+        val response = http.post("$FUNCTIONS_BASE/$name") {
+            header("Authorization", "Bearer ${token()}")
+            contentType(ContentType.Application.Json)
+            setBody(body.toString())
+        }
+        val text = response.bodyAsText()
+        val json = runCatching { Json.parseToJsonElement(text).jsonObject }.getOrNull()
+        if (!response.status.isSuccess() || json == null || "result" !in json) {
+            val message = json?.get("error")?.jsonObject?.get("message")?.jsonPrimitive?.contentOrNull
+            throw CloudException(message ?: "Server error (${response.status.value})", response.status.value)
+        }
+        @Suppress("UNCHECKED_CAST")
+        return (fromPlainJson(json.getValue("result")) as? Map<String, Any?>).orEmpty()
+    }
+
+    private fun plainJson(v: Any?): JsonElement = when (v) {
+        null -> JsonNull
+        is String -> JsonPrimitive(v)
+        is Boolean -> JsonPrimitive(v)
+        is Number -> JsonPrimitive(v)
+        is List<*> -> JsonArray(v.map { plainJson(it) })
+        is Map<*, *> -> JsonObject(v.entries.associate { (k, x) -> k.toString() to plainJson(x) })
+        else -> JsonPrimitive(v.toString())
+    }
+
+    private fun fromPlainJson(e: JsonElement): Any? = when (e) {
+        is JsonNull -> null
+        is JsonObject -> e.mapValues { (_, x) -> fromPlainJson(x) }
+        is JsonArray -> e.map { fromPlainJson(it) }
+        is JsonPrimitive -> when {
+            e.isString -> e.content
+            e.booleanOrNull != null -> e.boolean
+            e.longOrNull != null -> e.long
+            else -> e.doubleOrNull
         }
     }
 

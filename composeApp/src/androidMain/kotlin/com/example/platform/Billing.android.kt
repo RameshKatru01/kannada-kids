@@ -105,7 +105,8 @@ actual object PlatformBilling {
             purchaseTimeMillis = purchaseTime,
             expiresAtMillis = null,
             autoRenewing = isAutoRenewing,
-            platform = "android"
+            platform = "android",
+            proof = purchaseToken
         )
     }
 

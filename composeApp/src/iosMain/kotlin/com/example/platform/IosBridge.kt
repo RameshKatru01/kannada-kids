@@ -46,10 +46,13 @@ interface IosBillingHandler {
     /** json: [{"id":"premium_monthly","price":"₹99"}, …] */
     fun loadProducts(productIds: List<String>, callback: IosJsonCallback)
 
-    /** json: one purchase object, or null when cancelled. */
-    fun purchase(productId: String, callback: IosJsonCallback)
+    /**
+     * json: one purchase object, or null when cancelled. [accountId] (the Firebase user id) is
+     * turned into the App Store appAccountToken, so the server can tell whose purchase it is.
+     */
+    fun purchase(productId: String, accountId: String, callback: IosJsonCallback)
 
-    /** json: [{"id":…,"orderId":…,"purchased":ms,"expires":ms,"autoRenew":true}, …] */
+    /** json: [{"id":…,"orderId":…,"purchased":ms,"expires":ms,"autoRenew":true,"jws":"…"}, …] */
     fun activePurchases(callback: IosJsonCallback)
 }
 

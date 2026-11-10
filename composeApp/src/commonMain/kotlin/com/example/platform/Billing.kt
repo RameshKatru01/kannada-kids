@@ -36,7 +36,12 @@ data class StorePurchase(
     /** When it renews or ends; null when the store doesn't say (Android works it out from the period). */
     val expiresAtMillis: Long?,
     val autoRenewing: Boolean,
-    val platform: String
+    val platform: String,
+    /**
+     * What the server checks with the store: the Google Play purchase token on Android, the
+     * App Store signed transaction (JWS) on iPhone.
+     */
+    val proof: String = ""
 )
 
 class BillingException(message: String) : Exception(message)

@@ -1,7 +1,7 @@
 rules_version = '2';
 
 // Firestore security rules for Kannada Kids (project kannadakids-fd92d).
-// Paste into Firebase console > Firestore Database > Rules, then Publish.
+// Published by the "Deploy backend" GitHub action (or: firebase deploy --only firestore:rules).
 service cloud.firestore {
   match /databases/{database}/documents {
 
@@ -37,16 +37,27 @@ service cloud.firestore {
     }
 
     // One document per family: their plan, renewal date, payments.
-    // Families can write their own record, but only an admin can give free time (bonusUntil).
+    // The plan, status, dates and payments are written ONLY by the verifyPurchases Cloud Function
+    // (functions/index.js) after Google Play / the App Store confirm the purchase. The function uses
+    // the Admin SDK, which these rules don't limit. Families can only read their own record.
+    // Admins can only give or take away free time (bonusUntil / bonusNote / bonusBy).
+    function onlyBonusFields(keys) {
+      return keys.hasOnly(['bonusUntil', 'bonusNote', 'bonusBy']);
+    }
     match /subscriptions/{uid} {
       allow read: if isOwner(uid) || isAdmin();
-      allow create: if isOwner(uid) && !('bonusUntil' in request.resource.data);
-      allow update: if isAdmin()
-        || (isOwner(uid)
-            && request.resource.data.get('bonusUntil', 0) == resource.data.get('bonusUntil', 0)
-            && request.resource.data.get('bonusNote', '') == resource.data.get('bonusNote', ''));
+      allow create: if isAdmin() && onlyBonusFields(request.resource.data.keys());
+      allow update: if isAdmin() && onlyBonusFields(request.resource.data.diff(resource.data).affectedKeys());
       // Admins, or the family itself when they delete their account
       allow delete: if isAdmin() || isOwner(uid);
+    }
+
+    // Purchase proofs and "which account owns this App Store subscription": server only.
+    match /purchaseRecords/{uid} {
+      allow read, write: if false;
+    }
+    match /purchaseClaims/{id} {
+      allow read, write: if false;
     }
 
     // Admin list. The owner's own record is created by the app the first time

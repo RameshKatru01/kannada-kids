@@ -33,7 +33,8 @@ actual object PlatformBilling {
             purchaseTimeMillis = this["purchased"]?.jsonPrimitive?.longOrNull ?: 0L,
             expiresAtMillis = this["expires"]?.jsonPrimitive?.longOrNull,
             autoRenewing = this["autoRenew"]?.jsonPrimitive?.booleanOrNull ?: true,
-            platform = "ios"
+            platform = "ios",
+            proof = this["jws"]?.jsonPrimitive?.contentOrNull ?: ""
         )
     }
 
@@ -49,7 +50,7 @@ actual object PlatformBilling {
     }
 
     actual suspend fun purchase(context: Context, period: PlanPeriod, accountId: String): StorePurchase? {
-        val json = call { h, cb -> h.purchase(period.productId, cb) } ?: return null
+        val json = call { h, cb -> h.purchase(period.productId, accountId, cb) } ?: return null
         return Json.parseToJsonElement(json).jsonObject.toPurchase()
     }
 
