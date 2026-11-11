@@ -16,7 +16,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.platform.testTag
@@ -34,12 +33,9 @@ import androidx.compose.foundation.verticalScroll
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.ui.auth.AuthViewModel
 import com.example.ui.auth.AuthState
-import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.ExitToApp
 import androidx.compose.material.icons.filled.AdminPanelSettings
 import androidx.compose.foundation.text.KeyboardOptions
-import androidx.compose.ui.text.input.KeyboardType
-import kotlin.random.Random
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -74,12 +70,6 @@ fun ProfileScreen(
     
     var subscriptionPlan by remember(userEmail, langCode) { mutableStateOf(prefs.getString("${langCode}_subscriptionPlan_$userEmail", "Free") ?: "Free") }
     
-    // Parental Gate State
-    var isParentVerified by remember { mutableStateOf(true) }
-    var mathNum1 by remember { mutableStateOf(Random.nextInt(5, 12)) }
-    var mathNum2 by remember { mutableStateOf(Random.nextInt(5, 12)) }
-    var mathAnswer by remember { mutableStateOf("") }
-    var mathError by remember { mutableStateOf(false) }
     var showSignOutConfirm by remember { mutableStateOf(false) }
 
     Scaffold(
@@ -105,319 +95,252 @@ fun ProfileScreen(
         },
         containerColor = Color(0xFFF5F5F5)
     ) { paddingValues ->
-        if (false) {
-            // Parental Gate UI
-            Column(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(paddingValues)
-                    .padding(32.dp),
-                horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.Center
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(paddingValues)
+                .padding(16.dp)
+                .verticalScroll(rememberScrollState()),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            // Learner name: the child types their own name; Home greets them with it
+            var learnerName by remember(userEmail) { mutableStateOf(com.example.ui.data.LearnerName.load()) }
+            Card(
+                modifier = Modifier.fillMaxWidth().padding(8.dp),
+                shape = RoundedCornerShape(20.dp),
+                colors = CardDefaults.cardColors(containerColor = Color.White),
+                elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
             ) {
-                Icon(Icons.Filled.Person, contentDescription = "Parent", modifier = Modifier.size(64.dp), tint = BrightCyan)
-                Spacer(modifier = Modifier.height(16.dp))
-                Text(
-                    text = "For Parents Only",
-                    fontSize = 24.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = Color.DarkGray
-                )
-                Spacer(modifier = Modifier.height(8.dp))
-                Text(
-                    text = "Please solve this math problem to access settings and progress.",
-                    fontSize = 16.sp,
-                    color = Color.Gray,
-                    textAlign = TextAlign.Center
-                )
-                Spacer(modifier = Modifier.height(32.dp))
-                Text(
-                    text = "$mathNum1 x $mathNum2 = ?",
-                    fontSize = 32.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = BrightCyan
-                )
-                Spacer(modifier = Modifier.height(24.dp))
-                OutlinedTextField(
-                    value = mathAnswer,
-                    onValueChange = { 
-                        mathAnswer = it 
-                        mathError = false
-                    },
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                    label = { Text("Answer") },
-                    isError = mathError,
-                    modifier = Modifier.fillMaxWidth(0.6f)
-                )
-                if (mathError) {
-                    Text("Incorrect answer, try again.", color = Color.Red, fontSize = 12.sp, modifier = Modifier.padding(top = 4.dp))
-                }
-                Spacer(modifier = Modifier.height(24.dp))
-                Button(
-                    onClick = {
-                        val answer = mathAnswer.toIntOrNull()
-                        if (answer == mathNum1 * mathNum2) {
-                            isParentVerified = true
-                        } else {
-                            mathError = true
-                            mathAnswer = ""
-                        }
-                    },
-                    modifier = Modifier.fillMaxWidth(0.6f),
-                    colors = ButtonDefaults.buttonColors(containerColor = BrightCyan)
-                ) {
-                    Text("Enter", fontSize = 18.sp, fontWeight = FontWeight.Bold)
+                Column(Modifier.padding(16.dp)) {
+                    Text("Learner Name", fontSize = 17.sp, fontWeight = FontWeight.ExtraBold, color = Color(0xFF1E293B))
+                    Spacer(modifier = Modifier.height(8.dp))
+                    OutlinedTextField(
+                        value = learnerName,
+                        onValueChange = {
+                            val v = it.replace("\n", " ").take(com.example.ui.data.LearnerName.MAX_LENGTH)
+                            learnerName = v
+                            com.example.ui.data.LearnerName.set(v)
+                        },
+                        placeholder = { Text("Type your name", color = Color(0xFF94A3B8)) },
+                        leadingIcon = { Text("🧒", fontSize = 20.sp) },
+                        singleLine = true,
+                        // Each letter in a rainbow colour (VIBGYOR); dark cursor so it shows on white
+                        visualTransformation = RainbowText,
+                        textStyle = androidx.compose.ui.text.TextStyle(fontSize = 20.sp, fontWeight = FontWeight.ExtraBold, color = Color(0xFF1E293B)),
+                        colors = OutlinedTextFieldDefaults.colors(
+                            focusedTextColor = Color(0xFF1E293B),
+                            unfocusedTextColor = Color(0xFF1E293B),
+                            focusedContainerColor = Color.White,
+                            unfocusedContainerColor = Color.White,
+                            cursorColor = Color(0xFF1E293B),
+                            focusedBorderColor = Color(0xFF6C63FF),
+                            unfocusedBorderColor = Color(0xFFCBD5E1)
+                        ),
+                        keyboardOptions = KeyboardOptions(
+                            capitalization = androidx.compose.ui.text.input.KeyboardCapitalization.Words,
+                            imeAction = androidx.compose.ui.text.input.ImeAction.Done
+                        ),
+                        shape = RoundedCornerShape(14.dp),
+                        modifier = Modifier.fillMaxWidth().testTag("learner_name_field")
+                    )
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Text("This name shows on the home screen.", fontSize = 12.sp, color = Color(0xFF64748B))
                 }
             }
-        } else {
-            // Verified Profile UI (Simplified)
-            Column(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(paddingValues)
-                    .padding(16.dp)
-                    .verticalScroll(rememberScrollState()),
-                horizontalAlignment = Alignment.CenterHorizontally
-            ) {
-                // Learner name: the child types their own name; Home greets them with it
-                var learnerName by remember(userEmail) { mutableStateOf(com.example.ui.data.LearnerName.load()) }
+
+            if (authState is AuthState.Authenticated) {
+                val authUser = authState as AuthState.Authenticated
                 Card(
                     modifier = Modifier.fillMaxWidth().padding(8.dp),
                     shape = RoundedCornerShape(20.dp),
                     colors = CardDefaults.cardColors(containerColor = Color.White),
                     elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
                 ) {
-                    Column(Modifier.padding(16.dp)) {
-                        Text("Learner Name", fontSize = 17.sp, fontWeight = FontWeight.ExtraBold, color = Color(0xFF1E293B))
-                        Spacer(modifier = Modifier.height(8.dp))
-                        OutlinedTextField(
-                            value = learnerName,
-                            onValueChange = {
-                                val v = it.replace("\n", " ").take(com.example.ui.data.LearnerName.MAX_LENGTH)
-                                learnerName = v
-                                com.example.ui.data.LearnerName.set(v)
-                            },
-                            placeholder = { Text("Type your name", color = Color(0xFF94A3B8)) },
-                            leadingIcon = { Text("🧒", fontSize = 20.sp) },
-                            singleLine = true,
-                            // Each letter in a rainbow colour (VIBGYOR); dark cursor so it shows on white
-                            visualTransformation = RainbowText,
-                            textStyle = androidx.compose.ui.text.TextStyle(fontSize = 20.sp, fontWeight = FontWeight.ExtraBold, color = Color(0xFF1E293B)),
-                            colors = OutlinedTextFieldDefaults.colors(
-                                focusedTextColor = Color(0xFF1E293B),
-                                unfocusedTextColor = Color(0xFF1E293B),
-                                focusedContainerColor = Color.White,
-                                unfocusedContainerColor = Color.White,
-                                cursorColor = Color(0xFF1E293B),
-                                focusedBorderColor = Color(0xFF6C63FF),
-                                unfocusedBorderColor = Color(0xFFCBD5E1)
-                            ),
-                            keyboardOptions = KeyboardOptions(
-                                capitalization = androidx.compose.ui.text.input.KeyboardCapitalization.Words,
-                                imeAction = androidx.compose.ui.text.input.ImeAction.Done
-                            ),
-                            shape = RoundedCornerShape(14.dp),
-                            modifier = Modifier.fillMaxWidth().testTag("learner_name_field")
-                        )
-                        Spacer(modifier = Modifier.height(4.dp))
-                        Text("This name shows on the home screen.", fontSize = 12.sp, color = Color(0xFF64748B))
-                    }
-                }
-
-                if (authState is AuthState.Authenticated) {
-                    val authUser = authState as AuthState.Authenticated
-                    Card(
-                        modifier = Modifier.fillMaxWidth().padding(8.dp),
-                        shape = RoundedCornerShape(20.dp),
-                        colors = CardDefaults.cardColors(containerColor = Color.White),
-                        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
+                    Row(
+                        modifier = Modifier.padding(16.dp).fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Row(
-                            modifier = Modifier.padding(16.dp).fillMaxWidth(),
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Box(
-                                modifier = Modifier
-                                    .size(54.dp)
-                                    .background(
-                                        brush = androidx.compose.ui.graphics.Brush.linearGradient(
-                                            listOf(Color(0xFF0284C7), Color(0xFF0369A1))
-                                        ),
-                                        shape = CircleShape
-                                    ),
-                                contentAlignment = Alignment.Center
-                            ) {
-                                Text(
-                                    text = (authUser.displayName?.take(1) ?: userEmail.take(1)).uppercase(),
-                                    color = Color.White,
-                                    fontSize = 24.sp,
-                                    fontWeight = FontWeight.Bold
-                                )
-                            }
-                            Spacer(modifier = Modifier.width(14.dp))
-                            Column(modifier = Modifier.weight(1f)) {
-                                Text(
-                                    text = authUser.displayName ?: "Little Explorer",
-                                    fontSize = 17.sp,
-                                    fontWeight = FontWeight.Bold,
-                                    color = Color(0xFF1E293B)
-                                )
-                                Spacer(modifier = Modifier.height(2.dp))
-                                Text(
-                                    text = userEmail,
-                                    fontSize = 13.sp,
-                                    color = Color(0xFF64748B)
-                                )
-                                Spacer(modifier = Modifier.height(4.dp))
-                                Surface(
-                                    color = Color(0xFFE0F2FE),
-                                    shape = RoundedCornerShape(8.dp)
-                                ) {
-                                    Text(
-                                        text = if (userEmail.endsWith("@gmail.com", ignoreCase = true)) "✉️ Verified Gmail Account" else "🌟 Active Learner",
-                                        fontSize = 11.sp,
-                                        fontWeight = FontWeight.Bold,
-                                        color = Color(0xFF0284C7),
-                                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp)
-                                    )
-                                }
-                            }
-                        }
-                    }
-                }
-
-                if (isAdmin) {
-                    Spacer(modifier = Modifier.height(14.dp))
-                    Card(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .clickable { onNavigateToAdmin() },
-                        shape = RoundedCornerShape(20.dp),
-                        colors = CardDefaults.cardColors(containerColor = Color(0xFF1E293B)),
-                        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
-                    ) {
-                        Row(
+                        Box(
                             modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(16.dp),
-                            verticalAlignment = Alignment.CenterVertically
+                                .size(54.dp)
+                                .background(
+                                    brush = androidx.compose.ui.graphics.Brush.linearGradient(
+                                        listOf(Color(0xFF0284C7), Color(0xFF0369A1))
+                                    ),
+                                    shape = CircleShape
+                                ),
+                            contentAlignment = Alignment.Center
                         ) {
-                            Box(
-                                modifier = Modifier
-                                    .size(46.dp)
-                                    .background(Color(0xFFF59E0B), CircleShape),
-                                contentAlignment = Alignment.Center
+                            Text(
+                                text = (authUser.displayName?.take(1) ?: userEmail.take(1)).uppercase(),
+                                color = Color.White,
+                                fontSize = 24.sp,
+                                fontWeight = FontWeight.Bold
+                            )
+                        }
+                        Spacer(modifier = Modifier.width(14.dp))
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text(
+                                text = authUser.displayName ?: "Little Explorer",
+                                fontSize = 17.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = Color(0xFF1E293B)
+                            )
+                            Spacer(modifier = Modifier.height(2.dp))
+                            Text(
+                                text = userEmail,
+                                fontSize = 13.sp,
+                                color = Color(0xFF64748B)
+                            )
+                            Spacer(modifier = Modifier.height(4.dp))
+                            Surface(
+                                color = Color(0xFFE0F2FE),
+                                shape = RoundedCornerShape(8.dp)
                             ) {
-                                Icon(
-                                    imageVector = Icons.Default.AdminPanelSettings,
-                                    contentDescription = "Admin",
-                                    tint = Color.White,
-                                    modifier = Modifier.size(26.dp)
-                                )
-                            }
-                            Spacer(modifier = Modifier.width(14.dp))
-                            Column(modifier = Modifier.weight(1f)) {
                                 Text(
-                                    text = "Administration Portal",
+                                    text = if (userEmail.endsWith("@gmail.com", ignoreCase = true)) "✉️ Verified Gmail Account" else "🌟 Active Learner",
+                                    fontSize = 11.sp,
                                     fontWeight = FontWeight.Bold,
-                                    fontSize = 16.sp,
-                                    color = Color.White
+                                    color = Color(0xFF0284C7),
+                                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp)
                                 )
-                                Text(
-                                    text = "Manage users, plans, and expiry dates",
-                                    fontSize = 12.sp,
-                                    color = Color(0xFF94A3B8)
-                                )
-                            }
-                            Button(
-                                onClick = onNavigateToAdmin,
-                                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFF59E0B)),
-                                shape = RoundedCornerShape(10.dp),
-                                contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp)
-                            ) {
-                                Text("Open", fontWeight = FontWeight.Bold, color = Color.Black)
                             }
                         }
                     }
                 }
+            }
 
-                Spacer(modifier = Modifier.height(16.dp))
-                
-                // Sign Out Button
+            if (isAdmin) {
+                Spacer(modifier = Modifier.height(14.dp))
                 Card(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .clickable { showSignOutConfirm = true },
-                    shape = RoundedCornerShape(18.dp),
-                    colors = CardDefaults.cardColors(containerColor = Color(0xFFFFEBEE)),
-                    border = androidx.compose.foundation.BorderStroke(1.5.dp, Color(0xFFFFCDD2)),
-                    elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+                        .clickable { onNavigateToAdmin() },
+                    shape = RoundedCornerShape(20.dp),
+                    colors = CardDefaults.cardColors(containerColor = Color(0xFF1E293B)),
+                    elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
                 ) {
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(vertical = 16.dp, horizontal = 20.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.Center
+                            .padding(16.dp),
+                        verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Icon(
-                            imageVector = Icons.Default.ExitToApp,
-                            contentDescription = "Sign Out",
-                            tint = Color(0xFFD32F2F)
-                        )
-                        Spacer(modifier = Modifier.width(10.dp))
-                        Text(
-                            text = "Sign Out",
-                            color = Color(0xFFD32F2F),
-                            fontWeight = FontWeight.Bold,
-                            fontSize = 17.sp
-                        )
+                        Box(
+                            modifier = Modifier
+                                .size(46.dp)
+                                .background(Color(0xFFF59E0B), CircleShape),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.AdminPanelSettings,
+                                contentDescription = "Admin",
+                                tint = Color.White,
+                                modifier = Modifier.size(26.dp)
+                            )
+                        }
+                        Spacer(modifier = Modifier.width(14.dp))
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text(
+                                text = "Administration Portal",
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 16.sp,
+                                color = Color.White
+                            )
+                            Text(
+                                text = "Manage users, plans, and expiry dates",
+                                fontSize = 12.sp,
+                                color = Color(0xFF94A3B8)
+                            )
+                        }
+                        Button(
+                            onClick = onNavigateToAdmin,
+                            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFF59E0B)),
+                            shape = RoundedCornerShape(10.dp),
+                            contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp)
+                        ) {
+                            Text("Open", fontWeight = FontWeight.Bold, color = Color.Black)
+                        }
                     }
                 }
-
-                Spacer(modifier = Modifier.height(32.dp))
             }
 
-            if (showSignOutConfirm) {
-                AlertDialog(
-                    onDismissRequest = { showSignOutConfirm = false },
-                    title = {
-                        Text(
-                            text = "Sign Out",
-                            fontWeight = FontWeight.Bold,
-                            fontSize = 20.sp,
-                            color = Color(0xFF263238)
-                        )
-                    },
-                    text = {
-                        Text(
-                            text = "Are you sure you want to sign out and return to the FunBets landing page?",
-                            fontSize = 15.sp,
-                            color = Color(0xFF546E7A)
-                        )
-                    },
-                    confirmButton = {
-                        Button(
-                            onClick = {
-                                showSignOutConfirm = false
-                                authViewModel.signOut(context)
-                                onSignOut()
-                            },
-                            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFD32F2F)),
-                            shape = RoundedCornerShape(12.dp)
-                        ) {
-                            Text("Sign Out", fontWeight = FontWeight.Bold, color = Color.White)
-                        }
-                    },
-                    dismissButton = {
-                        TextButton(onClick = { showSignOutConfirm = false }) {
-                            Text("Cancel", color = Color(0xFF78909C), fontWeight = FontWeight.SemiBold)
-                        }
-                    },
-                    shape = RoundedCornerShape(20.dp),
-                    containerColor = Color.White
-                )
+            Spacer(modifier = Modifier.height(16.dp))
+            
+            // Sign Out Button
+            Card(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clickable { showSignOutConfirm = true },
+                shape = RoundedCornerShape(18.dp),
+                colors = CardDefaults.cardColors(containerColor = Color(0xFFFFEBEE)),
+                border = androidx.compose.foundation.BorderStroke(1.5.dp, Color(0xFFFFCDD2)),
+                elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+            ) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(vertical = 16.dp, horizontal = 20.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.Center
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.ExitToApp,
+                        contentDescription = "Sign Out",
+                        tint = Color(0xFFD32F2F)
+                    )
+                    Spacer(modifier = Modifier.width(10.dp))
+                    Text(
+                        text = "Sign Out",
+                        color = Color(0xFFD32F2F),
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 17.sp
+                    )
+                }
             }
+
+            Spacer(modifier = Modifier.height(32.dp))
+        }
+
+        if (showSignOutConfirm) {
+            AlertDialog(
+                onDismissRequest = { showSignOutConfirm = false },
+                title = {
+                    Text(
+                        text = "Sign Out",
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 20.sp,
+                        color = Color(0xFF263238)
+                    )
+                },
+                text = {
+                    Text(
+                        text = "Are you sure you want to sign out? You'll go back to the start screen.",
+                        fontSize = 15.sp,
+                        color = Color(0xFF546E7A)
+                    )
+                },
+                confirmButton = {
+                    Button(
+                        onClick = {
+                            showSignOutConfirm = false
+                            authViewModel.signOut(context)
+                            onSignOut()
+                        },
+                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFD32F2F)),
+                        shape = RoundedCornerShape(12.dp)
+                    ) {
+                        Text("Sign Out", fontWeight = FontWeight.Bold, color = Color.White)
+                    }
+                },
+                dismissButton = {
+                    TextButton(onClick = { showSignOutConfirm = false }) {
+                        Text("Cancel", color = Color(0xFF78909C), fontWeight = FontWeight.SemiBold)
+                    }
+                },
+                shape = RoundedCornerShape(20.dp),
+                containerColor = Color.White
+            )
         }
     }
 }

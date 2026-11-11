@@ -256,7 +256,7 @@ object UserManager {
                 plan = newPlan,
                 expiryDate = expiryStr,
                 expiryTimestamp = expiryTimestamp,
-                status = if (newPlan.contains("Free", ignoreCase = true)) "Active" else "Active"
+                status = "Active"
             )
             currentList[index] = updated
         } else {
