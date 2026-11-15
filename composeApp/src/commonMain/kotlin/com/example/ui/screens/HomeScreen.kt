@@ -176,6 +176,7 @@ fun HomeScreen(
                 streak = streak,
                 onProfile = onNavigateToProfile,
                 onPoints = onNavigateToLeaderboard,
+                showGold = !premium,
                 modifier = Modifier.padding(horizontal = side)
             )
             // Streaming-style home: section banner, learning path, video and game rows
@@ -207,7 +208,7 @@ fun HomeScreen(
 }
 
 @Composable
-private fun HomeTopBar(coins: Int, streak: Int, onProfile: () -> Unit, onPoints: () -> Unit, modifier: Modifier = Modifier) {
+private fun HomeTopBar(coins: Int, streak: Int, onProfile: () -> Unit, onPoints: () -> Unit, showGold: Boolean = false, modifier: Modifier = Modifier) {
     Row(modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
         Box(
             Modifier
@@ -230,6 +231,23 @@ private fun HomeTopBar(coins: Int, streak: Int, onProfile: () -> Unit, onPoints:
                 Text("Little learner", fontSize = 21.sp, fontWeight = FontWeight.ExtraBold, color = HomeInk, maxLines = 1, overflow = TextOverflow.Ellipsis)
             } else {
                 Text(rainbowText(learner), fontSize = 21.sp, fontWeight = FontWeight.ExtraBold, color = HomeInk, maxLines = 1, overflow = TextOverflow.Ellipsis)
+            }
+        }
+        if (showGold) {
+            // Free users: always-visible way to Gold. Goes through the grown-ups check first (Families policy).
+            Row(
+                Modifier
+                    .clip(RoundedCornerShape(18.dp))
+                    .background(Color(0xFFFFC93C))
+                    .border(2.dp, Color.White, RoundedCornerShape(18.dp))
+                    .clickable { Access.askGrownUp("Unlock every letter, game, video and worksheet with Gold.") }
+                    .padding(horizontal = 10.dp, vertical = 5.dp)
+                    .testTag("home_get_gold"),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(4.dp)
+            ) {
+                Text("👑", fontSize = 14.sp)
+                Text("Get Gold", fontSize = 14.sp, fontWeight = FontWeight.ExtraBold, color = Color(0xFF5A3A00))
             }
         }
         HomePill(onClick = onPoints) {
