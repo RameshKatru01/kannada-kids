@@ -25,8 +25,28 @@ enum class PlanPeriod(
     }
 }
 
-/** A plan as the store sells it (price in the shopper's currency). */
-data class StoreProduct(val period: PlanPeriod, val price: String)
+/**
+ * A plan as the store sells it, in the currency of the parent's store country
+ * (their Google Play / Apple ID country, not where the phone is right now).
+ * [micros] is the price × 1,000,000 and [currency] the ISO code ("INR", "USD"); 0 / "" when unknown.
+ */
+data class StoreProduct(val period: PlanPeriod, val price: String, val micros: Long = 0, val currency: String = "")
+
+/** "About $3.33 a month" for a longer plan, in the store's currency; null when the store didn't say. */
+fun List<StoreProduct>.perMonthPrice(period: PlanPeriod): String? {
+    val p = firstOrNull { it.period == period } ?: return null
+    if (p.micros <= 0 || p.currency.isBlank()) return null
+    return formatMoney(p.micros / period.months, p.currency)
+}
+
+/** Saving compared with paying monthly, using the store's prices when both are known in the same currency. */
+fun List<StoreProduct>.savingPercent(period: PlanPeriod): Int {
+    if (period.months == 1) return 0
+    val p = firstOrNull { it.period == period }
+    val m = firstOrNull { it.period == PlanPeriod.Monthly }
+    if (p == null || m == null || p.micros <= 0 || m.micros <= 0 || p.currency != m.currency) return period.savingPercent
+    return kotlin.math.round((1.0 - p.micros.toDouble() / (m.micros.toDouble() * period.months)) * 100).toInt().coerceAtLeast(0)
+}
 
 /** An active subscription the store knows about on this device's account. */
 data class StorePurchase(

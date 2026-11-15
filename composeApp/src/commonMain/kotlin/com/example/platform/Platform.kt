@@ -36,6 +36,12 @@ expect fun createHttpClient(): HttpClient
 /** Milliseconds since the Unix epoch. */
 expect fun currentTimeMillis(): Long
 
+/**
+ * Formats an amount of money (price × 1,000,000) in the given currency for the phone's language,
+ * e.g. "$3.33" or "₹75". Whole numbers are shown without decimals for amounts of 20 or more.
+ */
+expect fun formatMoney(micros: Long, currencyCode: String): String
+
 /** Formats a timestamp in the device time zone using a pattern such as "dd MMM yyyy" (US English month names). */
 expect fun formatDate(millis: Long, pattern: String = "dd MMM yyyy"): String
 

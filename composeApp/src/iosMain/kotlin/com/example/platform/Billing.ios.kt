@@ -42,7 +42,12 @@ actual object PlatformBilling {
         Json.parseToJsonElement(json).jsonArray.mapNotNull { e ->
             val o = e.jsonObject
             val p = PlanPeriod.byProductId(o["id"]?.jsonPrimitive?.contentOrNull) ?: return@mapNotNull null
-            StoreProduct(p, o["price"]?.jsonPrimitive?.contentOrNull ?: p.listPrice)
+            StoreProduct(
+                p,
+                o["price"]?.jsonPrimitive?.contentOrNull ?: p.listPrice,
+                o["micros"]?.jsonPrimitive?.longOrNull ?: 0L,
+                o["currency"]?.jsonPrimitive?.contentOrNull ?: ""
+            )
         }
     } catch (e: Exception) {
         emptyList()

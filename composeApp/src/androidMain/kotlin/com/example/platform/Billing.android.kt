@@ -90,8 +90,8 @@ actual object PlatformBilling {
     actual suspend fun loadProducts(): List<StoreProduct> = try {
         val d = loadDetails()
         PlanPeriod.entries.mapNotNull { p ->
-            val price = d[p.productId]?.baseOffer()?.pricingPhases?.pricingPhaseList?.lastOrNull()?.formattedPrice
-            price?.let { StoreProduct(p, it) }
+            val phase = d[p.productId]?.baseOffer()?.pricingPhases?.pricingPhaseList?.lastOrNull()
+            phase?.let { StoreProduct(p, it.formattedPrice, it.priceAmountMicros, it.priceCurrencyCode) }
         }
     } catch (e: Exception) {
         emptyList()

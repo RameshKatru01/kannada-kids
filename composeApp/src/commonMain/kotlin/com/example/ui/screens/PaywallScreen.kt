@@ -142,10 +142,11 @@ fun PaywallScreen(onBack: () -> Unit) {
                         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                             Text(p.title, fontSize = 17.sp, fontWeight = FontWeight.ExtraBold, color = ScrapbookInk)
                             if (p == PlanPeriod.Yearly) Tag("Best value", Color(0xFFFF6B6B), Color.White)
-                            if (p.savingPercent > 0) Tag("Save ${p.savingPercent}%", Color(0xFFE8F7EE), Color(0xFF1E6B3A))
+                            val saving = products.savingPercent(p)
+                            if (saving > 0) Tag("Save $saving%", Color(0xFFE8F7EE), Color(0xFF1E6B3A))
                         }
                         Text(
-                            if (p.months == 1) "Billed every month" else "About ₹${p.rupees / p.months} a month · billed ${p.perText}",
+                            if (p.months == 1) "Billed every month" else "About ${products.perMonthPrice(p) ?: "₹${p.rupees / p.months}"} a month · billed ${p.perText}",
                             fontSize = 12.sp, fontWeight = FontWeight.Bold, color = ScrapbookInkSoft
                         )
                     }

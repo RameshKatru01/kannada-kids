@@ -175,3 +175,15 @@ actual fun supportDeviceInfo(): String {
     val device = platform.UIKit.UIDevice.currentDevice
     return "App $version ($build) · ${device.model} · ${device.systemName} ${device.systemVersion}"
 }
+
+actual fun formatMoney(micros: Long, currencyCode: String): String {
+    val amount = micros / 1_000_000.0
+    val f = NSNumberFormatter()
+    f.numberStyle = NSNumberFormatterCurrencyStyle
+    f.locale = NSLocale.currentLocale
+    f.currencyCode = currencyCode
+    val digits = if (amount >= 20) 0uL else 2uL
+    f.minimumFractionDigits = digits
+    f.maximumFractionDigits = digits
+    return f.stringFromNumber(NSNumber(double = amount)) ?: "$currencyCode $amount"
+}

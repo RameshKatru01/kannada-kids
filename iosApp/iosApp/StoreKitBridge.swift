@@ -28,7 +28,14 @@ final class StoreKitBridge: NSObject, IosBillingHandler {
         Task {
             do {
                 let products = try await Product.products(for: productIds)
-                let list = products.map { ["id": $0.id, "price": $0.displayPrice] }
+                let list: [[String: Any]] = products.map {
+                    [
+                        "id": $0.id,
+                        "price": $0.displayPrice,
+                        "micros": NSDecimalNumber(decimal: $0.price * 1_000_000).int64Value,
+                        "currency": $0.priceFormatStyle.currencyCode
+                    ]
+                }
                 callback.onResult(json: Self.json(list), errorMessage: nil)
             } catch {
                 callback.onResult(json: nil, errorMessage: error.localizedDescription)

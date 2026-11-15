@@ -419,7 +419,11 @@ fun ParentCornerScreen(
 
         // Plan
         val sub by com.example.ui.data.SubscriptionManager.state.collectAsState()
-        LaunchedEffect(Unit) { com.example.ui.data.SubscriptionManager.refresh() }
+        val storeProducts by com.example.ui.data.SubscriptionManager.products.collectAsState()
+        LaunchedEffect(Unit) {
+            com.example.ui.data.SubscriptionManager.loadProducts()
+            com.example.ui.data.SubscriptionManager.refresh()
+        }
         Column(
             Modifier.fillMaxWidth().background(Color(0xFFFFF6E0), RoundedCornerShape(22.dp)).border(2.dp, Color(0xFFF2DFAE), RoundedCornerShape(22.dp))
                 .clickable { onOpenPlans() }.padding(14.dp),
@@ -439,7 +443,12 @@ fun ParentCornerScreen(
                             sub.hasPremium && p != null && sub.renewsAt > 0 ->
                                 (if (sub.autoRenew) "Renews " else "Ends ") + formatDate(sub.renewsAt)
                             sub.bonusUntil > currentTimeMillis() -> "Free until " + formatDate(sub.bonusUntil)
-                            else -> "₹99 a month, ₹499 for 6 months or ₹899 a year"
+                            else -> storeProducts.let { _ ->
+                                val m = com.example.ui.data.SubscriptionManager.priceOf(com.example.platform.PlanPeriod.Monthly)
+                                val h = com.example.ui.data.SubscriptionManager.priceOf(com.example.platform.PlanPeriod.HalfYearly)
+                                val y = com.example.ui.data.SubscriptionManager.priceOf(com.example.platform.PlanPeriod.Yearly)
+                                "$m a month, $h for 6 months or $y a year"
+                            }
                         },
                         fontSize = 12.sp, fontWeight = FontWeight.Bold, color = ScrapbookInkSoft
                     )

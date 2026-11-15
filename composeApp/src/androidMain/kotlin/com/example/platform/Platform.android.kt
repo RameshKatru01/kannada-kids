@@ -195,3 +195,17 @@ actual fun supportDeviceInfo(): String {
     }
     return "App $app · ${android.os.Build.MANUFACTURER} ${android.os.Build.MODEL} · Android ${android.os.Build.VERSION.RELEASE}"
 }
+
+actual fun formatMoney(micros: Long, currencyCode: String): String {
+    val amount = micros / 1_000_000.0
+    return try {
+        val f = java.text.NumberFormat.getCurrencyInstance(java.util.Locale.getDefault())
+        f.currency = java.util.Currency.getInstance(currencyCode)
+        val digits = if (amount >= 20) 0 else 2
+        f.minimumFractionDigits = digits
+        f.maximumFractionDigits = digits
+        f.format(amount)
+    } catch (e: Exception) {
+        "$currencyCode " + (if (amount >= 20) amount.toLong().toString() else ((amount * 100).toLong() / 100.0).toString())
+    }
+}
