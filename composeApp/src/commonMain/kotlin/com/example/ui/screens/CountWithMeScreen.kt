@@ -28,6 +28,27 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.data.ThemeWords
+import com.example.resources.Res
+import com.example.resources.tap_mango
+import com.example.resources.tap_apple
+import com.example.resources.tap_banana
+import com.example.resources.tap_orange
+import com.example.resources.tap_strawberry
+import com.example.resources.tap_watermelon
+import com.example.resources.tap_potato
+import com.example.resources.tap_brinjal
+import com.example.resources.pic_aane
+import com.example.resources.pic_karadi
+import com.example.resources.pic_onte
+import com.example.resources.pic_navilu
+import com.example.resources.pic_hamsa
+import com.example.resources.pic_ili
+import com.example.resources.pic_tagaru
+import com.example.resources.pic_dana
+import androidx.compose.foundation.Image
+import androidx.compose.ui.layout.ContentScale
+import org.jetbrains.compose.resources.DrawableResource
+import org.jetbrains.compose.resources.painterResource
 import com.example.ui.audio.NativeAudioPlayer
 import com.example.ui.audio.SoundEffectsHelper
 import com.example.ui.data.Access
@@ -42,11 +63,18 @@ const val COUNT_GAME_ID = 27
 private val numberNames = listOf("ಒಂದು", "ಎರಡು", "ಮೂರು", "ನಾಲ್ಕು", "ಐದು", "ಆರು", "ಏಳು", "ಎಂಟು", "ಒಂಬತ್ತು", "ಹತ್ತು")
 private val numberEnglish = listOf("one", "two", "three", "four", "five", "six", "seven", "eight", "nine", "ten")
 
-/** What to count, with its English name (for the answer card). */
+/** What to count: a picture (from the app's videos) and its English name, one and many (for the answer card). */
+private data class CountThing(val image: DrawableResource, val one: String, val many: String)
+
 private val countThings = listOf(
-    "🥭" to "mangoes", "🐘" to "elephants", "🎈" to "balloons", "🍌" to "bananas", "⭐" to "stars",
-    "🐟" to "fish", "🌸" to "flowers", "🚗" to "cars", "🐥" to "chicks", "🍎" to "apples",
-    "🦋" to "butterflies", "⚽" to "balls"
+    CountThing(Res.drawable.tap_mango, "mango", "mangoes"), CountThing(Res.drawable.tap_apple, "apple", "apples"),
+    CountThing(Res.drawable.tap_banana, "banana bunch", "banana bunches"), CountThing(Res.drawable.tap_orange, "orange", "oranges"),
+    CountThing(Res.drawable.tap_strawberry, "strawberry", "strawberries"), CountThing(Res.drawable.tap_watermelon, "watermelon", "watermelons"),
+    CountThing(Res.drawable.tap_potato, "potato", "potatoes"), CountThing(Res.drawable.tap_brinjal, "brinjal", "brinjals"),
+    CountThing(Res.drawable.pic_aane, "elephant", "elephants"), CountThing(Res.drawable.pic_karadi, "bear", "bears"),
+    CountThing(Res.drawable.pic_onte, "camel", "camels"), CountThing(Res.drawable.pic_navilu, "peacock", "peacocks"),
+    CountThing(Res.drawable.pic_hamsa, "swan", "swans"), CountThing(Res.drawable.pic_ili, "mouse", "mice"),
+    CountThing(Res.drawable.pic_tagaru, "ram", "rams"), CountThing(Res.drawable.pic_dana, "cow", "cows"),
 )
 
 /** Easy: 1–5 with count-along. Medium: 1–10 with count-along. Hard: 1–10, count in your head. */
@@ -192,8 +220,8 @@ fun CountWithMeScreen(onBack: () -> Unit) {
 
         Text(
             when (phase) {
-                CountPhase.Counting -> "Tap each ${thing.first} to count"
-                CountPhase.Answer -> if (busy) "Let's count again…" else "How many ${thing.second}?"
+                CountPhase.Counting -> "Tap each ${thing.one} to count"
+                CountPhase.Answer -> if (busy) "Let's count again…" else "How many ${thing.many}?"
                 else -> ""
             },
             fontSize = 16.sp, fontWeight = FontWeight.ExtraBold, color = CInk, textAlign = TextAlign.Center,
@@ -230,9 +258,21 @@ fun CountWithMeScreen(onBack: () -> Unit) {
                     verticalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
                     Text("ಶಭಾಷ್!", fontSize = 24.sp, fontWeight = FontWeight.ExtraBold, color = CInk)
-                    Text(thing.first.repeat(n), fontSize = if (n <= 5) 30.sp else 22.sp, textAlign = TextAlign.Center)
+                    // The pictures again, small, 5 a row
+                    Column(verticalArrangement = Arrangement.spacedBy(4.dp), horizontalAlignment = Alignment.CenterHorizontally) {
+                        (0 until n).chunked(5).forEach { row ->
+                            Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                                row.forEach { _ ->
+                                    Image(
+                                        painterResource(thing.image), contentDescription = null, contentScale = ContentScale.Crop,
+                                        modifier = Modifier.size(if (n <= 5) 40.dp else 30.dp).clip(CircleShape)
+                                    )
+                                }
+                            }
+                        }
+                    }
                     Text(numberNames[n - 1], fontSize = 30.sp, fontWeight = FontWeight.ExtraBold, color = CGood)
-                    Text("${numberEnglish[n - 1]} ${thing.second}", fontSize = 13.sp, fontWeight = FontWeight.Bold, color = Color(0xFF888780))
+                    Text("${numberEnglish[n - 1]} ${if (n == 1) thing.one else thing.many}", fontSize = 13.sp, fontWeight = FontWeight.Bold, color = Color(0xFF888780))
                     CountPill("Next ▶", Color(0xFFEF9F27)) { nextRound() }
                 }
             } else {
@@ -262,10 +302,10 @@ fun CountWithMeScreen(onBack: () -> Unit) {
                                         horizontalAlignment = Alignment.CenterHorizontally
                                     ) {
                                         val faded = level.countAlong && phase == CountPhase.Counting && !isCounted
-                                        Text(
-                                            thing.first,
-                                            fontSize = (cell.value * 0.5f).sp,
-                                            modifier = Modifier.scale(pop).alpha(if (faded) 0.35f else 1f)
+                                        Image(
+                                            painterResource(thing.image), contentDescription = thing.one,
+                                            contentScale = ContentScale.Crop,
+                                            modifier = Modifier.size(cell * 0.86f).scale(pop).alpha(if (faded) 0.35f else 1f).clip(CircleShape)
                                         )
                                         val label = when {
                                             lit -> numberNames[i]

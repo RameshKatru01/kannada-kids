@@ -46,7 +46,7 @@ private val MemGood = Color(0xFF3B6D11)
 private val MemGoodBg = Color(0xFFEAF3DE)
 
 /** One card: a letter, or the picture of a word that starts with it. Cards with the same [pair] match. */
-private data class MemCard(val id: Int, val pair: String, val isLetter: Boolean, val face: String, val caption: String, val speak: String)
+private data class MemCard(val id: Int, val pair: String, val isLetter: Boolean, val face: String, val caption: String, val speak: String, val image: org.jetbrains.compose.resources.DrawableResource? = null)
 
 /** Easy: 3 pairs of vowels. Medium: 4 pairs of vowels and consonants. Hard: 6 pairs of consonants. */
 private data class MemLevel(val title: String, val pairs: Int, val pool: () -> List<KannadaLetter>)
@@ -58,14 +58,20 @@ private val memLevels = listOf(
 )
 
 private fun dealCards(level: MemLevel): List<MemCard> {
-    val withWords = level.pool().mapNotNull { l -> ReferenceInfo.word(l)?.let { l to it } }
-        .distinctBy { it.second.picture }
-    val picked = withWords.shuffled().take(level.pairs)
+    // Pictures from the letter videos (Kannada); emoji words otherwise
+    val withPictures = level.pool().mapNotNull { l -> gamePicture(l.character)?.let { l to it } }
+    val picked = if (withPictures.size >= level.pairs) {
+        withPictures.shuffled().take(level.pairs).map { (l, p) -> Triple(l, p.word, p.image) }
+    } else {
+        level.pool().mapNotNull { l -> ReferenceInfo.word(l)?.let { l to it } }.distinctBy { it.second.picture }
+            .shuffled().take(level.pairs).map { (l, w) -> Triple(l, w.kannada, null) }
+    }
     var id = 0
-    return picked.flatMap { (letter, word) ->
+    return picked.flatMap { (letter, word, image) ->
+        val emoji = if (image == null) ReferenceInfo.word(letter)?.picture ?: "" else ""
         listOf(
             MemCard(id++, letter.character, true, letter.character, "", letter.character),
-            MemCard(id++, letter.character, false, word.picture, word.kannada, word.kannada)
+            MemCard(id++, letter.character, false, emoji, word, word, image)
         )
     }.shuffled()
 }
@@ -260,7 +266,15 @@ private fun FlipCard(card: MemCard, up: Boolean, matched: Boolean, modifier: Mod
                 if (card.isLetter) {
                     Text(card.face, fontSize = 34.sp, fontWeight = FontWeight.ExtraBold, color = if (matched) MemGood else MemInk)
                 } else {
-                    Text(card.face, fontSize = 30.sp)
+                    if (card.image != null) {
+                        androidx.compose.foundation.Image(
+                            org.jetbrains.compose.resources.painterResource(card.image), contentDescription = card.caption,
+                            contentScale = androidx.compose.ui.layout.ContentScale.Crop,
+                            modifier = Modifier.fillMaxWidth(0.86f).aspectRatio(1f).clip(RoundedCornerShape(10.dp))
+                        )
+                    } else {
+                        Text(card.face, fontSize = 30.sp)
+                    }
                     Text(card.caption, fontSize = 11.sp, fontWeight = FontWeight.Bold, color = if (matched) MemGood else MemSoft, maxLines = 1)
                 }
             }

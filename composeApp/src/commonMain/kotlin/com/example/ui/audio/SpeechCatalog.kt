@@ -48,6 +48,8 @@ object SpeechCatalog {
         com.example.data.ThemeWords.phrases().forEach { out += it }
         // Tap & Learn picture scenes (words and short sentences)
         com.example.ui.screens.tapLearnPhrases().forEach { out += it }
+        // Letter-video picture words (Memory Flip, Match the Letter)
+        com.example.ui.screens.letterPicturePhrases().forEach { out += it }
         return out.map { it.trim() }.filter { it.isNotEmpty() }.distinct()
     }
 }

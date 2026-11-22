@@ -57,7 +57,7 @@ private val matchLevels get() = listOf(
 
 private const val BOARDS = 2
 
-private data class MatchItem(val letter: KannadaLetter, val word: RefWord, val color: Color)
+private data class MatchItem(val letter: KannadaLetter, val word: RefWord, val color: Color, val image: org.jetbrains.compose.resources.DrawableResource? = null)
 
 @Composable
 fun MatchLetterScreen(firstLevel: Int = 1, onBack: () -> Unit) {
@@ -72,9 +72,17 @@ fun MatchLetterScreen(firstLevel: Int = 1, onBack: () -> Unit) {
     var showConfetti by remember { mutableStateOf(false) }
 
     val items = remember(level, round, board) {
-        spec.pool().mapNotNull { l -> ReferenceInfo.word(l)?.let { l to it } }
-            .shuffled().take(spec.pairs)
-            .mapIndexed { i, (l, w) -> MatchItem(l, w, CandyColors[(i + board * 2) % CandyColors.size]) }
+        // Kannada: pictures from the letter videos (ಅ → ಅರಸ); Hindi: the emoji words
+        val withPictures = spec.pool().mapNotNull { l -> gamePicture(l.character)?.let { l to it } }
+        if (withPictures.size >= spec.pairs) {
+            withPictures.shuffled().take(spec.pairs).mapIndexed { i, (l, p) ->
+                MatchItem(l, RefWord(p.word, p.english, ""), CandyColors[(i + board * 2) % CandyColors.size], p.image)
+            }
+        } else {
+            spec.pool().mapNotNull { l -> ReferenceInfo.word(l)?.let { l to it } }
+                .shuffled().take(spec.pairs)
+                .mapIndexed { i, (l, w) -> MatchItem(l, w, CandyColors[(i + board * 2) % CandyColors.size]) }
+        }
     }
     val pictures = remember(items) { items.shuffled() }
     var matched by remember(items) { mutableStateOf(listOf<MatchItem>()) }
@@ -220,7 +228,16 @@ fun MatchLetterScreen(firstLevel: Int = 1, onBack: () -> Unit) {
                             verticalAlignment = Alignment.CenterVertically,
                             horizontalArrangement = Arrangement.spacedBy(8.dp)
                         ) {
-                            Text(item.word.picture, fontSize = if (items.size >= 6) 34.sp else 42.sp)
+                            val img = item.image
+                            if (img != null) {
+                                androidx.compose.foundation.Image(
+                                    org.jetbrains.compose.resources.painterResource(img), contentDescription = item.word.english,
+                                    contentScale = androidx.compose.ui.layout.ContentScale.Crop,
+                                    modifier = Modifier.size(if (items.size >= 6) 46.dp else 58.dp).clip(RoundedCornerShape(14.dp))
+                                )
+                            } else {
+                                Text(item.word.picture, fontSize = if (items.size >= 6) 34.sp else 42.sp)
+                            }
                             Column {
                                 Text(
                                     if (isMatched) item.word.kannada else item.word.english,
