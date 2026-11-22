@@ -56,6 +56,7 @@ object GameRegistry {
         GameInfo(24, "tap_learn", "Tap & Learn", "Tap pictures, hear words", "🍎", Leaf, Navy),
         GameInfo(26, "my_name", "Write My Name", "Trace your own name", "ನ", Coral, Color.White),
         GameInfo(25, "memory_flip", "Memory Flip", "Find the letter and picture", "ಮ", Violet, Color.White),
+        GameInfo(27, "count_with_me", "Count with Me", "Count in Kannada", "೫", Tangerine, Navy),
         // Older games: play freely (levels come in a later update)
         GameInfo(12, "balloon_pop", "Musical Balloon Pop", "Endless · pop to the music!", "ಉ", Berry, Color.White),
         GameInfo(23, "letter_dash", "Letter Dash", "Endless run · beat your best!", "ಡ", Tangerine, Navy),

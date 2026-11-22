@@ -405,7 +405,7 @@ private fun sectionGames(type: String): List<Int> = when (type) {
     "vowels" -> listOf(1, 20, 19, 11, 12, 6)
     "consonants" -> listOf(2, 21, 11, 22, 23, 13)
     "guninthakshari" -> listOf(3, 8, 9, 21, 22, 23)
-    "numbers" -> listOf(4, 12, 13, 23, 6, 22)
+    "numbers" -> listOf(27, 4, 12, 13, 23, 6)
     else -> listOf(8, 9, 22, 21, 23, 13)
 }
 
