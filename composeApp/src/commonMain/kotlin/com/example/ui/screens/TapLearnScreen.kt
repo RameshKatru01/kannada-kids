@@ -35,9 +35,50 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.example.data.ThemeWord
 import com.example.data.ThemeWords
-import com.example.data.WordTheme
+import com.example.resources.Res
+import com.example.resources.tap_apple
+import com.example.resources.tap_banana
+import com.example.resources.tap_mango
+import com.example.resources.tap_grapes
+import com.example.resources.tap_orange
+import com.example.resources.tap_watermelon
+import com.example.resources.tap_pineapple
+import com.example.resources.tap_strawberry
+import com.example.resources.tap_guava
+import com.example.resources.tap_pomegranate
+import com.example.resources.tap_potato
+import com.example.resources.tap_onion
+import com.example.resources.tap_brinjal
+import com.example.resources.tap_cucumber
+import com.example.resources.tap_radish
+import com.example.resources.tap_beans
+import com.example.resources.tap_cabbage
+import com.example.resources.tap_okra
+import com.example.resources.tap_spinach
+import com.example.resources.tap_cauliflower
+import com.example.resources.tap_eye
+import com.example.resources.tap_ear
+import com.example.resources.tap_nose
+import com.example.resources.tap_mouth
+import com.example.resources.tap_tooth
+import com.example.resources.tap_head
+import com.example.resources.tap_tummy
+import com.example.resources.tap_back
+import com.example.resources.tap_hand
+import com.example.resources.tap_leg
+import com.example.resources.tap_grandfather
+import com.example.resources.tap_grandmother
+import com.example.resources.tap_mother
+import com.example.resources.tap_father
+import com.example.resources.tap_bigbrother
+import com.example.resources.tap_bigsister
+import com.example.resources.tap_littlebrother
+import com.example.resources.tap_littlesister
+import androidx.compose.foundation.Image
+import androidx.compose.ui.layout.ContentScale
+import org.jetbrains.compose.resources.DrawableResource
+import org.jetbrains.compose.resources.painterResource
 import com.example.ui.audio.NativeAudioPlayer
 import com.example.ui.audio.SoundEffectsHelper
 import com.example.ui.data.Access
@@ -48,22 +89,59 @@ import kotlinx.coroutines.launch
 /** Game id of Tap & Learn (see GameRegistry). */
 const val TAP_LEARN_GAME_ID = 24
 
-/** One picture scene: a theme's 10 words drawn on a backdrop. */
+/** One picture in a scene: the word, its meaning, a short sentence and the picture (from the Fun Videos). */
+data class TapWord(val kannada: String, val english: String, val sentence: String, val image: DrawableResource)
+
+/** One picture scene: up to 10 words drawn on a backdrop. */
 private data class TapScene(
-    val theme: WordTheme,
+    val key: String,
+    val kannada: String,
+    val words: List<TapWord>,
     val title: String,
-    val emoji: String,
     val sky: Color,
     val accent: Color,
     val free: Boolean
 )
 
+private fun thing(kn: String, en: String, img: DrawableResource) = TapWord(kn, en, "ಇದು $kn", img)
+private fun my(kn: String, en: String, img: DrawableResource) = TapWord(kn, en, "ಇದು ನನ್ನ $kn", img)
+
 private val tapScenes = listOf(
-    TapScene(ThemeWords.fruits, "Fruit market", "🍎", Color(0xFFFFF1D6), Color(0xFFFF6B6B), free = true),
-    TapScene(ThemeWords.vegetables, "Vegetable shop", "🥕", Color(0xFFE8F8E4), Color(0xFF59C173), free = false),
-    TapScene(ThemeWords.bodyParts, "My body", "🙂", Color(0xFFE6F2FF), Color(0xFF4DA8FF), free = false),
-    TapScene(ThemeWords.family, "My family", "👨‍👩‍👧", Color(0xFFFDEBF3), Color(0xFFE84393), free = false),
+    TapScene("Fruits", "ಹಣ್ಣುಗಳು", listOf(
+        thing("ಸೇಬು", "Apple", Res.drawable.tap_apple), thing("ಬಾಳೆಹಣ್ಣು", "Banana", Res.drawable.tap_banana),
+        thing("ಮಾವಿನಹಣ್ಣು", "Mango", Res.drawable.tap_mango), thing("ದ್ರಾಕ್ಷಿ", "Grapes", Res.drawable.tap_grapes),
+        thing("ಕಿತ್ತಳೆ", "Orange", Res.drawable.tap_orange), thing("ಕಲ್ಲಂಗಡಿ", "Watermelon", Res.drawable.tap_watermelon),
+        thing("ಅನಾನಸ್", "Pineapple", Res.drawable.tap_pineapple), thing("ಸ್ಟ್ರಾಬೆರಿ", "Strawberry", Res.drawable.tap_strawberry),
+        thing("ಸೀಬೆಹಣ್ಣು", "Guava", Res.drawable.tap_guava), thing("ದಾಳಿಂಬೆ", "Pomegranate", Res.drawable.tap_pomegranate),
+    ), "Fruit market", Color(0xFFFFF1D6), Color(0xFFFF6B6B), free = true),
+    TapScene("Vegetables", "ತರಕಾರಿಗಳು", listOf(
+        thing("ಆಲೂಗಡ್ಡೆ", "Potato", Res.drawable.tap_potato), thing("ಈರುಳ್ಳಿ", "Onion", Res.drawable.tap_onion),
+        thing("ಬದನೆಕಾಯಿ", "Brinjal", Res.drawable.tap_brinjal), thing("ಸೌತೆಕಾಯಿ", "Cucumber", Res.drawable.tap_cucumber),
+        thing("ಮೂಲಂಗಿ", "Radish", Res.drawable.tap_radish), thing("ಹುರಳಿಕಾಯಿ", "Beans", Res.drawable.tap_beans),
+        thing("ಎಲೆಕೋಸು", "Cabbage", Res.drawable.tap_cabbage), thing("ಬೆಂಡೆಕಾಯಿ", "Okra", Res.drawable.tap_okra),
+        thing("ಸೊಪ್ಪು", "Spinach (greens)", Res.drawable.tap_spinach), thing("ಹೂಕೋಸು", "Cauliflower", Res.drawable.tap_cauliflower),
+    ), "Vegetable shop", Color(0xFFE8F8E4), Color(0xFF59C173), free = false),
+    TapScene("Body Parts", "ದೇಹದ ಭಾಗಗಳು", listOf(
+        my("ತಲೆ", "Head", Res.drawable.tap_head), my("ಕಣ್ಣು", "Eye", Res.drawable.tap_eye),
+        my("ಕಿವಿ", "Ear", Res.drawable.tap_ear), my("ಮೂಗು", "Nose", Res.drawable.tap_nose),
+        my("ಬಾಯಿ", "Mouth", Res.drawable.tap_mouth), my("ಹಲ್ಲು", "Tooth", Res.drawable.tap_tooth),
+        my("ಕೈ", "Hand", Res.drawable.tap_hand), my("ಹೊಟ್ಟೆ", "Tummy", Res.drawable.tap_tummy),
+        my("ಬೆನ್ನು", "Back", Res.drawable.tap_back), my("ಕಾಲು", "Leg", Res.drawable.tap_leg),
+    ), "My body", Color(0xFFE6F2FF), Color(0xFF4DA8FF), free = false),
+    TapScene("Family", "ನನ್ನ ಕುಟುಂಬ", listOf(
+        TapWord("ಅಮ್ಮ", "Mother", "ಇವರು ನನ್ನ ಅಮ್ಮ", Res.drawable.tap_mother),
+        TapWord("ಅಪ್ಪ", "Father", "ಇವರು ನನ್ನ ಅಪ್ಪ", Res.drawable.tap_father),
+        TapWord("ಅಜ್ಜಿ", "Grandmother", "ಇವರು ನನ್ನ ಅಜ್ಜಿ", Res.drawable.tap_grandmother),
+        TapWord("ಅಜ್ಜ", "Grandfather", "ಇವರು ನನ್ನ ಅಜ್ಜ", Res.drawable.tap_grandfather),
+        TapWord("ಅಣ್ಣ", "Big brother", "ಇವನು ನನ್ನ ಅಣ್ಣ", Res.drawable.tap_bigbrother),
+        TapWord("ಅಕ್ಕ", "Big sister", "ಇವಳು ನನ್ನ ಅಕ್ಕ", Res.drawable.tap_bigsister),
+        TapWord("ತಮ್ಮ", "Little brother", "ಇವನು ನನ್ನ ತಮ್ಮ", Res.drawable.tap_littlebrother),
+        TapWord("ತಂಗಿ", "Little sister", "ಇವಳು ನನ್ನ ತಂಗಿ", Res.drawable.tap_littlesister),
+    ), "My family", Color(0xFFFDEBF3), Color(0xFFE84393), free = false),
 )
+
+/** Everything Tap & Learn says, for the voice clips (see SpeechCatalog). */
+fun tapLearnPhrases(): List<String> = tapScenes.flatMap { sc -> listOf(sc.kannada) + sc.words.flatMap { listOf(it.kannada, it.sentence) } }
 
 /** Where the 10 pictures sit in a scene (fractions of the scene's width and height). */
 private val spots = listOf(
@@ -103,7 +181,7 @@ fun TapLearnScreen(onBack: () -> Unit) {
             ) { Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back", tint = TapInk) }
             Column(Modifier.weight(1f)) {
                 Text(scene?.title ?: "Tap & Learn", fontSize = 20.sp, fontWeight = FontWeight.ExtraBold, color = TapInk)
-                Text(scene?.theme?.kannada ?: "Tap the pictures, hear the words", fontSize = 13.sp, fontWeight = FontWeight.Bold, color = TapSoft)
+                Text(scene?.kannada ?: "Tap the pictures, hear the words", fontSize = 13.sp, fontWeight = FontWeight.Bold, color = TapSoft)
             }
         }
 
@@ -113,7 +191,7 @@ fun TapLearnScreen(onBack: () -> Unit) {
                 SoundEffectsHelper.playButtonTap()
                 if (picked.free || premium) {
                     scene = picked
-                    NativeAudioPlayer.playPhonics(context, picked.theme.kannada)
+                    NativeAudioPlayer.playPhonics(context, picked.kannada)
                 } else {
                     Access.askGrownUp("The ${picked.title} scene and all the other picture scenes are in the Gold pack.")
                 }
@@ -140,7 +218,7 @@ private fun ScenePicker(premium: Boolean, onPick: (TapScene) -> Unit) {
                             .border(3.dp, s.accent.copy(alpha = 0.35f), RoundedCornerShape(22.dp))
                             .clickable { onPick(s) }
                             .padding(12.dp)
-                            .testTag("tap_scene_${s.theme.folder}"),
+                            .testTag("tap_scene_${s.key}"),
                         horizontalAlignment = Alignment.CenterHorizontally,
                         verticalArrangement = Arrangement.spacedBy(6.dp)
                     ) {
@@ -149,9 +227,17 @@ private fun ScenePicker(premium: Boolean, onPick: (TapScene) -> Unit) {
                             contentAlignment = Alignment.Center
                         ) {
                             // A little collage of the scene's pictures
-                            Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                                Text(s.theme.words.take(3).joinToString(" ") { it.picture }, fontSize = 26.sp)
-                                Text(s.theme.words.drop(3).take(3).joinToString(" ") { it.picture }, fontSize = 26.sp)
+                            Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                                listOf(s.words.take(3), s.words.drop(3).take(3)).forEach { row ->
+                                    Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                                        row.forEach { w ->
+                                            Image(
+                                                painterResource(w.image), contentDescription = null, contentScale = ContentScale.Crop,
+                                                modifier = Modifier.size(34.dp).clip(CircleShape).border(1.5.dp, Color.White, CircleShape)
+                                            )
+                                        }
+                                    }
+                                }
                             }
                             if (locked) {
                                 Text(
@@ -163,7 +249,7 @@ private fun ScenePicker(premium: Boolean, onPick: (TapScene) -> Unit) {
                             }
                         }
                         Text(s.title, fontSize = 16.sp, fontWeight = FontWeight.ExtraBold, color = TapInk, textAlign = TextAlign.Center)
-                        Text(s.theme.kannada, fontSize = 14.sp, fontWeight = FontWeight.Bold, color = s.accent, textAlign = TextAlign.Center)
+                        Text(s.kannada, fontSize = 14.sp, fontWeight = FontWeight.Bold, color = s.accent, textAlign = TextAlign.Center)
                     }
                 }
                 if (row.size == 1) Spacer(Modifier.weight(1f))
@@ -176,10 +262,10 @@ private fun ScenePicker(premium: Boolean, onPick: (TapScene) -> Unit) {
 private fun ScenePlay(scene: TapScene, onPickAnother: () -> Unit) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
-    val words = scene.theme.words.take(spots.size)
+    val words = scene.words.take(spots.size)
     var findMode by remember { mutableStateOf(false) }
-    var shown by remember { mutableStateOf<ThemeWord?>(null) }
-    var target by remember { mutableStateOf<ThemeWord?>(null) }
+    var shown by remember { mutableStateOf<TapWord?>(null) }
+    var target by remember { mutableStateOf<TapWord?>(null) }
     var found by remember { mutableIntStateOf(0) }
     var mistakes by remember { mutableIntStateOf(0) }
     var done by remember { mutableStateOf(false) }
@@ -267,7 +353,10 @@ private fun ScenePlay(scene: TapScene, onPickAnother: () -> Unit) {
                     SpeakButton(scene.accent) { say(t.kannada) }
                 }
                 s != null && !findMode -> {
-                    Text(s.picture, fontSize = 26.sp)
+                    Image(
+                        painterResource(s.image), contentDescription = null, contentScale = ContentScale.Crop,
+                        modifier = Modifier.size(40.dp).clip(CircleShape)
+                    )
                     Column(Modifier.weight(1f)) {
                         Text(s.kannada, fontSize = 22.sp, fontWeight = FontWeight.ExtraBold, color = TapInk)
                         Text(s.english, fontSize = 13.sp, fontWeight = FontWeight.Bold, color = TapSoft)
@@ -301,12 +390,16 @@ private fun ScenePlay(scene: TapScene, onPickAnother: () -> Unit) {
                             translationX = shake[i].value * density
                         }
                         .clip(CircleShape)
-                        .background(Color.White.copy(alpha = 0.55f))
+                        .background(Color.White)
+                        .border(3.dp, Color.White, CircleShape)
                         .clickable(interactionSource = remember { MutableInteractionSource() }, indication = null) { onTap(i) }
                         .testTag("tap_item_$i"),
                     contentAlignment = Alignment.Center
                 ) {
-                    Text(word.picture, fontSize = (pic.value * 0.58f).sp)
+                    Image(
+                        painterResource(word.image), contentDescription = word.english,
+                        contentScale = ContentScale.Crop, modifier = Modifier.fillMaxSize().clip(CircleShape)
+                    )
                 }
             }
 
@@ -362,7 +455,7 @@ private fun BigPill(label: String, color: Color, onClick: () -> Unit) {
 private fun DrawScope.drawBackdrop(scene: TapScene) {
     val w = size.width
     val h = size.height
-    when (scene.theme.folder) {
+    when (scene.key) {
         "Fruits", "Vegetables" -> {
             // Striped awning along the top
             val stripes = 8

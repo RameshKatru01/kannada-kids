@@ -46,6 +46,8 @@ object SpeechCatalog {
         LetterData.hindiConsonants.forEach { c -> com.example.ui.screens.barakhadiSigns.forEach { (sign, _) -> out += c.character + sign } }
         // Theme videos (Fruits, Vegetables, Body Parts, Family)
         com.example.data.ThemeWords.phrases().forEach { out += it }
+        // Tap & Learn picture scenes (words and short sentences)
+        com.example.ui.screens.tapLearnPhrases().forEach { out += it }
         return out.map { it.trim() }.filter { it.isNotEmpty() }.distinct()
     }
 }
