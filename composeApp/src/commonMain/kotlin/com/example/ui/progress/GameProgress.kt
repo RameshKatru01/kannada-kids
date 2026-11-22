@@ -53,6 +53,9 @@ object GameRegistry {
         GameInfo(19, "listen_choose", "Listen & Choose", "Hear it, find it", "ಆ", Teal, Navy, LEVELS_PER_GAME),
         GameInfo(11, "match_letter", "Match the Letter", "Letters and pictures", "ಇ", Sky, Color.White, LEVELS_PER_GAME),
         GameInfo(20, "swara_adventure", "Swara Adventure", "Find the missing ಸ್ವರ", "ಸ", Leaf, Navy, LEVELS_PER_GAME),
+        GameInfo(24, "tap_learn", "Tap & Learn", "Tap pictures, hear words", "🍎", Leaf, Navy),
+        GameInfo(26, "my_name", "Write My Name", "Trace your own name", "ನ", Coral, Color.White),
+        GameInfo(25, "memory_flip", "Memory Flip", "Find the letter and picture", "ಮ", Violet, Color.White),
         // Older games: play freely (levels come in a later update)
         GameInfo(12, "balloon_pop", "Musical Balloon Pop", "Endless · pop to the music!", "ಉ", Berry, Color.White),
         GameInfo(23, "letter_dash", "Letter Dash", "Endless run · beat your best!", "ಡ", Tangerine, Navy),

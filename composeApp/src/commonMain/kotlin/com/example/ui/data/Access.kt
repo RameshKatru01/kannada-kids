@@ -173,6 +173,9 @@ object Access {
     fun game(game: GameInfo): State = when {
         isPremium() -> State.Open
         game.id in monster || game.id in endless -> State.Open
+        // Tap & Learn opens for everyone; inside it the fruit market is free and the other scenes need Gold
+        // Memory Flip: Easy is free (Medium / Hard ask for Gold inside). Write My Name is free for everyone.
+        game.id == 24 || game.id == 25 || game.id == 26 -> State.Open
         else -> State.NeedsPremium
     }
 

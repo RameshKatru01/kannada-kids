@@ -1,0 +1,2 @@
+# Voice clips recorded by a real person. tools/generate_voice.py never replaces these.
+v_40dd811b7b0d3916.mp3  # ಅ (recorded 22 Nov 2026)

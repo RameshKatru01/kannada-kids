@@ -170,13 +170,14 @@ fun LetterTraceVideoPlayer(
                     )
                 }
 
-                // Finished: one big "Play again" button
+                // Finished: "Play again" button in the bottom-right corner, clear of the letter
                 if (ended && !isPlaying) {
                     Row(
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.spacedBy(8.dp),
                         modifier = Modifier
-                            .align(Alignment.Center)
+                            .align(Alignment.BottomEnd)
+                            .padding(10.dp)
                             .clip(RoundedCornerShape(28.dp))
                             .background(Color(0xFFFF5722))
                             .clickable {

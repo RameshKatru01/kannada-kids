@@ -124,6 +124,8 @@ android {
             // R8: strips unused code (most of Material Icons Extended, unused library parts) and unused resources.
             isMinifyEnabled = true
             isShrinkResources = true
+            // Pack native debug symbols into the AAB so Play can show readable native crash reports
+            ndk { debugSymbolLevel = "SYMBOL_TABLE" }
             proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
             val releaseKeystore = file(System.getenv("KEYSTORE_PATH") ?: "${rootDir}/my-upload-key.jks")
             if (releaseKeystore.exists()) {

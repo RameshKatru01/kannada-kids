@@ -97,9 +97,15 @@ def main():
 
     made = kept = 0
     chars = 0
+    # Clips recorded by a real person: never replaced by the computer voice, even with --force
+    rec_file = os.path.join(OUT, "recorded.txt")
+    recorded = set()
+    if os.path.exists(rec_file):
+        with open(rec_file, encoding="utf-8") as f:
+            recorded = {l.split("#")[0].strip() for l in f if l.split("#")[0].strip()}
     for k, text in rows:
         path = os.path.join(OUT, f"v_{k}.mp3")
-        if os.path.exists(path) and not a.force:
+        if os.path.exists(path) and (not a.force or f"v_{k}.mp3" in recorded):
             kept += 1
             continue
         res = call(f"{API}/text:synthesize?key={key}", {

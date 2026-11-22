@@ -183,6 +183,20 @@ fun BubbleGame(
         }
     }
 
+    // Background music (the same cheerful tune as Musical Balloon Pop); stops for the celebration
+    var musicHandle by remember { mutableStateOf<Any?>(null) }
+    LaunchedEffect(showConfetti) {
+        PlatformAudio.stopLoop(musicHandle)
+        musicHandle = null
+        if (!showConfetti) {
+            val samples = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Default) {
+                com.example.ui.audio.BalloonMusic.track(114)
+            }
+            musicHandle = PlatformAudio.startLoop(samples, com.example.ui.audio.BalloonMusic.SAMPLE_RATE)
+        }
+    }
+    DisposableEffect(Unit) { onDispose { PlatformAudio.stopLoop(musicHandle) } }
+
     Column(
         modifier = Modifier.fillMaxSize().background(Color(0xFFE0F7FA)), // Light sky blue background
         horizontalAlignment = Alignment.CenterHorizontally
@@ -322,6 +336,11 @@ fun CatchGame(
             onComplete()
         }
     }
+
+    // Background music (the Letter Runner tune); stops for the celebration
+    val bgm = remember { BGMPlayer() }
+    LaunchedEffect(showConfetti) { if (showConfetti) bgm.stop() else bgm.play() }
+    DisposableEffect(Unit) { onDispose { bgm.stop() } }
 
     Column(
         modifier = Modifier.fillMaxSize().background(Color(0xFFE0F7FA)),

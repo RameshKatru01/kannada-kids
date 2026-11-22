@@ -94,7 +94,9 @@ fun TraceExercise(
     letter: KannadaLetter,
     onSpeakText: (String) -> Unit,
     onComplete: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    /** How many good traces finish the exercise (5 for lessons; fewer for "Write my name"). */
+    requiredTraces: Int = REQUIRED_TRACES
 ) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
@@ -112,14 +114,14 @@ fun TraceExercise(
         TraceRepository.addTrace(letter.character, strokes)
         done += 1
         feedback = TraceFeedback.Good
-        if (done >= REQUIRED_TRACES) SoundEffectsHelper.playGameCompletion(context) else SoundEffectsHelper.playSuccess(context)
+        if (done >= requiredTraces) SoundEffectsHelper.playGameCompletion(context) else SoundEffectsHelper.playSuccess(context)
         scope.launch {
             delay(450)
             onSpeakText(letter.character)
             delay(650)
             strokes = emptyList()
             feedback = TraceFeedback.None
-            if (done >= REQUIRED_TRACES) {
+            if (done >= requiredTraces) {
                 delay(300)
                 onComplete()
             }
@@ -160,13 +162,13 @@ fun TraceExercise(
         ) {
             Column(Modifier.weight(1f)) {
                 Text(
-                    "Trace ${letter.character} $REQUIRED_TRACES times",
+                    if (requiredTraces == 1) "Trace ${letter.character}" else "Trace ${letter.character} $requiredTraces times",
                     fontSize = 20.sp, fontWeight = FontWeight.ExtraBold, color = PadInk
                 )
-                val left = REQUIRED_TRACES - done
+                val left = requiredTraces - done
                 Text(
                     when {
-                        feedback == TraceFeedback.Good && left == 0 -> "All $REQUIRED_TRACES done! 🎉"
+                        feedback == TraceFeedback.Good && left == 0 -> "All $requiredTraces done! 🎉"
                         feedback == TraceFeedback.Good -> "Great! $left more to go"
                         feedback == TraceFeedback.TryAgain -> "Oops! Stay on the grey letter"
                         feedback == TraceFeedback.NotYet -> "Almost! Colour the orange bits, then tap Done"
@@ -184,7 +186,7 @@ fun TraceExercise(
             }
         }
         Spacer(Modifier.height(6.dp))
-        TraceStars(done = done, celebrate = feedback == TraceFeedback.Good)
+        TraceStars(done = done, celebrate = feedback == TraceFeedback.Good, total = requiredTraces)
         Spacer(Modifier.height(8.dp))
 
         TracePad(
@@ -236,11 +238,11 @@ fun TraceExercise(
 
 /** Five stars, one per good trace; the next one to earn gently pulses. */
 @Composable
-private fun TraceStars(done: Int, celebrate: Boolean) {
+private fun TraceStars(done: Int, celebrate: Boolean, total: Int = REQUIRED_TRACES) {
     val pulse = rememberInfiniteTransition(label = "stars")
     val beat by pulse.animateFloat(1f, 1.18f, infiniteRepeatable(tween(600), RepeatMode.Reverse), label = "beat")
     Row(horizontalArrangement = Arrangement.spacedBy(10.dp), verticalAlignment = Alignment.CenterVertically) {
-        repeat(REQUIRED_TRACES) { i ->
+        repeat(total) { i ->
             val earned = i < done
             val isNext = i == done
             val pop by animateFloatAsState(if (earned && celebrate && i == done - 1) 1.35f else 1f, spring(dampingRatio = 0.35f), label = "pop")

@@ -121,7 +121,7 @@ fun VideoFoldersScreen(
             return@Column
         }
         LazyVerticalGrid(
-            columns = GridCells.Adaptive(minSize = 160.dp),
+            columns = AtLeastTwoColumns,
             modifier = Modifier.fillMaxSize(),
             contentPadding = PaddingValues(start = 14.dp, end = 14.dp, top = 8.dp, bottom = 24.dp),
             horizontalArrangement = Arrangement.spacedBy(14.dp),

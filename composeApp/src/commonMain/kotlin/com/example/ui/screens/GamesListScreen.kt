@@ -82,7 +82,7 @@ fun GamesListScreen(
         )
 
         LazyVerticalGrid(
-            columns = GridCells.Adaptive(minSize = 160.dp),
+            columns = AtLeastTwoColumns,
             modifier = Modifier.fillMaxSize(),
             contentPadding = PaddingValues(start = 14.dp, end = 14.dp, top = 8.dp, bottom = 24.dp),
             horizontalArrangement = Arrangement.spacedBy(14.dp),
@@ -159,3 +159,17 @@ private fun GamePolaroid(index: Int, game: GameInfo, version: Int, onClick: () -
     )
 }
 
+
+/**
+ * Grid columns for the Games and Videos tabs: always at least 2 cards a row (even on narrow phones or
+ * with a large "Display size" setting), and more cards a row on wide screens (about one per 160 dp).
+ */
+internal object AtLeastTwoColumns : GridCells {
+    override fun androidx.compose.ui.unit.Density.calculateCrossAxisCellSizes(availableSize: Int, spacing: Int): List<Int> {
+        val count = ((availableSize + spacing) / (160.dp.roundToPx() + spacing)).coerceAtLeast(2)
+        val total = availableSize - spacing * (count - 1)
+        val cell = total / count
+        val extra = total % count
+        return List(count) { if (it < extra) cell + 1 else cell }
+    }
+}
