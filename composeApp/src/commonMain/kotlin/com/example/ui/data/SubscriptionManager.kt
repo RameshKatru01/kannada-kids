@@ -17,10 +17,22 @@ data class SubscriptionState(
     val renewsAt: Long = 0L,
     /** Free time given by the admin, valid until this time. */
     val bonusUntil: Long = 0L,
-    val platform: String = ""
+    val platform: String = "",
+    /** End of the free Gold trial every family gets (no card, no purchase); 0 = unknown yet. */
+    val trialUntil: Long = 0L
 ) {
-    val hasPremium: Boolean get() = status == "active" || status == "autorenew_off" || bonusUntil > currentTimeMillis()
+    val paid: Boolean get() = status == "active" || status == "autorenew_off"
+    val hasPremium: Boolean get() = paid || bonusUntil > currentTimeMillis() || trialUntil > currentTimeMillis()
+    /** On the free trial (not paying, no admin gift). */
+    val inTrial: Boolean get() = !paid && bonusUntil <= currentTimeMillis() && trialUntil > currentTimeMillis()
+    /** Whole days left on the trial (1 on the last day). */
+    val trialDaysLeft: Int get() = if (!inTrial) 0 else (((trialUntil - currentTimeMillis()) + 86_399_999L) / 86_400_000L).toInt()
+    /** The trial has run out and the family hasn't chosen a plan. */
+    val trialEnded: Boolean get() = !hasPremium && trialUntil in 1..currentTimeMillis()
 }
+
+/** Every family gets this many days of Gold free, with no card or purchase. */
+const val FREE_TRIAL_DAYS = 15
 
 /**
  * Keeps the subscription in sync between the store (Google Play / App Store), the online database
@@ -70,6 +82,15 @@ object SubscriptionManager {
         } catch (e: Exception) {
             null
         }
+        // Free trial: starts the first time this account uses the app (kept online, so reinstalling
+        // doesn't restart it; the earliest start we know of wins).
+        val trialPrefs = getSharedPreferences("SubscriptionTrial")
+        val trialKey = "trial_start_${user.uid}"
+        val trialStart = listOf(trialPrefs.getLong(trialKey, 0L), remote?.long("trialStart") ?: 0L)
+            .filter { it > 0L }.minOrNull() ?: currentTimeMillis()
+        if (trialPrefs.getLong(trialKey, 0L) != trialStart) trialPrefs.edit().putLong(trialKey, trialStart).apply()
+        val trialUntil = trialStart + FREE_TRIAL_DAYS * 86_400_000L
+
         // Only bonusUntil can be trusted from the online record: the rules let just admins write it.
         // status / plan / renewsAt are written by the family's own app, so anyone signed in could
         // set them by hand; they are kept for the admin screens but never switch Premium on.
@@ -78,7 +99,7 @@ object SubscriptionManager {
         if (purchases == null) {
             // Store not reachable: keep what the store said last time (plus any admin free time).
             // Premium is never switched off here, so a paying family isn't locked out offline.
-            _state.value = _state.value.copy(bonusUntil = bonusUntil)
+            _state.value = _state.value.copy(bonusUntil = bonusUntil, trialUntil = trialUntil)
             if (_state.value.hasPremium) applyEntitlement(user.email, true)
             return@withLock
         }
@@ -92,7 +113,8 @@ object SubscriptionManager {
                 autoRenew = best.autoRenewing,
                 renewsAt = nextRenewal(best),
                 bonusUntil = bonusUntil,
-                platform = best.platform
+                platform = best.platform,
+                trialUntil = trialUntil
             )
         } else {
             // No purchase in this device's store. A subscription bought on the other platform is
@@ -104,7 +126,8 @@ object SubscriptionManager {
                 autoRenew = false,
                 renewsAt = remote?.long("renewsAt") ?: 0L,
                 bonusUntil = bonusUntil,
-                platform = remote?.str("platform") ?: ""
+                platform = remote?.str("platform") ?: "",
+                trialUntil = trialUntil
             )
         }
         _state.value = newState
@@ -137,7 +160,8 @@ object SubscriptionManager {
                 "renewsAt" to newState.renewsAt,
                 "platform" to newState.platform,
                 "updatedAt" to now,
-                "payments" to payments.takeLast(60)
+                "payments" to payments.takeLast(60),
+                "trialStart" to trialStart
             )
             if (remote == null) fields["joinedAt"] = now
             if (best != null && (remote == null || remote.long("startedAt") == 0L)) {

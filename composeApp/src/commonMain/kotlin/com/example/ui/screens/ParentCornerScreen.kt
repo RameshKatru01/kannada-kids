@@ -434,7 +434,7 @@ fun ParentCornerScreen(
                 Column(Modifier.weight(1f)) {
                     val p = sub.plan
                     Text(
-                        if (sub.hasPremium && p != null) "Premium · ${p.title}" else if (sub.hasPremium) "Premium (gift)"
+                        if (sub.hasPremium && p != null) "Premium · ${p.title}" else if (sub.inTrial) "Free Gold trial" else if (sub.hasPremium) "Premium (gift)"
                         else if (com.example.ui.data.Access.isTestGold()) "Gold (test account)" else "Free plan",
                         fontSize = 16.sp, fontWeight = FontWeight.ExtraBold, color = ScrapbookInk
                     )
@@ -443,6 +443,11 @@ fun ParentCornerScreen(
                             sub.hasPremium && p != null && sub.renewsAt > 0 ->
                                 (if (sub.autoRenew) "Renews " else "Ends ") + formatDate(sub.renewsAt)
                             sub.bonusUntil > currentTimeMillis() -> "Free until " + formatDate(sub.bonusUntil)
+                            sub.inTrial && sub.trialDaysLeft <= 2 -> "Your free trial ends in ${sub.trialDaysLeft} day${if (sub.trialDaysLeft == 1) "" else "s"}. See plans to keep Gold."
+                            sub.inTrial -> "Free Gold until " + formatDate(sub.trialUntil) + " · no card needed"
+                            sub.trialEnded -> "Your free trial has ended. " + storeProducts.let { _ ->
+                                "${com.example.ui.data.SubscriptionManager.priceOf(com.example.platform.PlanPeriod.Monthly)} a month to keep Gold"
+                            }
                             else -> storeProducts.let { _ ->
                                 val m = com.example.ui.data.SubscriptionManager.priceOf(com.example.platform.PlanPeriod.Monthly)
                                 val h = com.example.ui.data.SubscriptionManager.priceOf(com.example.platform.PlanPeriod.HalfYearly)
@@ -454,7 +459,7 @@ fun ParentCornerScreen(
                     )
                 }
             }
-            PlanButton(if (sub.hasPremium) "See my plan" else "See plans", Modifier.fillMaxWidth()) { onOpenPlans() }
+            PlanButton(if (sub.hasPremium && !sub.inTrial) "See my plan" else "See plans", Modifier.fillMaxWidth()) { onOpenPlans() }
         }
 
         // Learning path (how letters, islands and levels open)

@@ -316,26 +316,6 @@ fun LoginScreen(
                 }
             }
 
-            Spacer(modifier = Modifier.height(8.dp))
-
-            // Explore as a guest
-            TextButton(
-                onClick = {
-                    com.example.ui.audio.SoundEffectsHelper.playButtonTap(context)
-                    viewModel.signInAsGuest(context)
-                },
-                enabled = !isLoading,
-                modifier = Modifier
-                    .heightIn(min = 48.dp)
-                    .testTag("guest_explorer_button")
-            ) {
-                Text(
-                    text = "Explore as a guest",
-                    color = Ink,
-                    fontSize = 16.sp,
-                    fontWeight = FontWeight.ExtraBold
-                )
-            }
         }
     }
 }

@@ -18,7 +18,7 @@ import kotlinx.coroutines.flow.asStateFlow
  *    level 1, one run a day of Balloon Pop and Letter Dash, the Vowels videos and the Letter Box.
  *
  * Premium (Gold) = an active store subscription, free time given in Admin, a Gold plan set by
- * an admin, or being an admin. New users get a 7-day free trial, set up in the stores.
+ * an admin, or being an admin. Every family gets a 15-day free Gold trial with no card (see SubscriptionManager.FREE_TRIAL_DAYS).
  *
  * Admins never see either lock: every island, letter, game, level and video is open for them.
  *

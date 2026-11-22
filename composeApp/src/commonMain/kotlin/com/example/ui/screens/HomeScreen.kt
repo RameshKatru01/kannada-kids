@@ -125,6 +125,17 @@ fun HomeScreen(
     val pathVersion by Access.version.collectAsState()
     val sub by com.example.ui.data.SubscriptionManager.state.collectAsState()
     val premium = remember(sub, pathVersion) { Access.isPremium() }
+    // When the free trial runs out, say so once (with the way to the plans, behind the grown-up check)
+    LaunchedEffect(sub.trialEnded) {
+        if (sub.trialEnded && !Access.isPremium()) {
+            val prefs = com.example.platform.getSharedPreferences("SubscriptionTrial")
+            val key = "trial_end_shown_${com.example.platform.PlatformAuth.currentUser()?.uid ?: "guest"}"
+            if (!prefs.getBoolean(key, false)) {
+                prefs.edit().putBoolean(key, true).apply()
+                Access.askGrownUp("Your 15 days of free Gold have finished. We hope you loved it! Choose a plan to keep every letter, game and video open.")
+            }
+        }
+    }
     val islands = remember(version, currentLanguage, pathVersion, sub) {
         listOf(
             Island("vowels", com.example.data.Lang.islandName("vowels"), com.example.data.Lang.script("ಅ"), Color(0xFF2EC4B6), Color(0xFFD9F6F2), LetterData.vowels.size, ActivityTracker.learned("vowels"), onNavigateToVowels),
@@ -176,7 +187,13 @@ fun HomeScreen(
                 streak = streak,
                 onProfile = onNavigateToProfile,
                 onPoints = onNavigateToLeaderboard,
-                showGold = !premium,
+                goldLabel = when {
+                    sub.inTrial -> "Gold trial · ${sub.trialDaysLeft} day${if (sub.trialDaysLeft == 1) "" else "s"}"
+                    !premium -> "Get Gold"
+                    else -> null
+                },
+                goldMessage = if (sub.inTrial) "Your free Gold trial ends on ${com.example.platform.formatDate(sub.trialUntil)}. Choose a plan to keep every letter, game and video open."
+                    else "Unlock every letter, game, video and worksheet with Gold.",
                 modifier = Modifier.padding(horizontal = side)
             )
             // Streaming-style home: section banner, learning path, video and game rows
@@ -208,7 +225,7 @@ fun HomeScreen(
 }
 
 @Composable
-private fun HomeTopBar(coins: Int, streak: Int, onProfile: () -> Unit, onPoints: () -> Unit, showGold: Boolean = false, modifier: Modifier = Modifier) {
+private fun HomeTopBar(coins: Int, streak: Int, onProfile: () -> Unit, onPoints: () -> Unit, goldLabel: String? = null, goldMessage: String = "", modifier: Modifier = Modifier) {
     Row(modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
         Box(
             Modifier
@@ -233,21 +250,21 @@ private fun HomeTopBar(coins: Int, streak: Int, onProfile: () -> Unit, onPoints:
                 Text(rainbowText(learner), fontSize = 21.sp, fontWeight = FontWeight.ExtraBold, color = HomeInk, maxLines = 1, overflow = TextOverflow.Ellipsis)
             }
         }
-        if (showGold) {
+        if (goldLabel != null) {
             // Free users: always-visible way to Gold. Goes through the grown-ups check first (Families policy).
             Row(
                 Modifier
                     .clip(RoundedCornerShape(18.dp))
                     .background(Color(0xFFFFC93C))
                     .border(2.dp, Color.White, RoundedCornerShape(18.dp))
-                    .clickable { Access.askGrownUp("Unlock every letter, game, video and worksheet with Gold.") }
+                    .clickable { Access.askGrownUp(goldMessage) }
                     .padding(horizontal = 10.dp, vertical = 5.dp)
                     .testTag("home_get_gold"),
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(4.dp)
             ) {
                 Text("👑", fontSize = 14.sp)
-                Text("Get Gold", fontSize = 14.sp, fontWeight = FontWeight.ExtraBold, color = Color(0xFF5A3A00))
+                Text(goldLabel, fontSize = 14.sp, fontWeight = FontWeight.ExtraBold, color = Color(0xFF5A3A00), maxLines = 1)
             }
         }
         HomePill(onClick = onPoints) {
