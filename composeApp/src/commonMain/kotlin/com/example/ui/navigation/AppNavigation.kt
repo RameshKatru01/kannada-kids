@@ -334,6 +334,10 @@ fun AppNavigation(authViewModel: AuthViewModel = viewModel { AuthViewModel() }) 
                     }
                 }
 
+                composable("car_ride") {
+                    CarRideScreen(onBack = { navController.popBackStack() })
+                }
+
                 composable("numbers") {
                     NumbersScreen(
                         onBack = { navController.popBackStack() }
@@ -346,7 +350,8 @@ fun AppNavigation(authViewModel: AuthViewModel = viewModel { AuthViewModel() }) 
                         folders = if (com.example.data.Lang.isHindi) com.example.ui.screens.hindiVideoFolders
                             else listOf("Vowels", "Consonants", "Birds", "Animals", "Colours", "Fruits", "Vegetables", "Body Parts", "Family", "Numbers", "Letter Quiz", "Picture Quiz", "Number Quiz", "How Many?", "Class Room", "Play Time"),
                         onFolderClick = openVideoFolder,
-                        onBack = { navController.popBackStack() }
+                        onBack = { navController.popBackStack() },
+                        onCarRide = if (com.example.data.Lang.isHindi) null else ({ navController.navigate("car_ride") })
                     )
                 }
                 

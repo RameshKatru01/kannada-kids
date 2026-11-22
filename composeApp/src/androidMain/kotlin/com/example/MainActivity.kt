@@ -1,5 +1,6 @@
 package com.example
 
+import android.content.Intent
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -31,6 +32,24 @@ class MainActivity : ComponentActivity() {
         setContent {
             App()
         }
+
+        // Home-screen widget: keep today's word up to date, and say the word if the widget was tapped
+        com.example.widget.WordWidgetProvider.refreshAll(applicationContext)
+        sayWidgetWord(intent)
+    }
+
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        setIntent(intent)
+        sayWidgetWord(intent)
+    }
+
+    private fun sayWidgetWord(intent: Intent?) {
+        val word = intent?.getStringExtra(com.example.widget.WordWidgetProvider.EXTRA_SAY_WORD) ?: return
+        intent.removeExtra(com.example.widget.WordWidgetProvider.EXTRA_SAY_WORD)
+        android.os.Handler(mainLooper).postDelayed({
+            try { com.example.ui.audio.SpeechBank.play(applicationContext, word) } catch (e: Exception) {}
+        }, 900)
     }
 
     override fun onDestroy() {

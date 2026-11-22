@@ -53,3 +53,7 @@ expect val platformName: String
 
 /** App version and phone model, e.g. "App 1.1 (2) · Pixel 7 · Android 15" (for support emails). */
 expect fun supportDeviceInfo(): String
+
+/** Keeps the screen from turning off while this is shown (car-ride listening). */
+@androidx.compose.runtime.Composable
+expect fun KeepScreenOn()

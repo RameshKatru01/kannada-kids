@@ -3,6 +3,7 @@ package com.example.ui.screens
 import com.example.ui.components.readableWidth
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
@@ -12,6 +13,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.zIndex
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
@@ -102,7 +104,8 @@ fun VideoFoldersScreen(
     title: String,
     folders: List<String>,
     onFolderClick: (String) -> Unit,
-    onBack: () -> Unit
+    onBack: () -> Unit,
+    onCarRide: (() -> Unit)? = null
 ) {
     Column(
         modifier = Modifier
@@ -119,6 +122,26 @@ fun VideoFoldersScreen(
                 fontSize = 16.sp, fontWeight = FontWeight.Bold, color = ScrapbookInk
             )
             return@Column
+        }
+        if (onCarRide != null) {
+            // Car-ride listening: Kannada words to hear and repeat, no screen needed
+            Row(
+                Modifier.padding(start = 14.dp, end = 14.dp, top = 4.dp).fillMaxWidth()
+                    .clip(androidx.compose.foundation.shape.RoundedCornerShape(18.dp))
+                    .background(Color(0xFF14213D))
+                    .clickable { com.example.ui.audio.SoundEffectsHelper.playButtonTap(); onCarRide() }
+                    .padding(horizontal = 14.dp, vertical = 10.dp)
+                    .testTag("car_ride_banner"),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                Text("🚗", fontSize = 30.sp)
+                Column(Modifier.weight(1f)) {
+                    Text("Car-ride listening", fontSize = 16.sp, fontWeight = FontWeight.ExtraBold, color = Color.White)
+                    Text("Hear Kannada words and say them back · no screen needed", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = Color(0xFFB4B2A9))
+                }
+                Text("▶", fontSize = 20.sp, color = Color(0xFFFAC775), fontWeight = FontWeight.ExtraBold)
+            }
         }
         LazyVerticalGrid(
             columns = AtLeastTwoColumns,

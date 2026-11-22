@@ -209,3 +209,12 @@ actual fun formatMoney(micros: Long, currencyCode: String): String {
         "$currencyCode " + (if (amount >= 20) amount.toLong().toString() else ((amount * 100).toLong() / 100.0).toString())
     }
 }
+
+@androidx.compose.runtime.Composable
+actual fun KeepScreenOn() {
+    val view = androidx.compose.ui.platform.LocalView.current
+    androidx.compose.runtime.DisposableEffect(view) {
+        view.keepScreenOn = true
+        onDispose { view.keepScreenOn = false }
+    }
+}

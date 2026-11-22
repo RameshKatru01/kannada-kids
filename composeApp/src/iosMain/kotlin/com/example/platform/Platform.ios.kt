@@ -187,3 +187,11 @@ actual fun formatMoney(micros: Long, currencyCode: String): String {
     f.maximumFractionDigits = digits
     return f.stringFromNumber(NSNumber(double = amount)) ?: "$currencyCode $amount"
 }
+
+@androidx.compose.runtime.Composable
+actual fun KeepScreenOn() {
+    androidx.compose.runtime.DisposableEffect(Unit) {
+        platform.UIKit.UIApplication.sharedApplication.idleTimerDisabled = true
+        onDispose { platform.UIKit.UIApplication.sharedApplication.idleTimerDisabled = false }
+    }
+}

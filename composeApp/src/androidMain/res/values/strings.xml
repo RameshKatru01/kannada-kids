@@ -1,3 +1,6 @@
 <resources>
     <string name="app_name">Fun Learn - ಕನ್ನಡ</string>
+    <string name="widget_title">⭐ Word of the day</string>
+    <string name="widget_tap">Tap to hear it</string>
+    <string name="widget_description">A new Kannada word every day</string>
 </resources>
