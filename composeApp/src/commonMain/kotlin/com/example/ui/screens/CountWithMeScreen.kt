@@ -201,6 +201,7 @@ fun CountWithMeScreen(onBack: () -> Unit) {
         )
 
         BoxWithConstraints(Modifier.fillMaxWidth().weight(1f).padding(bottom = 12.dp)) {
+            val boxWidth = maxWidth
             if (stars > 0) {
                 // Game finished
                 Column(
@@ -239,7 +240,7 @@ fun CountWithMeScreen(onBack: () -> Unit) {
                     // The pictures, 5 a row
                     val perRow = 5
                     val rows = (n + perRow - 1) / perRow
-                    val cell = minOf((maxWidth - 8.dp * (perRow - 1)) / perRow, 76.dp)
+                    val cell = minOf((boxWidth - 20.dp - 8.dp * (perRow - 1)) / perRow, 76.dp)
                     Column(
                         Modifier.fillMaxWidth().clip(RoundedCornerShape(18.dp)).background(Color.White).padding(10.dp),
                         verticalArrangement = Arrangement.spacedBy(6.dp),
