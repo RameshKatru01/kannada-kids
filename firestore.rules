@@ -40,11 +40,15 @@ service cloud.firestore {
     // Families can write their own record, but only an admin can give free time (bonusUntil).
     match /subscriptions/{uid} {
       allow read: if isOwner(uid) || isAdmin();
-      allow create: if isOwner(uid) && !('bonusUntil' in request.resource.data);
+      // The free trial's start (trialStart) can't be set in the future, and once set can only move earlier.
+      allow create: if isOwner(uid) && !('bonusUntil' in request.resource.data)
+        && request.resource.data.get('trialStart', 0) <= request.time.toMillis() + 600000;
       allow update: if isAdmin()
         || (isOwner(uid)
             && request.resource.data.get('bonusUntil', 0) == resource.data.get('bonusUntil', 0)
-            && request.resource.data.get('bonusNote', '') == resource.data.get('bonusNote', ''));
+            && request.resource.data.get('bonusNote', '') == resource.data.get('bonusNote', '')
+            && request.resource.data.get('trialStart', 0) <= request.time.toMillis() + 600000
+            && (!('trialStart' in resource.data) || request.resource.data.get('trialStart', 0) <= resource.data.trialStart));
       // Admins, or the family itself when they delete their account
       allow delete: if isAdmin() || isOwner(uid);
     }
