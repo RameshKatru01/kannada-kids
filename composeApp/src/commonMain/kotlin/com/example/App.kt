@@ -42,6 +42,16 @@ fun App() {
         Box(modifier = Modifier.fillMaxSize()) {
             com.example.ui.data.TrackActiveTime()
             LaunchedEffect(Unit) {
+                // Subscription first (Gold, free trial, the family's record for the admin list), so it
+                // never waits for the video downloads below
+                try {
+                    com.example.ui.data.SubscriptionManager.loadProducts()
+                    com.example.ui.data.SubscriptionManager.refresh()
+                    com.example.ui.data.AdminRoles.load()
+                } catch (e: Exception) {
+                }
+            }
+            LaunchedEffect(Unit) {
                 // Where the videos are served from (can be changed without an app update)
                 try {
                     com.example.ui.data.VideoHost.refresh()
@@ -54,12 +64,6 @@ fun App() {
                     listOf("Vowels", "Consonants", "Birds").forEach { section ->
                         com.example.ui.screens.videoUrlsFor(section).firstOrNull()?.let { preloadVideo(it) }
                     }
-                } catch (e: Exception) {
-                }
-                try {
-                    com.example.ui.data.SubscriptionManager.loadProducts()
-                    com.example.ui.data.SubscriptionManager.refresh()
-                    com.example.ui.data.AdminRoles.load()
                 } catch (e: Exception) {
                 }
             }

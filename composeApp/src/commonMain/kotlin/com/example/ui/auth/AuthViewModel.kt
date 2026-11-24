@@ -44,6 +44,16 @@ class AuthViewModel : ViewModel() {
         val prefs = getSharedPreferences("AppProgress")
         prefs.edit().putString("last_active_user", email).apply()
         com.example.ui.data.UserManager.onUserLoggedIn(context, email, displayName)
+        // Save the family's record straight away (admin Subscriptions list, free trial start)
+        viewModelScope.launch {
+            try {
+                com.example.ui.data.SubscriptionManager.loadProducts()
+                com.example.ui.data.SubscriptionManager.refresh()
+                com.example.ui.data.AdminRoles.load()
+            } catch (e: Exception) {
+                Log.w("AuthViewModel", "Couldn't refresh subscription after sign-in", e)
+            }
+        }
     }
 
     /**
@@ -60,13 +70,13 @@ class AuthViewModel : ViewModel() {
             } catch (e: AuthException) {
                 Log.e("AuthViewModel", "Google Sign in failed", e)
                 _authState.value = if (e.noAccountOnDevice) {
-                    AuthState.Error("No Google account detected on this device. You can explore as a guest instead!")
+                    AuthState.Error("No Google account found on this phone. Add one in the phone's Settings > Accounts, then try again.")
                 } else {
                     AuthState.Error(e.message ?: "Google sign in failed")
                 }
             } catch (e: Exception) {
                 Log.e("AuthViewModel", "Unexpected error during Google sign in", e)
-                _authState.value = AuthState.Error("Sign in error: ${e.message}. You can explore as a guest instead.")
+                _authState.value = AuthState.Error("Sign in error: ${e.message}. Please check your internet connection and try again.")
             }
         }
     }
