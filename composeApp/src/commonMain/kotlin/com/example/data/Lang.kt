@@ -58,7 +58,7 @@ object Lang {
     val hello: String get() = if (isHindi) "नमस्ते!" else "ನಮಸ್ಕಾರ!"
 
     /** Games that need words not yet written in Hindi. */
-    private val kannadaOnlyGames = setOf(8, 9, 20, 24, 25, 26, 27, 28)   // Scrambled Words, Word Search, Swara Adventure, Tap & Learn, Memory Flip, Write My Name
+    private val kannadaOnlyGames = setOf(8, 9, 20, 24, 25, 26, 27, 28, 29)   // Scrambled Words, Word Search, Swara Adventure, Tap & Learn, Memory Flip, Write My Name
 
     fun hasGame(id: Int): Boolean = !isHindi || id !in kannadaOnlyGames
 
