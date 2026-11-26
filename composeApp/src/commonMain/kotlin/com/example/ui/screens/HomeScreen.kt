@@ -408,7 +408,7 @@ private val folderThumbs: Map<String, DrawableResource> = mapOf(
 private val homeFunVideos = listOf("Vowels", "Consonants", "Birds", "Fruits", "Vegetables", "Body Parts", "Family", "Animals", "Colours")
 
 /** "Games for you" on Home: Letter Runner, Musical Balloon Pop and Colour Sort first. */
-private val homeGames = listOf(26, 24, 25, 6, 12, 13)
+private val homeGames = listOf(26, 28, 24, 25, 6, 12, 13)
 
 /** A section's own videos and games (first ones are the closest match). */
 private fun sectionVideos(type: String): List<String> = when (type) {
