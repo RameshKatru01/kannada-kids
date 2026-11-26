@@ -419,7 +419,7 @@ private fun sectionVideos(type: String): List<String> = when (type) {
 }
 
 private fun sectionGames(type: String): List<Int> = when (type) {
-    "vowels" -> listOf(1, 20, 19, 11, 12, 6)
+    "vowels" -> listOf(29, 1, 20, 19, 11, 12)
     "consonants" -> listOf(2, 21, 11, 22, 23, 13)
     "guninthakshari" -> listOf(3, 8, 9, 21, 22, 23)
     "numbers" -> listOf(27, 4, 12, 13, 23, 6)
