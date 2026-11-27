@@ -66,5 +66,56 @@ service cloud.firestore {
       allow update: if isAppOwner() && request.resource.data.role == 'admin' && email != myEmail();
       allow delete: if isAppOwner() && email != myEmail();
     }
+    // ---------------- Classroom homework (ui/classroom/) ----------------
+    // Delete this block if the classroom module is removed.
+    function classDoc(code) {
+      return get(/databases/$(database)/documents/classes/$(code));
+    }
+    function isClassTeacher(code) {
+      return request.auth != null && classDoc(code).data.teacherUid == request.auth.uid;
+    }
+    function isApprovedStudent(code) {
+      return request.auth != null
+        && exists(/databases/$(database)/documents/classes/$(code)/students/$(request.auth.uid))
+        && get(/databases/$(database)/documents/classes/$(code)/students/$(request.auth.uid)).data.approved == true;
+    }
+
+    match /classes/{code} {
+      // Anyone signed in can look a class up by its code (name and teacher's first name only).
+      allow get: if request.auth != null;
+      allow create: if request.auth != null && request.resource.data.teacherUid == request.auth.uid;
+      allow update: if isClassTeacher(code) && request.resource.data.teacherUid == resource.data.teacherUid;
+      allow delete: if isClassTeacher(code);
+
+      match /students/{uid} {
+        allow get: if isOwner(uid) || isClassTeacher(code);
+        allow list: if isClassTeacher(code);
+        // A family asks to join (not approved yet); only the teacher can approve.
+        allow create: if isOwner(uid) && request.resource.data.approved == false;
+        allow update: if isClassTeacher(code)
+          || (isOwner(uid) && request.resource.data.approved == resource.data.approved);
+        allow delete: if isOwner(uid) || isClassTeacher(code);
+      }
+
+      match /homework/{hw} {
+        allow read: if isClassTeacher(code) || isApprovedStudent(code);
+        allow write: if isClassTeacher(code);
+
+        match /results/{uid} {
+          allow get: if isOwner(uid) || isClassTeacher(code);
+          allow list: if isClassTeacher(code);
+          allow create, update: if isOwner(uid) && isApprovedStudent(code);
+          allow delete: if isClassTeacher(code);
+        }
+      }
+    }
+
+    // Which classes an account teaches, and which class a family's child is in.
+    match /teachers/{uid} {
+      allow read, write: if isOwner(uid);
+    }
+    match /classMembers/{uid} {
+      allow read, write: if isOwner(uid);
+    }
   }
 }

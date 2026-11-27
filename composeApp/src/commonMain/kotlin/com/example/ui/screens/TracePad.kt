@@ -96,7 +96,9 @@ fun TraceExercise(
     onComplete: () -> Unit,
     modifier: Modifier = Modifier,
     /** How many good traces finish the exercise (5 for lessons; fewer for "Write my name"). */
-    requiredTraces: Int = REQUIRED_TRACES
+    requiredTraces: Int = REQUIRED_TRACES,
+    /** Told about every checked trace: how close it was to the letter (0..1) and whether it passed. */
+    onChecked: (accuracy: Float, passed: Boolean) -> Unit = { _, _ -> }
 ) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
@@ -142,6 +144,7 @@ fun TraceExercise(
     fun checkOnDone() {
         if (feedback == TraceFeedback.Good || feedback == TraceFeedback.TryAgain) return
         val score = checker?.invoke(strokes) ?: return
+        onChecked(score.accuracy, score.passed)
         when {
             score.passed -> success()
             score.accuracy < OK_ACCURACY -> tryAgain()

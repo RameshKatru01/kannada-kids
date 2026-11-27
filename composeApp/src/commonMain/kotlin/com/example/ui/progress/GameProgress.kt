@@ -97,6 +97,10 @@ object GameProgress {
     /** Changes whenever progress is saved, so screens can refresh. */
     val version: StateFlow<Int> = _version.asStateFlow()
 
+    private val _lastLevel = MutableStateFlow<LevelResult?>(null)
+    /** The most recently finished level (any game), for features that want to know a game was played. */
+    val lastLevel: StateFlow<LevelResult?> = _lastLevel.asStateFlow()
+
     fun currentUser(): String =
         getSharedPreferences("AppProgress").getString("last_active_user", "guest") ?: "guest"
 
@@ -173,7 +177,7 @@ object GameProgress {
             pointsEarned = earned,
             totalPoints = ScoreManager.totalCoins.value,
             message = message
-        )
+        ).also { _lastLevel.value = it }
     }
 }
 

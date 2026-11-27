@@ -20,6 +20,7 @@ import androidx.navigation.compose.*
 import androidx.navigation.navArgument
 import androidx.savedstate.read
 import com.example.ui.screens.*
+import com.example.ui.classroom.classroomRoutes // classroom module
 
 @Composable
 fun AppNavigation(authViewModel: AuthViewModel = viewModel { AuthViewModel() }) {
@@ -106,21 +107,25 @@ fun AppNavigation(authViewModel: AuthViewModel = viewModel { AuthViewModel() }) 
                 }
 
                 composable("home") {
-                    HomeScreen(
-                        onNavigateToVowels = { navController.navigate("list/vowels") },
-                        onNavigateToConsonants = { navController.navigate("list/consonants") },
-                        onNavigateToGunninthakshari = { navController.navigate("guninthakshari") }, // Kept for map navigation
-                        onNavigateToNumbers = { navController.navigate("list/numbers") },
-                    onNavigateToOttakshara = { navController.navigate("ottakshara") },
-                        onNavigateToLeaderboard = { navController.navigate("leaderboard") },
-                        onNavigateToProfile = { navController.navigate("profile") },
-                        onOpenLetter = { type, index -> navController.navigate("letter_flow/$type/$index") },
-                        onOpenGame = openGame,
-                        onSeeAllGames = { navController.navigate("games") { launchSingleTop = true } },
-                        onOpenVideos = openVideoFolder,
-                        onSeeAllVideos = { navController.navigate("fun_videos") { launchSingleTop = true } },
-                        onSignOut = signOutAction
-                    )
+                    val home: @Composable () -> Unit = {
+                        HomeScreen(
+                            onNavigateToVowels = { navController.navigate("list/vowels") },
+                            onNavigateToConsonants = { navController.navigate("list/consonants") },
+                            onNavigateToGunninthakshari = { navController.navigate("guninthakshari") }, // Kept for map navigation
+                            onNavigateToNumbers = { navController.navigate("list/numbers") },
+                        onNavigateToOttakshara = { navController.navigate("ottakshara") },
+                            onNavigateToLeaderboard = { navController.navigate("leaderboard") },
+                            onNavigateToProfile = { navController.navigate("profile") },
+                            onOpenLetter = { type, index -> navController.navigate("letter_flow/$type/$index") },
+                            onOpenGame = openGame,
+                            onSeeAllGames = { navController.navigate("games") { launchSingleTop = true } },
+                            onOpenVideos = openVideoFolder,
+                            onSeeAllVideos = { navController.navigate("fun_videos") { launchSingleTop = true } },
+                            onSignOut = signOutAction
+                        )
+                    }
+                    // Classroom homework button (remove with the classroom module)
+                    if (com.example.ui.data.FeatureFlags.CLASSROOM) com.example.ui.classroom.WithHomeworkButton(navController, home) else home()
                 }
                 composable("dashboard") {
                     DashboardScreen(
@@ -335,6 +340,9 @@ fun AppNavigation(authViewModel: AuthViewModel = viewModel { AuthViewModel() }) 
                         else -> PathBuilderScreen(gameType = gameIndex, onBack = back)
                     }
                 }
+
+                // Classroom homework screens (remove with the classroom module)
+                if (com.example.ui.data.FeatureFlags.CLASSROOM) classroomRoutes(navController)
 
                 composable("car_ride") {
                     CarRideScreen(onBack = { navController.popBackStack() })
